@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  --pitch: #0F3D2E;
+  --ivory: #F5F1E8;
+  --gold: #D4A537;
+  --charcoal: #1A1A1A;
+  --muted-green: #6B7F73;
+  --muted-text: #A9BBB0;
+
+  --gs-1: #A32638;
+  --gs-2: #B8860B;
+  --fb-1: #FFED00;
+  --fb-2: #00338D;
+  --bjk-1: #000000;
+  --bjk-2: #FFFFFF;
+  --ts-1: #7A1E3C;
+  --ts-2: #5CB8E4;
+
+  --background: #F8F7F3;
+  --foreground: #1A1A1A;
+}
+
+@theme inline {
+  --color-pitch: var(--pitch);
+  --color-ivory: var(--ivory);
+  --color-gold: var(--gold);
+  --color-charcoal: var(--charcoal);
+  --color-muted-green: var(--muted-green);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-display: var(--font-oswald);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.team-badge {
+  background: conic-gradient(from 135deg, var(--c1) 0deg 180deg, var(--c2) 180deg 360deg);
+}
+
+.team-badge-bjk {
+  box-shadow: 0 0 0 1px var(--muted-green) inset;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
