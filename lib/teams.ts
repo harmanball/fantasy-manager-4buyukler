@@ -4,7 +4,7 @@ export const TEAMS: Record<
   TeamCode,
   { name: string; c1: string; c2: string; needsRing?: boolean }
 > = {
-  GS: { name: "Galatasaray", c1: "#A32638", c2: "#B8860B" },
+  GS: { name: "Galatasaray", c1: "#A90432", c2: "#FDB912" },
   FB: { name: "Fenerbahçe", c1: "#FFED00", c2: "#00338D" },
   BJK: { name: "Beşiktaş", c1: "#000000", c2: "#FFFFFF", needsRing: true },
   TS: { name: "Trabzonspor", c1: "#7A1E3C", c2: "#5CB8E4" },
