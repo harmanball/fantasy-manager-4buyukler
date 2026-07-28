@@ -21,20 +21,37 @@ export function buildSlots(formation: Formation): SquadSlot[] {
   return slots;
 }
 
-function groupByPosition(slots: SquadSlot[]) {
-  const rows: SquadSlot[][] = [];
-  let current: Position | null = null;
-  let bucket: SquadSlot[] = [];
-  for (const s of slots) {
-    if (s.position !== current) {
-      if (bucket.length) rows.push(bucket);
-      bucket = [];
-      current = s.position;
-    }
-    bucket.push(s);
-  }
-  if (bucket.length) rows.push(bucket);
-  return rows;
+// Sahadaki her satırın dikey konumu (yüzde, üstten alta: FWD -> MID -> DEF -> GK)
+const ROW_Y: Record<Position, number> = {
+  FWD: 15,
+  MID: 39,
+  DEF: 63,
+  GK: 87,
+};
+
+// Bir satırdaki n oyuncu için eşit aralıklı yatay konumlar (yüzde)
+function rowX(count: number): number[] {
+  if (count === 1) return [50];
+  const margin = 14;
+  const span = 100 - margin * 2;
+  return Array.from({ length: count }, (_, i) => margin + (span * i) / (count - 1));
+}
+
+interface PositionedSlot extends SquadSlot {
+  x: number;
+  y: number;
+}
+
+function layoutSlots(slots: SquadSlot[]): PositionedSlot[] {
+  const positioned: PositionedSlot[] = [];
+  (["FWD", "MID", "DEF", "GK"] as Position[]).forEach((pos) => {
+    const inRow = slots.filter((s) => s.position === pos);
+    const xs = rowX(inRow.length);
+    inRow.forEach((s, i) => {
+      positioned.push({ ...s, x: xs[i], y: ROW_Y[pos] });
+    });
+  });
+  return positioned;
 }
 
 export function Pitch({
@@ -46,64 +63,63 @@ export function Pitch({
   captainId: string | null;
   onSlotTap: (slot: SquadSlot) => void;
 }) {
-  const rows = groupByPosition(slots);
+  const positioned = layoutSlots(slots);
 
   return (
-    <div className="relative mx-auto aspect-[3/4] w-full max-w-sm overflow-hidden rounded-lg bg-pitch sm:max-w-md sm:aspect-[4/5]">
-      <svg
-        viewBox="0 0 600 400"
-        preserveAspectRatio="none"
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.18]"
-        aria-hidden="true"
-      >
-        <rect x="10" y="10" width="580" height="380" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
-        <line x1="10" y1="200" x2="590" y2="200" stroke="#F5F1E8" strokeWidth="1.5" />
-        <circle cx="300" cy="200" r="45" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
-        <circle cx="300" cy="200" r="2.5" fill="#F5F1E8" />
-        <rect x="190" y="10" width="220" height="70" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
-        <rect x="255" y="10" width="90" height="26" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
-        <circle cx="300" cy="58" r="2.5" fill="#F5F1E8" />
-        <path d="M 240 80 A 60 60 0 0 0 360 80" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
-        <rect x="190" y="320" width="220" height="70" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
-        <rect x="255" y="364" width="90" height="26" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
-        <circle cx="300" cy="342" r="2.5" fill="#F5F1E8" />
-        <path d="M 240 320 A 60 60 0 0 1 360 320" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
-      </svg>
+    <div className="mx-auto w-full max-w-[360px] sm:max-w-[440px]">
+      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-pitch">
+        {/* Saha çizgileri — viewBox konteynerle aynı 3:4 oranında, bu yüzden bozulma olmaz */}
+        <svg
+          viewBox="0 0 300 400"
+          className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.18]"
+          aria-hidden="true"
+        >
+          <rect x="6" y="6" width="288" height="388" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+          <line x1="6" y1="200" x2="294" y2="200" stroke="#F5F1E8" strokeWidth="1.5" />
+          <circle cx="150" cy="200" r="38" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+          <circle cx="150" cy="200" r="2" fill="#F5F1E8" />
+          {/* üst kale alanı */}
+          <rect x="90" y="6" width="120" height="46" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+          <rect x="122" y="6" width="56" height="18" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+          <circle cx="150" cy="40" r="2" fill="#F5F1E8" />
+          <path d="M 118 52 A 34 34 0 0 0 182 52" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+          {/* alt kale alanı */}
+          <rect x="90" y="348" width="120" height="46" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+          <rect x="122" y="376" width="56" height="18" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+          <circle cx="150" cy="360" r="2" fill="#F5F1E8" />
+          <path d="M 118 348 A 34 34 0 0 1 182 348" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+        </svg>
 
-      <div className="relative flex h-full flex-col justify-between px-2 py-4 sm:px-4 sm:py-6">
-        {rows.map((row, i) => (
-          <div key={i} className="flex justify-around">
-            {row.map((slot) => (
-              <button
-                key={slot.id}
-                onClick={() => onSlotTap(slot)}
-                className="flex min-w-[52px] flex-col items-center gap-1 rounded-md py-1 active:scale-95 transition-transform"
-                aria-label={
-                  slot.player
-                    ? `${slot.player.name}, ${slot.position} — düzenle`
-                    : `Boş ${slot.position} slotu — oyuncu ekle`
-                }
-              >
-                {slot.player ? (
-                  <TeamBadge
-                    team={slot.player.team}
-                    size={36}
-                    role={slot.player.id === captainId ? "captain" : undefined}
-                  />
-                ) : (
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-dashed border-ivory/40 text-ivory/50">
-                    <span className="text-lg leading-none">+</span>
-                  </div>
-                )}
-                <span className="max-w-[64px] truncate text-[10px] font-medium text-ivory sm:text-[11px]">
-                  {slot.player ? slot.player.name.split(" ").pop() : slot.position}
-                </span>
-                {slot.player && (
-                  <span className="text-[9px] font-medium text-ivory/75">{slot.player.team}</span>
-                )}
-              </button>
-            ))}
-          </div>
+        {positioned.map((slot) => (
+          <button
+            key={slot.id}
+            onClick={() => onSlotTap(slot)}
+            className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-0.5 active:scale-95 transition-transform"
+            style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
+            aria-label={
+              slot.player
+                ? `${slot.player.name}, ${slot.position} — düzenle`
+                : `Boş ${slot.position} slotu — oyuncu ekle`
+            }
+          >
+            {slot.player ? (
+              <TeamBadge
+                team={slot.player.team}
+                size={34}
+                role={slot.player.id === captainId ? "captain" : undefined}
+              />
+            ) : (
+              <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full border-2 border-dashed border-ivory/40 text-ivory/50">
+                <span className="text-base leading-none">+</span>
+              </div>
+            )}
+            <span className="max-w-[62px] truncate text-[10px] font-medium text-ivory">
+              {slot.player ? slot.player.name.split(" ").pop() : slot.position}
+            </span>
+            {slot.player && (
+              <span className="text-[8px] font-medium text-ivory/75">{slot.player.team}</span>
+            )}
+          </button>
         ))}
       </div>
     </div>
