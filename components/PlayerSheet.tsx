@@ -8,12 +8,14 @@ export function PlayerSheet({
   position,
   players,
   teamCounts,
+  excludeIds,
   onPick,
   onClose,
 }: {
   position: Position;
   players: Player[];
   teamCounts: Record<string, number>;
+  excludeIds: string[];
   onPick: (p: Player) => void;
   onClose: () => void;
 }) {
@@ -21,6 +23,7 @@ export function PlayerSheet({
   const filtered = players.filter(
     (p) =>
       p.position === position &&
+      !excludeIds.includes(p.id) &&
       p.name.toLowerCase().includes(query.toLowerCase())
   );
 
