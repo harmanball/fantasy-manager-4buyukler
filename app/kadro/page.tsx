@@ -24,7 +24,6 @@ export default function KadroPage() {
   const [formation, setFormation] = useState<Formation>("4-3-3");
   const [slots, setSlots] = useState<SquadSlot[]>(() => buildSlots("4-3-3"));
   const [captainId, setCaptainId] = useState<string | null>(null);
-  const [viceId, setViceId] = useState<string | null>(null);
   const [pickerPosition, setPickerPosition] = useState<Position | null>(null);
   const [activeSlotId, setActiveSlotId] = useState<string | null>(null);
   const [actionPlayer, setActionPlayer] = useState<Player | null>(null);
@@ -84,7 +83,6 @@ export default function KadroPage() {
       prev.map((s) => (s.id === activeSlotId ? { ...s, player: null } : s))
     );
     if (actionPlayer?.id === captainId) setCaptainId(null);
-    if (actionPlayer?.id === viceId) setViceId(null);
     setActionPlayer(null);
     setActiveSlotId(null);
   }
@@ -96,6 +94,11 @@ export default function KadroPage() {
     }
     return counts;
   }, [slots]);
+
+  const usedPlayerIds = useMemo(
+    () => slots.filter((s) => s.player).map((s) => s.player!.id),
+    [slots]
+  );
 
   const filledCount = slots.filter((s) => s.player).length;
   const captainName =
@@ -117,7 +120,6 @@ export default function KadroPage() {
       .map((s) => ({
         playerId: s.player!.id,
         isCaptain: s.player!.id === captainId,
-        isVice: s.player!.id === viceId,
       }));
     const { error } = await saveSquad({
       userId: session.user.id,
@@ -164,16 +166,11 @@ export default function KadroPage() {
       <FormationPicker value={formation} onChange={changeFormation} />
 
       {playersLoading ? (
-        <div className="flex h-64 items-center justify-center rounded-lg bg-pitch">
+        <div className="flex aspect-[3/4] items-center justify-center rounded-lg bg-pitch sm:aspect-[4/5]">
           <p className="text-sm text-ivory/60">Oyuncular yükleniyor…</p>
         </div>
       ) : (
-        <Pitch
-          slots={slots}
-          captainId={captainId}
-          viceId={viceId}
-          onSlotTap={handleSlotTap}
-        />
+        <Pitch slots={slots} captainId={captainId} onSlotTap={handleSlotTap} />
       )}
 
       <StatCards
@@ -200,6 +197,7 @@ export default function KadroPage() {
           position={pickerPosition}
           players={players}
           teamCounts={teamCounts}
+          excludeIds={usedPlayerIds}
           onPick={assignPlayer}
           onClose={() => {
             setPickerPosition(null);
@@ -212,15 +210,8 @@ export default function KadroPage() {
         <PlayerActionSheet
           player={actionPlayer}
           isCaptain={actionPlayer.id === captainId}
-          isVice={actionPlayer.id === viceId}
           onMakeCaptain={() => {
             setCaptainId(actionPlayer.id);
-            if (viceId === actionPlayer.id) setViceId(null);
-            setActionPlayer(null);
-          }}
-          onMakeVice={() => {
-            setViceId(actionPlayer.id);
-            if (captainId === actionPlayer.id) setCaptainId(null);
             setActionPlayer(null);
           }}
           onRemove={removeFromSlot}
