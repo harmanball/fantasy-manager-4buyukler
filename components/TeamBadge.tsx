@@ -7,20 +7,14 @@ export function TeamBadge({
 }: {
   team: TeamCode;
   size?: number;
-  role?: "captain" | "vice";
+  role?: "captain";
 }) {
   const t = TEAMS[team];
   return (
     <div
       className={`team-badge relative shrink-0 rounded-full ${
         t.needsRing ? "team-badge-bjk" : ""
-      } ${
-        role === "captain"
-          ? "ring-2 ring-gold"
-          : role === "vice"
-          ? "ring-2 ring-ivory"
-          : ""
-      }`}
+      } ${role === "captain" ? "ring-2 ring-gold" : ""}`}
       style={
         {
           width: size,
@@ -32,12 +26,12 @@ export function TeamBadge({
       role="img"
       aria-label={`${t.name} forması`}
     >
-      {role && (
+      {role === "captain" && (
         <span
           className="absolute inset-0 flex items-center justify-center text-[9px] font-semibold text-ivory"
           style={{ textShadow: "0 0 3px rgba(0,0,0,0.7)" }}
         >
-          {role === "captain" ? "C" : "V"}
+          C
         </span>
       )}
     </div>
