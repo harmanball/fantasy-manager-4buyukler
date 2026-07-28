@@ -166,7 +166,7 @@ export default function KadroPage() {
       <FormationPicker value={formation} onChange={changeFormation} />
 
       {playersLoading ? (
-        <div className="flex aspect-[3/4] items-center justify-center rounded-lg bg-pitch sm:aspect-[4/5]">
+        <div className="mx-auto flex aspect-[3/4] w-full max-w-[360px] items-center justify-center rounded-lg bg-pitch sm:max-w-[440px]">
           <p className="text-sm text-ivory/60">Oyuncular yükleniyor…</p>
         </div>
       ) : (
@@ -176,7 +176,6 @@ export default function KadroPage() {
       <StatCards
         filledCount={filledCount}
         totalSlots={SQUAD_SIZE}
-        teamCounts={teamCounts}
         captainName={captainName}
       />
 
