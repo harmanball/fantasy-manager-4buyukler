@@ -50,7 +50,7 @@ export default function Home() {
           </div>
 
           <div className="flex h-1 w-full max-w-[280px] overflow-hidden rounded-full">
-            <div className="flex-1 bg-[#A32638]" />
+            <div className="flex-1 bg-[#A90432]" />
             <div className="flex-1 bg-[#00338D]" />
             <div className="flex-1 bg-[#F5F1E8]" />
             <div className="flex-1 bg-[#7A1E3C]" />
