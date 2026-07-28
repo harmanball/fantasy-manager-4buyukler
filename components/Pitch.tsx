@@ -40,18 +40,16 @@ function groupByPosition(slots: SquadSlot[]) {
 export function Pitch({
   slots,
   captainId,
-  viceId,
   onSlotTap,
 }: {
   slots: SquadSlot[];
   captainId: string | null;
-  viceId: string | null;
   onSlotTap: (slot: SquadSlot) => void;
 }) {
   const rows = groupByPosition(slots);
 
   return (
-    <div className="relative overflow-hidden rounded-lg bg-pitch px-2 py-5 sm:px-4 sm:py-6">
+    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-pitch sm:aspect-[4/5]">
       <svg
         viewBox="0 0 600 400"
         preserveAspectRatio="none"
@@ -62,19 +60,17 @@ export function Pitch({
         <line x1="10" y1="200" x2="590" y2="200" stroke="#F5F1E8" strokeWidth="1.5" />
         <circle cx="300" cy="200" r="45" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
         <circle cx="300" cy="200" r="2.5" fill="#F5F1E8" />
-        {/* üst kale — ceza sahası + kale sahası */}
         <rect x="190" y="10" width="220" height="70" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
         <rect x="255" y="10" width="90" height="26" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
         <circle cx="300" cy="58" r="2.5" fill="#F5F1E8" />
         <path d="M 240 80 A 60 60 0 0 0 360 80" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
-        {/* alt kale — ceza sahası + kale sahası */}
         <rect x="190" y="320" width="220" height="70" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
         <rect x="255" y="364" width="90" height="26" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
         <circle cx="300" cy="342" r="2.5" fill="#F5F1E8" />
         <path d="M 240 320 A 60 60 0 0 1 360 320" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
       </svg>
 
-      <div className="relative flex flex-col gap-4 sm:gap-6">
+      <div className="relative flex h-full flex-col justify-between px-2 py-4 sm:px-4 sm:py-6">
         {rows.map((row, i) => (
           <div key={i} className="flex justify-around">
             {row.map((slot) => (
@@ -92,13 +88,7 @@ export function Pitch({
                   <TeamBadge
                     team={slot.player.team}
                     size={36}
-                    role={
-                      slot.player.id === captainId
-                        ? "captain"
-                        : slot.player.id === viceId
-                        ? "vice"
-                        : undefined
-                    }
+                    role={slot.player.id === captainId ? "captain" : undefined}
                   />
                 ) : (
                   <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-dashed border-ivory/40 text-ivory/50">
