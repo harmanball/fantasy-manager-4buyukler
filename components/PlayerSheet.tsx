@@ -70,7 +70,10 @@ export function PlayerSheet({
               return (
                 <li
                   key={p.id}
-                  className="flex items-center justify-between rounded-lg border border-charcoal/10 bg-white px-3 py-2.5"
+                  onClick={() => !atLimit && onPick(p)}
+                  className={`flex items-center justify-between rounded-lg border border-charcoal/10 bg-white px-3 py-2.5 ${
+                    atLimit ? "" : "cursor-pointer active:bg-charcoal/5"
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <TeamBadge team={p.team} size={26} />
@@ -81,7 +84,10 @@ export function PlayerSheet({
                   </div>
                   <button
                     disabled={atLimit}
-                    onClick={() => onPick(p)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPick(p);
+                    }}
                     className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                       atLimit
                         ? "cursor-not-allowed border border-charcoal/10 text-foreground/30"
