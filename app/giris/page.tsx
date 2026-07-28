@@ -20,7 +20,7 @@ export default function GirisPage() {
     setLoading(true);
 
     if (mode === "kayit") {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { data: { username } },
@@ -28,6 +28,8 @@ export default function GirisPage() {
       setLoading(false);
       if (error) {
         setError(error.message);
+      } else if (data.session) {
+        router.push("/kadro");
       } else {
         setCheckEmail(true);
       }
