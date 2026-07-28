@@ -1,4 +1,5 @@
 import { TeamCode } from "./teams";
+import { supabase } from "./supabase";
 
 export type Position = "GK" | "DEF" | "MID" | "FWD";
 
@@ -8,6 +9,31 @@ export interface Player {
   team: TeamCode;
   position: Position;
 }
+
+export async function fetchPlayers(): Promise<Player[]> {
+  const { data, error } = await supabase
+    .from("players")
+    .select("id, name, position, is_active, teams(short_code)")
+    .eq("is_active", true)
+    .order("name");
+
+  if (error) {
+    console.error("Oyuncular çekilemedi:", error.message);
+    return [];
+  }
+
+  return (data ?? []).map((row) => {
+    const teamRel = row.teams as unknown as { short_code: TeamCode } | { short_code: TeamCode }[];
+    const shortCode = Array.isArray(teamRel) ? teamRel[0]?.short_code : teamRel?.short_code;
+    return {
+      id: row.id as string,
+      name: row.name as string,
+      position: row.position as Position,
+      team: shortCode,
+    };
+  });
+}
+
 
 export const MOCK_PLAYERS: Player[] = [
   { id: "gs-gk-1", name: "Günay Güvenç", team: "GS", position: "GK" },
