@@ -55,12 +55,23 @@ export function Pitch({
       <svg
         viewBox="0 0 600 400"
         preserveAspectRatio="none"
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.15]"
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.18]"
         aria-hidden="true"
       >
         <rect x="10" y="10" width="580" height="380" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
         <line x1="10" y1="200" x2="590" y2="200" stroke="#F5F1E8" strokeWidth="1.5" />
         <circle cx="300" cy="200" r="45" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+        <circle cx="300" cy="200" r="2.5" fill="#F5F1E8" />
+        {/* üst kale — ceza sahası + kale sahası */}
+        <rect x="190" y="10" width="220" height="70" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+        <rect x="255" y="10" width="90" height="26" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+        <circle cx="300" cy="58" r="2.5" fill="#F5F1E8" />
+        <path d="M 240 80 A 60 60 0 0 0 360 80" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+        {/* alt kale — ceza sahası + kale sahası */}
+        <rect x="190" y="320" width="220" height="70" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+        <rect x="255" y="364" width="90" height="26" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+        <circle cx="300" cy="342" r="2.5" fill="#F5F1E8" />
+        <path d="M 240 320 A 60 60 0 0 1 360 320" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
       </svg>
 
       <div className="relative flex flex-col gap-4 sm:gap-6">
@@ -98,7 +109,7 @@ export function Pitch({
                   {slot.player ? slot.player.name.split(" ").pop() : slot.position}
                 </span>
                 {slot.player && (
-                  <span className="text-[9px] text-muted-text">{slot.player.team}</span>
+                  <span className="text-[9px] font-medium text-ivory/75">{slot.player.team}</span>
                 )}
               </button>
             ))}
