@@ -27,6 +27,7 @@
   --color-gold: var(--gold);
   --color-charcoal: var(--charcoal);
   --color-muted-green: var(--muted-green);
+  --color-muted-text: var(--muted-text);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-display: var(--font-oswald);
