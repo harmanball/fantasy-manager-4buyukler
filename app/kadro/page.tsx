@@ -1,8 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Formation, TEAM_LIMIT, SQUAD_SIZE } from "@/lib/teams";
-import { MOCK_PLAYERS, Player, Position } from "@/lib/players";
+import { fetchPlayers, Player, Position } from "@/lib/players";
+import { fetchOpenGameweek, saveSquad } from "@/lib/squad";
+import { useSession } from "@/lib/useSession";
+import { supabase } from "@/lib/supabase";
 import { FormationPicker } from "@/components/FormationPicker";
 import { Pitch, SquadSlot, buildSlots } from "@/components/Pitch";
 import { StatCards } from "@/components/StatCards";
@@ -10,6 +14,13 @@ import { PlayerSheet } from "@/components/PlayerSheet";
 import { PlayerActionSheet } from "@/components/PlayerActionSheet";
 
 export default function KadroPage() {
+  const { session, loading: sessionLoading } = useSession();
+  const router = useRouter();
+
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [playersLoading, setPlayersLoading] = useState(true);
+  const [gameweek, setGameweek] = useState<{ id: number; name: string | null } | null>(null);
+
   const [formation, setFormation] = useState<Formation>("4-3-3");
   const [slots, setSlots] = useState<SquadSlot[]>(() => buildSlots("4-3-3"));
   const [captainId, setCaptainId] = useState<string | null>(null);
@@ -18,14 +29,30 @@ export default function KadroPage() {
   const [activeSlotId, setActiveSlotId] = useState<string | null>(null);
   const [actionPlayer, setActionPlayer] = useState<Player | null>(null);
 
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!sessionLoading && !session) {
+      router.push("/giris");
+    }
+  }, [sessionLoading, session, router]);
+
+  useEffect(() => {
+    fetchPlayers().then((p) => {
+      setPlayers(p);
+      setPlayersLoading(false);
+    });
+    fetchOpenGameweek().then(setGameweek);
+  }, []);
+
   function changeFormation(f: Formation) {
     const newSlots = buildSlots(f);
-    // mevcut oyuncuları mevkiye göre yeniden yerleştirmeyi dene
     const existing = slots.filter((s) => s.player);
     for (const pos of ["GK", "DEF", "MID", "FWD"] as Position[]) {
-      const players = existing.filter((s) => s.position === pos);
+      const ps = existing.filter((s) => s.position === pos);
       const targets = newSlots.filter((s) => s.position === pos);
-      players.forEach((p, i) => {
+      ps.forEach((p, i) => {
         if (targets[i]) targets[i].player = p.player;
       });
     }
@@ -74,25 +101,80 @@ export default function KadroPage() {
   const captainName =
     slots.find((s) => s.player?.id === captainId)?.player?.name ?? null;
 
+  const canSave =
+    filledCount === SQUAD_SIZE &&
+    !Object.values(teamCounts).some((c) => c > TEAM_LIMIT) &&
+    !!captainId &&
+    !!gameweek &&
+    !!session;
+
+  async function handleSave() {
+    if (!session || !gameweek) return;
+    setSaving(true);
+    setSaveMessage(null);
+    const picks = slots
+      .filter((s) => s.player)
+      .map((s) => ({
+        playerId: s.player!.id,
+        isCaptain: s.player!.id === captainId,
+        isVice: s.player!.id === viceId,
+      }));
+    const { error } = await saveSquad({
+      userId: session.user.id,
+      gameweekId: gameweek.id,
+      picks,
+    });
+    setSaving(false);
+    setSaveMessage(error ? `Hata: ${error}` : "Kadron kaydedildi ✓");
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/giris");
+  }
+
+  if (sessionLoading || !session) {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-3xl items-center justify-center px-3">
+        <p className="text-sm text-foreground/50">Yükleniyor…</p>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
       <header className="flex items-center justify-between">
         <h1 className="font-display text-lg font-semibold sm:text-xl">
           Kadromu kur
         </h1>
-        <span className="rounded-full bg-gold/15 px-3 py-1 text-xs font-medium text-gold">
-          Fantasy Manager: 4 Büyükler
-        </span>
+        <button
+          onClick={handleLogout}
+          className="text-xs text-foreground/50 underline underline-offset-2"
+        >
+          Çıkış yap
+        </button>
       </header>
+
+      {!gameweek && !playersLoading && (
+        <p className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-charcoal">
+          Henüz açık bir hafta yok — kadro kaydı yakında açılacak.
+        </p>
+      )}
 
       <FormationPicker value={formation} onChange={changeFormation} />
 
-      <Pitch
-        slots={slots}
-        captainId={captainId}
-        viceId={viceId}
-        onSlotTap={handleSlotTap}
-      />
+      {playersLoading ? (
+        <div className="flex h-64 items-center justify-center rounded-lg bg-pitch">
+          <p className="text-sm text-ivory/60">Oyuncular yükleniyor…</p>
+        </div>
+      ) : (
+        <Pitch
+          slots={slots}
+          captainId={captainId}
+          viceId={viceId}
+          onSlotTap={handleSlotTap}
+        />
+      )}
 
       <StatCards
         filledCount={filledCount}
@@ -102,20 +184,21 @@ export default function KadroPage() {
       />
 
       <button
-        disabled={
-          filledCount !== SQUAD_SIZE ||
-          Object.values(teamCounts).some((c) => c > TEAM_LIMIT) ||
-          !captainId
-        }
+        disabled={!canSave || saving}
+        onClick={handleSave}
         className="rounded-lg bg-pitch py-3 text-sm font-medium text-ivory disabled:cursor-not-allowed disabled:opacity-30"
       >
-        Kadromu kaydet
+        {saving ? "Kaydediliyor…" : "Kadromu kaydet"}
       </button>
+
+      {saveMessage && (
+        <p className="text-center text-sm text-foreground/70">{saveMessage}</p>
+      )}
 
       {pickerPosition && (
         <PlayerSheet
           position={pickerPosition}
-          players={MOCK_PLAYERS}
+          players={players}
           teamCounts={teamCounts}
           onPick={assignPlayer}
           onClose={() => {
