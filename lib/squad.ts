@@ -29,7 +29,7 @@ export async function saveSquad({
 }: {
   userId: string;
   gameweekId: number;
-  picks: { playerId: string; isCaptain: boolean; isVice: boolean }[];
+  picks: { playerId: string; isCaptain: boolean }[];
 }): Promise<{ error: string | null }> {
   const { error: deleteError } = await supabase
     .from("user_picks")
@@ -46,7 +46,6 @@ export async function saveSquad({
     gameweek_id: gameweekId,
     player_id: p.playerId,
     is_captain: p.isCaptain,
-    is_vice: p.isVice,
   }));
 
   const { error: insertError } = await supabase.from("user_picks").insert(rows);
