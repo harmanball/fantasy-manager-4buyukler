@@ -6,17 +6,13 @@ import { TeamBadge } from "./TeamBadge";
 export function PlayerActionSheet({
   player,
   isCaptain,
-  isVice,
   onMakeCaptain,
-  onMakeVice,
   onRemove,
   onClose,
 }: {
   player: Player;
   isCaptain: boolean;
-  isVice: boolean;
   onMakeCaptain: () => void;
-  onMakeVice: () => void;
   onRemove: () => void;
   onClose: () => void;
 }) {
@@ -45,13 +41,6 @@ export function PlayerActionSheet({
             className="rounded-lg border border-charcoal/15 px-4 py-2.5 text-left text-sm font-medium disabled:text-foreground/30"
           >
             {isCaptain ? "Kaptan (seçili)" : "Kaptan yap"}
-          </button>
-          <button
-            onClick={onMakeVice}
-            disabled={isVice}
-            className="rounded-lg border border-charcoal/15 px-4 py-2.5 text-left text-sm font-medium disabled:text-foreground/30"
-          >
-            {isVice ? "Yardımcı (seçili)" : "Yardımcı yap"}
           </button>
           <button
             onClick={onRemove}
