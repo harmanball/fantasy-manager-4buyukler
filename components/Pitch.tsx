@@ -49,7 +49,7 @@ export function Pitch({
   const rows = groupByPosition(slots);
 
   return (
-    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-pitch sm:aspect-[4/5]">
+    <div className="relative mx-auto aspect-[3/4] w-full max-w-sm overflow-hidden rounded-lg bg-pitch sm:max-w-md sm:aspect-[4/5]">
       <svg
         viewBox="0 0 600 400"
         preserveAspectRatio="none"
