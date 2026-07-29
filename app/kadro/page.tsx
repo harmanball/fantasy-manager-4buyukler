@@ -240,7 +240,7 @@ export default function KadroPage() {
 
       {lastWeekName && (
         <p className="text-center text-[11px] text-foreground/50">
-          Oyuncu rozetlerindeki puanlar {lastWeekName} sonuçlarını gösterir
+          Oyuncu rozetlerindeki puanlar son hafta ({lastWeekName}) sonuçlarını gösterir
         </p>
       )}
 
