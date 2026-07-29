@@ -1,4 +1,7 @@
 import { supabase } from "./supabase";
+import { Formation, FORMATIONS, FORMATION_LAYOUT } from "./teams";
+import { Player, Position } from "./players";
+import { buildSlots, SquadSlot } from "@/components/Pitch";
 
 export interface OpenGameweek {
   id: number;
@@ -45,6 +48,44 @@ export async function fetchUserSquad(
     playerId: row.player_id as string,
     isCaptain: row.is_captain as boolean,
   }));
+}
+
+// Kayıtlı seçimlerden (playerId + kaptan bilgisi) diziliş, saha slotları ve
+// kaptan id'sini yeniden kurar. Hem kendi kadro ekranında hem başkasının
+// kadrosunu salt-okunur gösterirken AYNI mantık kullanılır — sonuç asla farklılaşmaz.
+export function buildSquadFromPicks(
+  saved: SavedPick[],
+  players: Player[]
+): { formation: Formation; slots: SquadSlot[]; captainId: string | null } | null {
+  if (saved.length === 0) return null;
+
+  const byId = new Map(players.map((p) => [p.id, p]));
+  const withPlayer = saved
+    .map((s) => ({ ...s, player: byId.get(s.playerId) }))
+    .filter((s): s is SavedPick & { player: Player } => !!s.player);
+
+  if (withPlayer.length === 0) return null;
+
+  const counts: Record<Position, number> = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
+  withPlayer.forEach((s) => counts[s.player.position]++);
+
+  const matchedFormation = FORMATIONS.find((f) => {
+    const l = FORMATION_LAYOUT[f];
+    return l.DEF === counts.DEF && l.MID === counts.MID && l.FWD === counts.FWD;
+  });
+  const formation = matchedFormation ?? "4-3-3";
+
+  const slots = buildSlots(formation);
+  (["GK", "DEF", "MID", "FWD"] as Position[]).forEach((pos) => {
+    const inPos = withPlayer.filter((s) => s.player.position === pos);
+    const targets = slots.filter((s) => s.position === pos);
+    inPos.forEach((s, i) => {
+      if (targets[i]) targets[i].player = s.player;
+    });
+  });
+
+  const captain = withPlayer.find((s) => s.isCaptain);
+  return { formation, slots, captainId: captain?.player.id ?? null };
 }
 
 export async function saveSquad({
