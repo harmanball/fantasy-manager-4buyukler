@@ -137,7 +137,7 @@ export function PlayerPointsModal({
                 );
               })}
               <div className="mt-1 flex items-center justify-between rounded-md bg-pitch px-2 py-2 text-sm">
-                <span className="font-medium text-ivory">Taban puan</span>
+                <span className="font-medium text-ivory">Toplam puan</span>
                 <span className="font-display font-semibold text-ivory">
                   {data.toplamPuan}
                 </span>
