@@ -57,10 +57,12 @@ function layoutSlots(slots: SquadSlot[]): PositionedSlot[] {
 export function Pitch({
   slots,
   captainId,
+  lastWeekPoints,
   onSlotTap,
 }: {
   slots: SquadSlot[];
   captainId: string | null;
+  lastWeekPoints?: Record<string, number>;
   onSlotTap: (slot: SquadSlot) => void;
 }) {
   const positioned = layoutSlots(slots);
@@ -117,7 +119,25 @@ export function Pitch({
               {slot.player ? slot.player.name.split(" ").pop() : slot.position}
             </span>
             {slot.player && (
-              <span className="text-[8px] font-medium text-ivory/75">{slot.player.team}</span>
+              <span className="flex items-center gap-1">
+                <span className="text-[8px] font-medium text-ivory/75">
+                  {slot.player.team}
+                </span>
+                {lastWeekPoints?.[slot.player.id] !== undefined && (
+                  <span
+                    className={`rounded-sm px-1 text-[8px] font-semibold ${
+                      lastWeekPoints[slot.player.id] > 0
+                        ? "bg-gold/90 text-charcoal"
+                        : lastWeekPoints[slot.player.id] < 0
+                        ? "bg-red-500/90 text-ivory"
+                        : "bg-ivory/20 text-ivory"
+                    }`}
+                  >
+                    {lastWeekPoints[slot.player.id] > 0 ? "+" : ""}
+                    {lastWeekPoints[slot.player.id]}
+                  </span>
+                )}
+              </span>
             )}
           </button>
         ))}
