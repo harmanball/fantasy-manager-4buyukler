@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Formation, TEAM_LIMIT, SQUAD_SIZE } from "@/lib/teams";
+import { Formation, FORMATIONS, FORMATION_LAYOUT, TEAM_LIMIT, SQUAD_SIZE } from "@/lib/teams";
 import { fetchPlayers, Player, Position } from "@/lib/players";
-import { fetchOpenGameweek, saveSquad } from "@/lib/squad";
+import { fetchOpenGameweek, fetchUserSquad, saveSquad } from "@/lib/squad";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 import { FormationPicker } from "@/components/FormationPicker";
@@ -31,6 +31,7 @@ export default function KadroPage() {
 
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [squadLoaded, setSquadLoaded] = useState(false);
 
   useEffect(() => {
     if (!sessionLoading && !session) {
@@ -45,6 +46,54 @@ export default function KadroPage() {
     });
     fetchOpenGameweek().then(setGameweek);
   }, []);
+
+  // Kaydedilmiş kadroyu bir kez geri yükle (oyuncular ve hafta bilgisi hazır olunca)
+  useEffect(() => {
+    if (playersLoading || squadLoaded || !session) return;
+
+    async function loadSavedSquad() {
+      if (!gameweek) {
+        setSquadLoaded(true);
+        return;
+      }
+      const saved = await fetchUserSquad(session!.user.id, gameweek.id);
+      if (saved.length === 0) {
+        setSquadLoaded(true);
+        return;
+      }
+      const byId = new Map(players.map((p) => [p.id, p]));
+      const withPlayer = saved
+        .map((s) => ({ ...s, player: byId.get(s.playerId) }))
+        .filter((s): s is { playerId: string; isCaptain: boolean; player: Player } => !!s.player);
+
+      const counts: Record<Position, number> = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
+      withPlayer.forEach((s) => counts[s.player.position]++);
+
+      const matchedFormation = FORMATIONS.find((f) => {
+        const l = FORMATION_LAYOUT[f];
+        return l.DEF === counts.DEF && l.MID === counts.MID && l.FWD === counts.FWD;
+      });
+      const useFormation = matchedFormation ?? formation;
+
+      const newSlots = buildSlots(useFormation);
+      (["GK", "DEF", "MID", "FWD"] as Position[]).forEach((pos) => {
+        const inPos = withPlayer.filter((s) => s.player.position === pos);
+        const targets = newSlots.filter((s) => s.position === pos);
+        inPos.forEach((s, i) => {
+          if (targets[i]) targets[i].player = s.player;
+        });
+      });
+
+      setFormation(useFormation);
+      setSlots(newSlots);
+      const captain = withPlayer.find((s) => s.isCaptain);
+      if (captain) setCaptainId(captain.player.id);
+      setSquadLoaded(true);
+    }
+
+    loadSavedSquad();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playersLoading, squadLoaded, session, gameweek, players]);
 
   function changeFormation(f: Formation) {
     const newSlots = buildSlots(f);
@@ -174,9 +223,9 @@ export default function KadroPage() {
 
       <FormationPicker value={formation} onChange={changeFormation} />
 
-      {playersLoading ? (
+      {playersLoading || !squadLoaded ? (
         <div className="mx-auto flex aspect-[3/4] w-full max-w-[360px] items-center justify-center rounded-lg bg-pitch sm:max-w-[440px]">
-          <p className="text-sm text-ivory/60">Oyuncular yükleniyor…</p>
+          <p className="text-sm text-ivory/60">Kadron yükleniyor…</p>
         </div>
       ) : (
         <Pitch slots={slots} captainId={captainId} onSlotTap={handleSlotTap} />
