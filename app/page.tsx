@@ -53,6 +53,12 @@ export default function Home() {
             >
               Sıralama
             </Link>
+            <Link
+              href="/futbolcu-puanlari"
+              className="rounded-md border border-muted-green px-5 py-2.5 text-sm font-medium text-ivory"
+            >
+              Futbolcu Puanları
+            </Link>
           </div>
 
           <div className="flex h-1 w-full max-w-[280px] overflow-hidden rounded-full">
