@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Formation, FORMATIONS, FORMATION_LAYOUT, TEAM_LIMIT, SQUAD_SIZE } from "@/lib/teams";
 import { fetchPlayers, Player, Position } from "@/lib/players";
 import { fetchOpenGameweek, fetchUserSquad, saveSquad } from "@/lib/squad";
-import { fetchPlayerPointsMap } from "@/lib/playerPoints";
+import { fetchPlayerPointsMap, fetchLastFinishedGameweekPoints } from "@/lib/playerPoints";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 import { FormationPicker } from "@/components/FormationPicker";
@@ -22,6 +22,8 @@ export default function KadroPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [playersLoading, setPlayersLoading] = useState(true);
   const [pointsMap, setPointsMap] = useState<Record<string, number>>({});
+  const [lastWeekPoints, setLastWeekPoints] = useState<Record<string, number>>({});
+  const [lastWeekName, setLastWeekName] = useState<string | null>(null);
   const [gameweek, setGameweek] = useState<{ id: number; name: string | null } | null>(null);
 
   const [formation, setFormation] = useState<Formation>("4-3-3");
@@ -48,6 +50,10 @@ export default function KadroPage() {
     });
     fetchOpenGameweek().then(setGameweek);
     fetchPlayerPointsMap().then(setPointsMap);
+    fetchLastFinishedGameweekPoints().then(({ gameweekName, map }) => {
+      setLastWeekName(gameweekName);
+      setLastWeekPoints(map);
+    });
   }, []);
 
   // Kaydedilmiş kadroyu bir kez geri yükle (oyuncular ve hafta bilgisi hazır olunca)
@@ -204,6 +210,12 @@ export default function KadroPage() {
         </h1>
         <div className="flex items-center gap-3">
           <Link
+            href="/puanlarim"
+            className="text-xs text-foreground/50 underline underline-offset-2"
+          >
+            Puanlarım
+          </Link>
+          <Link
             href="/siralama"
             className="text-xs text-foreground/50 underline underline-offset-2"
           >
@@ -226,12 +238,23 @@ export default function KadroPage() {
 
       <FormationPicker value={formation} onChange={changeFormation} />
 
+      {lastWeekName && (
+        <p className="text-center text-[11px] text-foreground/50">
+          Oyuncu rozetlerindeki puanlar {lastWeekName} sonuçlarını gösterir
+        </p>
+      )}
+
       {playersLoading || !squadLoaded ? (
         <div className="mx-auto flex aspect-[3/4] w-full max-w-[360px] items-center justify-center rounded-lg bg-pitch sm:max-w-[440px]">
           <p className="text-sm text-ivory/60">Kadron yükleniyor…</p>
         </div>
       ) : (
-        <Pitch slots={slots} captainId={captainId} onSlotTap={handleSlotTap} />
+        <Pitch
+          slots={slots}
+          captainId={captainId}
+          lastWeekPoints={lastWeekPoints}
+          onSlotTap={handleSlotTap}
+        />
       )}
 
       <StatCards
