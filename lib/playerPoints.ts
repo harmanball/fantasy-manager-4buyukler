@@ -33,6 +33,7 @@ export async function fetchPlayerPointsBreakdown(): Promise<PlayerPointsBreakdow
 // Kadro kurma ekranında oyuncu adının yanında göstermek için: playerId -> toplam puan
 // Kadro kurma ekranında "geçen hafta bu oyuncu kaç puan kazandırdı" bilgisi için
 export async function fetchLastFinishedGameweekPoints(): Promise<{
+  gameweekId: number | null;
   gameweekName: string | null;
   map: Record<string, number>;
 }> {
@@ -44,7 +45,7 @@ export async function fetchLastFinishedGameweekPoints(): Promise<{
     .limit(1)
     .maybeSingle();
 
-  if (!gw) return { gameweekName: null, map: {} };
+  if (!gw) return { gameweekId: null, gameweekName: null, map: {} };
 
   const { data, error } = await supabase
     .from("player_stats")
@@ -53,14 +54,14 @@ export async function fetchLastFinishedGameweekPoints(): Promise<{
 
   if (error) {
     console.error("Geçen hafta puanları çekilemedi:", error.message);
-    return { gameweekName: gw.name, map: {} };
+    return { gameweekId: gw.id, gameweekName: gw.name, map: {} };
   }
 
   const map: Record<string, number> = {};
   for (const row of data ?? []) {
     map[row.player_id as string] = row.points as number;
   }
-  return { gameweekName: gw.name, map };
+  return { gameweekId: gw.id, gameweekName: gw.name, map };
 }
 
 export async function fetchPlayerPointsMap(): Promise<Record<string, number>> {
