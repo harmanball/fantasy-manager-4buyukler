@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Formation, FORMATIONS, FORMATION_LAYOUT, TEAM_LIMIT, SQUAD_SIZE } from "@/lib/teams";
+import { Formation, TEAM_LIMIT, SQUAD_SIZE } from "@/lib/teams";
 import { fetchPlayers, Player, Position } from "@/lib/players";
-import { fetchOpenGameweek, fetchUserSquad, saveSquad } from "@/lib/squad";
+import { fetchOpenGameweek, fetchUserSquad, saveSquad, buildSquadFromPicks } from "@/lib/squad";
 import { fetchPlayerPointsMap, fetchLastFinishedGameweekPoints } from "@/lib/playerPoints";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
@@ -68,42 +68,16 @@ export default function KadroPage() {
         return;
       }
       const saved = await fetchUserSquad(session!.user.id, gameweek.id);
-      if (saved.length === 0) {
-        setSquadLoaded(true);
-        return;
+      const result = buildSquadFromPicks(saved, players);
+      if (result) {
+        setFormation(result.formation);
+        setSlots(result.slots);
+        setCaptainId(result.captainId);
       }
-      const byId = new Map(players.map((p) => [p.id, p]));
-      const withPlayer = saved
-        .map((s) => ({ ...s, player: byId.get(s.playerId) }))
-        .filter((s): s is { playerId: string; isCaptain: boolean; player: Player } => !!s.player);
-
-      const counts: Record<Position, number> = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
-      withPlayer.forEach((s) => counts[s.player.position]++);
-
-      const matchedFormation = FORMATIONS.find((f) => {
-        const l = FORMATION_LAYOUT[f];
-        return l.DEF === counts.DEF && l.MID === counts.MID && l.FWD === counts.FWD;
-      });
-      const useFormation = matchedFormation ?? formation;
-
-      const newSlots = buildSlots(useFormation);
-      (["GK", "DEF", "MID", "FWD"] as Position[]).forEach((pos) => {
-        const inPos = withPlayer.filter((s) => s.player.position === pos);
-        const targets = newSlots.filter((s) => s.position === pos);
-        inPos.forEach((s, i) => {
-          if (targets[i]) targets[i].player = s.player;
-        });
-      });
-
-      setFormation(useFormation);
-      setSlots(newSlots);
-      const captain = withPlayer.find((s) => s.isCaptain);
-      if (captain) setCaptainId(captain.player.id);
       setSquadLoaded(true);
     }
 
     loadSavedSquad();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playersLoading, squadLoaded, session, gameweek, players]);
 
   function changeFormation(f: Formation) {
@@ -211,6 +185,12 @@ export default function KadroPage() {
           Kadromu kur
         </h1>
         <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="text-xs text-foreground/50 underline underline-offset-2"
+          >
+            Anasayfa
+          </Link>
           <Link
             href="/puanlarim"
             className="text-xs text-foreground/50 underline underline-offset-2"
