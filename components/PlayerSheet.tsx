@@ -12,6 +12,7 @@ export function PlayerSheet({
   players,
   teamCounts,
   excludeIds,
+  pointsMap,
   onPick,
   onClose,
 }: {
@@ -19,6 +20,7 @@ export function PlayerSheet({
   players: Player[];
   teamCounts: Record<string, number>;
   excludeIds: string[];
+  pointsMap: Record<string, number>;
   onPick: (p: Player) => void;
   onClose: () => void;
 }) {
@@ -110,7 +112,12 @@ export function PlayerSheet({
                   <div className="flex items-center gap-3">
                     <TeamBadge team={p.team} size={26} />
                     <div>
-                      <p className="text-sm font-medium leading-tight">{p.name}</p>
+                      <p className="text-sm font-medium leading-tight">
+                        {p.name}{" "}
+                        <span className="font-normal text-foreground/50">
+                          ({pointsMap[p.id] ?? 0})
+                        </span>
+                      </p>
                       <p className="text-xs text-foreground/50">{p.team}</p>
                     </div>
                   </div>
