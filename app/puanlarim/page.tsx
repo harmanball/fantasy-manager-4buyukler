@@ -115,7 +115,7 @@ export default function PuanlarimPage() {
                 <div
                   key={r.playerId}
                   onClick={() => setSelectedPlayer(r)}
-                  className="flex cursor-pointer items-center justify-between rounded-lg border border-charcoal/10 bg-white px-3 py-2.5 active:bg-charcoal/5"
+                  className="flex cursor-pointer items-center justify-between rounded-lg border border-charcoal/10 bg-white px-3 py-2.5 transition-colors hover:bg-charcoal/5 active:bg-charcoal/10"
                 >
                   <div>
                     <p className="text-sm font-medium leading-tight">
@@ -132,7 +132,7 @@ export default function PuanlarimPage() {
                       )}
                     </p>
                     <p className="text-xs text-foreground/50">
-                      {r.team} · {r.position} · taban puan {r.basePoints}
+                      {r.team} · {r.position} · toplam puan {r.basePoints}
                       {r.multiplier > 1 && ` × ${r.multiplier}`}
                       {!r.played && " · oynamadı"}
                     </p>
