@@ -127,7 +127,7 @@ export function Pitch({
                   <span
                     className={`rounded-sm px-1 text-[8px] font-semibold ${
                       lastWeekPoints[slot.player.id] > 0
-                        ? "bg-gold/90 text-charcoal"
+                        ? "bg-green-500/90 text-ivory"
                         : lastWeekPoints[slot.player.id] < 0
                         ? "bg-red-500/90 text-ivory"
                         : "bg-ivory/20 text-ivory"
