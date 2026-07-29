@@ -22,6 +22,31 @@ export async function fetchOpenGameweek(): Promise<OpenGameweek | null> {
   return data;
 }
 
+export interface SavedPick {
+  playerId: string;
+  isCaptain: boolean;
+}
+
+export async function fetchUserSquad(
+  userId: string,
+  gameweekId: number
+): Promise<SavedPick[]> {
+  const { data, error } = await supabase
+    .from("user_picks")
+    .select("player_id, is_captain")
+    .eq("user_id", userId)
+    .eq("gameweek_id", gameweekId);
+
+  if (error) {
+    console.error("Kayıtlı kadro çekilemedi:", error.message);
+    return [];
+  }
+  return (data ?? []).map((row) => ({
+    playerId: row.player_id as string,
+    isCaptain: row.is_captain as boolean,
+  }));
+}
+
 export async function saveSquad({
   userId,
   gameweekId,
