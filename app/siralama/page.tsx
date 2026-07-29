@@ -53,37 +53,39 @@ export default function SiralamaPage() {
           {rows.map((row, i) => {
             const isMe = session?.user.id === row.user_id;
             return (
-              <li
-                key={row.user_id}
-                className={`flex items-center justify-between rounded-lg border px-3 py-2.5 ${
-                  isMe
-                    ? "border-gold bg-gold/10"
-                    : "border-charcoal/10 bg-white"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-6 shrink-0 text-right text-sm font-medium text-foreground/50">
-                    {i + 1}
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium leading-tight">
-                      {row.squad_name || row.username}
-                      {isMe && (
-                        <span className="ml-1.5 text-xs font-normal text-gold">
-                          (sen)
-                        </span>
-                      )}
-                    </p>
-                    {row.squad_name && (
-                      <p className="text-xs text-foreground/50">
-                        {row.username}
+              <li key={row.user_id}>
+                <Link
+                  href={isMe ? "/kadro" : `/takim/${row.user_id}`}
+                  className={`flex items-center justify-between rounded-lg border px-3 py-2.5 transition-colors active:bg-charcoal/5 ${
+                    isMe
+                      ? "border-gold bg-gold/10"
+                      : "border-charcoal/10 bg-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 shrink-0 text-right text-sm font-medium text-foreground/50">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium leading-tight">
+                        {row.squad_name || row.username}
+                        {isMe && (
+                          <span className="ml-1.5 text-xs font-normal text-gold">
+                            (sen)
+                          </span>
+                        )}
                       </p>
-                    )}
+                      {row.squad_name && (
+                        <p className="text-xs text-foreground/50">
+                          {row.username}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <span className="shrink-0 font-display text-base font-semibold">
-                  {row.total_points}
-                </span>
+                  <span className="shrink-0 font-display text-base font-semibold">
+                    {row.total_points}
+                  </span>
+                </Link>
               </li>
             );
           })}
