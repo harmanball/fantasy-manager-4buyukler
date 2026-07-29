@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Formation, FORMATIONS, FORMATION_LAYOUT, TEAM_LIMIT, SQUAD_SIZE } from "@/lib/teams";
 import { fetchPlayers, Player, Position } from "@/lib/players";
 import { fetchOpenGameweek, fetchUserSquad, saveSquad } from "@/lib/squad";
+import { fetchPlayerPointsMap } from "@/lib/playerPoints";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 import { FormationPicker } from "@/components/FormationPicker";
@@ -20,6 +21,7 @@ export default function KadroPage() {
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [playersLoading, setPlayersLoading] = useState(true);
+  const [pointsMap, setPointsMap] = useState<Record<string, number>>({});
   const [gameweek, setGameweek] = useState<{ id: number; name: string | null } | null>(null);
 
   const [formation, setFormation] = useState<Formation>("4-3-3");
@@ -45,6 +47,7 @@ export default function KadroPage() {
       setPlayersLoading(false);
     });
     fetchOpenGameweek().then(setGameweek);
+    fetchPlayerPointsMap().then(setPointsMap);
   }, []);
 
   // Kaydedilmiş kadroyu bir kez geri yükle (oyuncular ve hafta bilgisi hazır olunca)
@@ -255,6 +258,7 @@ export default function KadroPage() {
           players={players}
           teamCounts={teamCounts}
           excludeIds={usedPlayerIds}
+          pointsMap={pointsMap}
           onPick={assignPlayer}
           onClose={() => {
             setPickerPosition(null);
