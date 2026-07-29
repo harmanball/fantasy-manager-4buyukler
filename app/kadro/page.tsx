@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Formation, TEAM_LIMIT, SQUAD_SIZE } from "@/lib/teams";
 import { fetchPlayers, Player, Position } from "@/lib/players";
 import { fetchOpenGameweek, saveSquad } from "@/lib/squad";
@@ -149,12 +150,20 @@ export default function KadroPage() {
         <h1 className="font-display text-lg font-semibold sm:text-xl">
           Kadromu kur
         </h1>
-        <button
-          onClick={handleLogout}
-          className="text-xs text-foreground/50 underline underline-offset-2"
-        >
-          Çıkış yap
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/siralama"
+            className="text-xs text-foreground/50 underline underline-offset-2"
+          >
+            Sıralama
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="text-xs text-foreground/50 underline underline-offset-2"
+          >
+            Çıkış yap
+          </button>
+        </div>
       </header>
 
       {!gameweek && !playersLoading && (
