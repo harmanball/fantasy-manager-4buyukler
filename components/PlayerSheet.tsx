@@ -55,7 +55,10 @@ export function PlayerSheet({
           </button>
         </div>
 
-        <div className="flex gap-1.5 overflow-x-auto px-4 pt-3 pb-1" style={{ scrollbarWidth: "none" }}>
+        <div
+          className="flex gap-1.5 overflow-x-auto px-4 pt-3 pb-2 [&::-webkit-scrollbar]:hidden"
+          style={{ scrollbarWidth: "none" }}
+        >
           {TEAM_FILTERS.map((t) => {
             const active = t === teamFilter;
             return (
@@ -63,7 +66,7 @@ export function PlayerSheet({
                 key={t}
                 onClick={() => setTeamFilter(t)}
                 aria-pressed={active}
-                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-xs leading-none font-medium transition-colors ${
                   active
                     ? "bg-pitch text-ivory"
                     : "border border-charcoal/20 text-foreground/70 hover:border-charcoal/40"
