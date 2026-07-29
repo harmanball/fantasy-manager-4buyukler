@@ -23,12 +23,20 @@ export default function SiralamaPage() {
         <h1 className="font-display text-lg font-semibold sm:text-xl">
           Genel Sıralama
         </h1>
-        <Link
-          href="/kadro"
-          className="text-xs text-foreground/50 underline underline-offset-2"
-        >
-          Kadrom
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/puanlarim"
+            className="text-xs text-foreground/50 underline underline-offset-2"
+          >
+            Puanlarım
+          </Link>
+          <Link
+            href="/kadro"
+            className="text-xs text-foreground/50 underline underline-offset-2"
+          >
+            Kadrom
+          </Link>
+        </div>
       </header>
 
       {loading ? (
