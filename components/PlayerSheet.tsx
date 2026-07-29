@@ -44,7 +44,7 @@ export function PlayerSheet({
         className="flex max-h-[80vh] w-full flex-col rounded-t-2xl bg-background sm:max-w-md sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-charcoal/10 px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between border-b border-charcoal/10 px-4 py-3">
           <h2 className="font-display text-base font-medium">
             Oyuncu ekle — {position}
           </h2>
@@ -58,7 +58,7 @@ export function PlayerSheet({
         </div>
 
         <div
-          className="flex gap-1.5 overflow-x-auto px-4 pt-3 pb-2 [&::-webkit-scrollbar]:hidden"
+          className="flex shrink-0 gap-1.5 overflow-x-auto px-4 pt-3 pb-2 [&::-webkit-scrollbar]:hidden"
           style={{ scrollbarWidth: "none" }}
         >
           {TEAM_FILTERS.map((t) => {
@@ -68,7 +68,7 @@ export function PlayerSheet({
                 key={t}
                 onClick={() => setTeamFilter(t)}
                 aria-pressed={active}
-                className={`shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-xs leading-none font-medium transition-colors ${
+                className={`flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3 text-xs font-medium transition-colors ${
                   active
                     ? "bg-pitch text-ivory"
                     : "border border-charcoal/20 text-foreground/70 hover:border-charcoal/40"
@@ -80,7 +80,7 @@ export function PlayerSheet({
           })}
         </div>
 
-        <div className="px-4 py-2">
+        <div className="shrink-0 px-4 py-2">
           <input
             autoFocus
             type="text"
