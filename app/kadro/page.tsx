@@ -24,6 +24,7 @@ export default function KadroPage() {
   const [pointsMap, setPointsMap] = useState<Record<string, number>>({});
   const [lastWeekPoints, setLastWeekPoints] = useState<Record<string, number>>({});
   const [lastWeekName, setLastWeekName] = useState<string | null>(null);
+  const [lastWeekGameweekId, setLastWeekGameweekId] = useState<number | null>(null);
   const [gameweek, setGameweek] = useState<{ id: number; name: string | null } | null>(null);
 
   const [formation, setFormation] = useState<Formation>("4-3-3");
@@ -50,7 +51,8 @@ export default function KadroPage() {
     });
     fetchOpenGameweek().then(setGameweek);
     fetchPlayerPointsMap().then(setPointsMap);
-    fetchLastFinishedGameweekPoints().then(({ gameweekName, map }) => {
+    fetchLastFinishedGameweekPoints().then(({ gameweekId, gameweekName, map }) => {
+      setLastWeekGameweekId(gameweekId);
       setLastWeekName(gameweekName);
       setLastWeekPoints(map);
     });
@@ -253,6 +255,7 @@ export default function KadroPage() {
           slots={slots}
           captainId={captainId}
           lastWeekPoints={lastWeekPoints}
+          lastWeekGameweekId={lastWeekGameweekId}
           onSlotTap={handleSlotTap}
         />
       )}
