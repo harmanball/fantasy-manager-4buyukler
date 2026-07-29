@@ -144,7 +144,7 @@ export function Pitch({
                         setPointsModalPlayerId(slot.player!.id);
                       }
                     }}
-                    className={`rounded-sm px-1 text-[8px] font-semibold ${
+                    className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
                       lastWeekPoints[slot.player.id] > 0
                         ? "bg-green-500/90 text-ivory"
                         : lastWeekPoints[slot.player.id] < 0
