@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { Formation, FORMATION_LAYOUT } from "@/lib/teams";
 import { Player, Position } from "@/lib/players";
 import { TeamBadge } from "./TeamBadge";
+import { PlayerPointsModal } from "./PlayerPointsModal";
 
 export interface SquadSlot {
   id: string;
@@ -58,14 +60,19 @@ export function Pitch({
   slots,
   captainId,
   lastWeekPoints,
+  lastWeekGameweekId,
   onSlotTap,
 }: {
   slots: SquadSlot[];
   captainId: string | null;
   lastWeekPoints?: Record<string, number>;
+  lastWeekGameweekId?: number | null;
   onSlotTap: (slot: SquadSlot) => void;
 }) {
   const positioned = layoutSlots(slots);
+  const [pointsModalPlayerId, setPointsModalPlayerId] = useState<string | null>(
+    null
+  );
 
   return (
     <div className="mx-auto w-full max-w-[360px] sm:max-w-[440px]">
@@ -93,10 +100,15 @@ export function Pitch({
         </svg>
 
         {positioned.map((slot) => (
-          <button
+          <div
             key={slot.id}
+            role="button"
+            tabIndex={0}
             onClick={() => onSlotTap(slot)}
-            className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-0.5 active:scale-95 transition-transform"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") onSlotTap(slot);
+            }}
+            className="absolute flex -translate-x-1/2 -translate-y-1/2 cursor-pointer flex-col items-center gap-0.5 active:scale-95 transition-transform"
             style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
             aria-label={
               slot.player
@@ -124,7 +136,14 @@ export function Pitch({
                   {slot.player.team}
                 </span>
                 {lastWeekPoints?.[slot.player.id] !== undefined && (
-                  <span
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (lastWeekGameweekId) {
+                        setPointsModalPlayerId(slot.player!.id);
+                      }
+                    }}
                     className={`rounded-sm px-1 text-[8px] font-semibold ${
                       lastWeekPoints[slot.player.id] > 0
                         ? "bg-green-500/90 text-ivory"
@@ -135,13 +154,21 @@ export function Pitch({
                   >
                     {lastWeekPoints[slot.player.id] > 0 ? "+" : ""}
                     {lastWeekPoints[slot.player.id]}
-                  </span>
+                  </button>
                 )}
               </span>
             )}
-          </button>
+          </div>
         ))}
       </div>
+
+      {pointsModalPlayerId && lastWeekGameweekId && (
+        <PlayerPointsModal
+          playerId={pointsModalPlayerId}
+          gameweekId={lastWeekGameweekId}
+          onClose={() => setPointsModalPlayerId(null)}
+        />
+      )}
     </div>
   );
 }
