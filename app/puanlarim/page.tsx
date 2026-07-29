@@ -10,6 +10,7 @@ import {
   FinishedGameweek,
   GameweekResultRow,
 } from "@/lib/gameweekResult";
+import { PlayerPointsModal } from "@/components/PlayerPointsModal";
 
 export default function PuanlarimPage() {
   const { session, loading: sessionLoading } = useSession();
@@ -20,6 +21,9 @@ export default function PuanlarimPage() {
   const [rows, setRows] = useState<GameweekResultRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [selectedPlayer, setSelectedPlayer] = useState<GameweekResultRow | null>(
+    null
+  );
 
   useEffect(() => {
     if (!sessionLoading && !session) router.push("/giris");
@@ -110,7 +114,8 @@ export default function PuanlarimPage() {
               {rows.map((r) => (
                 <div
                   key={r.playerId}
-                  className="flex items-center justify-between rounded-lg border border-charcoal/10 bg-white px-3 py-2.5"
+                  onClick={() => setSelectedPlayer(r)}
+                  className="flex cursor-pointer items-center justify-between rounded-lg border border-charcoal/10 bg-white px-3 py-2.5 active:bg-charcoal/5"
                 >
                   <div>
                     <p className="text-sm font-medium leading-tight">
@@ -140,6 +145,22 @@ export default function PuanlarimPage() {
             </div>
           )}
         </>
+      )}
+
+      {selectedPlayer && selectedGw && (
+        <PlayerPointsModal
+          playerId={selectedPlayer.playerId}
+          gameweekId={selectedGw}
+          onClose={() => setSelectedPlayer(null)}
+          extraHeader={
+            selectedPlayer.multiplier > 1 ? (
+              <p className="mt-1 text-xs font-medium text-gold">
+                Çarpan ×{selectedPlayer.multiplier} uygulandı — nihai katkı{" "}
+                {selectedPlayer.finalPoints}
+              </p>
+            ) : undefined
+          }
+        />
       )}
     </main>
   );
