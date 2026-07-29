@@ -47,6 +47,12 @@ export default function Home() {
             >
               Nasıl oynanır
             </Link>
+            <Link
+              href="/siralama"
+              className="rounded-md border border-muted-green px-5 py-2.5 text-sm font-medium text-ivory"
+            >
+              Sıralama
+            </Link>
           </div>
 
           <div className="flex h-1 w-full max-w-[280px] overflow-hidden rounded-full">
