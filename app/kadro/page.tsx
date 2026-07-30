@@ -321,7 +321,29 @@ export default function KadroPage() {
       </button>
 
       {saveMessage && (
-        <p className="text-center text-sm text-foreground/70">{saveMessage}</p>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/50"
+          onClick={() => setSaveMessage(null)}
+        >
+          <div
+            className="mx-4 rounded-2xl bg-background px-6 py-8 text-center shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p
+              className={`font-display text-lg font-semibold ${
+                saveMessage.startsWith("Hata") ? "text-red-600" : "text-pitch"
+              }`}
+            >
+              {saveMessage}
+            </p>
+            <button
+              onClick={() => setSaveMessage(null)}
+              className="mt-4 rounded-lg bg-pitch px-6 py-2 text-sm font-medium text-ivory"
+            >
+              Tamam
+            </button>
+          </div>
+        </div>
       )}
 
       {pickerPosition && (
