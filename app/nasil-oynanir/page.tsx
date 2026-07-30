@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppHeader } from "@/components/AppHeader";
 
 function Section({
   title,
@@ -43,20 +43,12 @@ const SCORING_ROWS: [string, string, string, string, string][] = [
 
 export default function NasilOynanirPage() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10">
-      <header className="flex items-center justify-between">
-        <h1 className="font-display text-xl font-semibold sm:text-2xl">
-          Nasıl Oynanır?
-        </h1>
-        <Link
-          href="/"
-          className="text-xs text-foreground/50 underline underline-offset-2"
-        >
-          Ana sayfa
-        </Link>
-      </header>
+    <>
+      <AppHeader />
+      <main className="mx-auto flex max-w-2xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10">
+        <h1 className="font-display text-xl font-semibold sm:text-2xl">Nasıl Oynanır?</h1>
 
-      <Section title="Kadro Kurma">
+        <Section title="Kadro Kurma">
         <Bul>
           Oyuncu havuzu yalnızca Galatasaray, Fenerbahçe, Beşiktaş ve
           Trabzonspor kadrolarından oluşur.
@@ -174,6 +166,7 @@ export default function NasilOynanirPage() {
       <Section title="Sezon">
         <Bul>Oyun tam sezon boyunca sürer: 2026-27 Süper Lig sezonu, 34 hafta.</Bul>
       </Section>
-    </main>
+      </main>
+    </>
   );
 }
