@@ -11,6 +11,7 @@ import {
   GameweekResultRow,
 } from "@/lib/gameweekResult";
 import { PlayerPointsModal } from "@/components/PlayerPointsModal";
+import { positionLabel } from "@/lib/positionLabels";
 
 export default function PuanlarimPage() {
   const { session, loading: sessionLoading } = useSession();
@@ -132,7 +133,7 @@ export default function PuanlarimPage() {
                       )}
                     </p>
                     <p className="text-xs text-foreground/50">
-                      {r.team} · {r.position} · toplam puan {r.basePoints}
+                      {r.team} · {positionLabel(r.position)} · toplam puan {r.basePoints}
                       {r.multiplier > 1 && ` × ${r.multiplier}`}
                       {!r.played && " · oynamadı"}
                     </p>
