@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { positionLabel } from "@/lib/positionLabels";
 import {
   fetchPlayerGameweekBreakdown,
   PlayerGameweekBreakdown,
@@ -99,7 +100,7 @@ export function PlayerPointsModal({
                     {data.name}
                   </p>
                   <p className="text-xs text-foreground/50">
-                    {data.team} · {data.position} · {data.minutes} dk
+                    {data.team} · {positionLabel(data.position)} · {data.minutes} dk
                     {data.matchRating !== null && ` · maç puanı ${data.matchRating}`}
                     {data.isMotm && " · Maçın Yıldızı"}
                   </p>
