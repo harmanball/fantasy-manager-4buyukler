@@ -17,7 +17,7 @@ const ROWS: { key: keyof PlayerGameweekBreakdown; label: string }[] = [
   { key: "kartPuani", label: "Kart" },
   { key: "kkGolPuani", label: "Kendi kalesine gol" },
   { key: "penKacanPuani", label: "Penaltı kaçırma" },
-  { key: "macPuaniBonusu", label: "Maç puanı bonusu" },
+  { key: "macPuaniBonusu", label: "Maç reytingi bonusu" },
 ];
 
 export function PlayerPointsModal({
@@ -90,7 +90,7 @@ export function PlayerPointsModal({
                   </p>
                   <p className="text-xs text-foreground/50">
                     {data.team} · {positionLabel(data.position)} · {data.minutes} dk
-                    {data.matchRating !== null && ` · maç puanı ${data.matchRating}`}
+                    {data.matchRating !== null && ` · maç reytingi ${data.matchRating}`}
                     {data.isMotm && " · Maçın Yıldızı"}
                   </p>
                   {extraHeader}
@@ -132,6 +132,19 @@ export function PlayerPointsModal({
                   {data.toplamPuan}
                 </span>
               </div>
+
+              <p className="mt-2 text-center text-[10px] text-foreground/40">
+                Bu istatistikler için{" "}
+                <a
+                  href="https://www.fotmob.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  www.fotmob.com
+                </a>{" "}
+                referans alınır.
+              </p>
             </div>
           </>
         )}
