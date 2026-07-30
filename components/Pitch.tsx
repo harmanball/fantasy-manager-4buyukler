@@ -5,6 +5,7 @@ import { Formation, FORMATION_LAYOUT } from "@/lib/teams";
 import { Player, Position } from "@/lib/players";
 import { TeamBadge } from "./TeamBadge";
 import { PlayerPointsModal } from "./PlayerPointsModal";
+import { positionLabel } from "@/lib/positionLabels";
 
 export interface SquadSlot {
   id: string;
@@ -112,8 +113,8 @@ export function Pitch({
             style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
             aria-label={
               slot.player
-                ? `${slot.player.name}, ${slot.position} — düzenle`
-                : `Boş ${slot.position} slotu — oyuncu ekle`
+                ? `${slot.player.name}, ${positionLabel(slot.position)} — düzenle`
+                : `Boş ${positionLabel(slot.position)} slotu — oyuncu ekle`
             }
           >
             {slot.player ? (
@@ -128,7 +129,7 @@ export function Pitch({
               </div>
             )}
             <span className="max-w-[62px] truncate text-[10px] font-medium text-ivory">
-              {slot.player ? slot.player.name.split(" ").pop() : slot.position}
+              {slot.player ? slot.player.name.split(" ").pop() : positionLabel(slot.position)}
             </span>
             {slot.player && (
               <span className="flex items-center gap-1">
