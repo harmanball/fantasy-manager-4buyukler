@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { fetchLeaderboard, fetchGameweekLeaderboard, LeaderboardRow } from "@/lib/leaderboard";
+import {
+  fetchLeaderboardWithTrend,
+  fetchGameweekLeaderboard,
+  LeaderboardRowWithTrend,
+} from "@/lib/leaderboard";
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
 import { useSession } from "@/lib/useSession";
 
 export default function SiralamaPage() {
   const { session } = useSession();
-  const [rows, setRows] = useState<LeaderboardRow[]>([]);
+  const [rows, setRows] = useState<LeaderboardRowWithTrend[]>([]);
   const [weeks, setWeeks] = useState<FinishedGameweek[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<"total" | number>("total");
   const [loading, setLoading] = useState(true);
@@ -23,8 +27,11 @@ export default function SiralamaPage() {
       setLoading(true);
       const r =
         selectedFilter === "total"
-          ? await fetchLeaderboard()
-          : await fetchGameweekLeaderboard(selectedFilter);
+          ? await fetchLeaderboardWithTrend()
+          : (await fetchGameweekLeaderboard(selectedFilter)).map((row) => ({
+              ...row,
+              rankChange: null,
+            }));
       if (cancelled) return;
       setRows(r);
       setLoading(false);
@@ -52,7 +59,7 @@ export default function SiralamaPage() {
             href="/kadro"
             className="text-xs text-foreground/50 underline underline-offset-2"
           >
-            Kadrom
+            Kadro
           </Link>
         </div>
       </header>
@@ -96,8 +103,17 @@ export default function SiralamaPage() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="w-6 shrink-0 text-right text-sm font-medium text-foreground/50">
+                    <span className="flex w-9 shrink-0 items-center justify-end gap-1 text-right text-sm font-medium text-foreground/50">
                       {i + 1}
+                      {row.rankChange === "up" && (
+                        <span className="text-green-600" aria-label="yükseldi">▲</span>
+                      )}
+                      {row.rankChange === "down" && (
+                        <span className="text-red-600" aria-label="düştü">▼</span>
+                      )}
+                      {(row.rankChange === "same" || row.rankChange === null) && (
+                        <span className="text-foreground/25" aria-label="değişiklik yok">–</span>
+                      )}
                     </span>
                     <div>
                       <p className="text-sm font-medium leading-tight">
