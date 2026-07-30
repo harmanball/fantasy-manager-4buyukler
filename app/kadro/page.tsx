@@ -15,7 +15,8 @@ import { FormationPicker } from "@/components/FormationPicker";
 import { Pitch, SquadSlot, buildSlots } from "@/components/Pitch";
 import { StatCards } from "@/components/StatCards";
 import { PlayerSheet } from "@/components/PlayerSheet";
-import { PlayerActionSheet } from "@/components/PlayerActionSheet";
+import { PlayerPointsModal } from "@/components/PlayerPointsModal";
+import { CaptainPickerSheet } from "@/components/CaptainPickerSheet";
 
 export default function KadroPage() {
   const { session, loading: sessionLoading } = useSession();
@@ -40,7 +41,8 @@ export default function KadroPage() {
   const [captainId, setCaptainId] = useState<string | null>(null);
   const [pickerPosition, setPickerPosition] = useState<Position | null>(null);
   const [activeSlotId, setActiveSlotId] = useState<string | null>(null);
-  const [actionPlayer, setActionPlayer] = useState<Player | null>(null);
+  const [modalPlayer, setModalPlayer] = useState<Player | null>(null);
+  const [captainPickerOpen, setCaptainPickerOpen] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -145,9 +147,12 @@ export default function KadroPage() {
     setSlots(newSlots);
   }
 
+  // Dolu bir slota (avatar ya da puan rozeti — ikisi de aynı alan) dokunmak
+  // birleşik puan detayı + kaptan/çıkarma penceresini açar. Boş slot ise
+  // oyuncu ekleme panelini açar.
   function handleSlotTap(slot: SquadSlot) {
     if (slot.player) {
-      setActionPlayer(slot.player);
+      setModalPlayer(slot.player);
       setActiveSlotId(slot.id);
     } else {
       setActiveSlotId(slot.id);
@@ -168,8 +173,8 @@ export default function KadroPage() {
     setSlots((prev) =>
       prev.map((s) => (s.id === activeSlotId ? { ...s, player: null } : s))
     );
-    if (actionPlayer?.id === captainId) setCaptainId(null);
-    setActionPlayer(null);
+    if (modalPlayer?.id === captainId) setCaptainId(null);
+    setModalPlayer(null);
     setActiveSlotId(null);
   }
 
@@ -183,6 +188,11 @@ export default function KadroPage() {
 
   const usedPlayerIds = useMemo(
     () => slots.filter((s) => s.player).map((s) => s.player!.id),
+    [slots]
+  );
+
+  const squadPlayers = useMemo(
+    () => slots.filter((s) => s.player).map((s) => s.player!),
     [slots]
   );
 
@@ -291,7 +301,6 @@ export default function KadroPage() {
           slots={slots}
           captainId={captainId}
           lastWeekPoints={lastWeekPoints}
-          lastWeekGameweekId={lastWeekGameweekId}
           onSlotTap={handleSlotTap}
         />
       )}
@@ -300,6 +309,7 @@ export default function KadroPage() {
         filledCount={filledCount}
         totalSlots={SQUAD_SIZE}
         captainName={captainName}
+        onCaptainClick={() => setCaptainPickerOpen(true)}
       />
 
       <button
@@ -329,16 +339,29 @@ export default function KadroPage() {
         />
       )}
 
-      {actionPlayer && (
-        <PlayerActionSheet
-          player={actionPlayer}
-          isCaptain={actionPlayer.id === captainId}
+      {modalPlayer && (
+        <PlayerPointsModal
+          player={modalPlayer}
+          gameweekId={lastWeekGameweekId}
+          isCaptain={modalPlayer.id === captainId}
           onMakeCaptain={() => {
-            setCaptainId(actionPlayer.id);
-            setActionPlayer(null);
+            setCaptainId(modalPlayer.id);
+            setModalPlayer(null);
           }}
           onRemove={removeFromSlot}
-          onClose={() => setActionPlayer(null)}
+          onClose={() => setModalPlayer(null)}
+        />
+      )}
+
+      {captainPickerOpen && (
+        <CaptainPickerSheet
+          players={squadPlayers}
+          captainId={captainId}
+          onPick={(id) => {
+            setCaptainId(id);
+            setCaptainPickerOpen(false);
+          }}
+          onClose={() => setCaptainPickerOpen(false)}
         />
       )}
       </main>
