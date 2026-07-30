@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import {
   fetchPlayerPointsBreakdown,
   fetchGameweekPlayersBreakdown,
   PlayerPointsBreakdown,
 } from "@/lib/playerPoints";
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
+import { AppHeader } from "@/components/AppHeader";
 
 type SortableKey = keyof Pick<
   PlayerPointsBreakdown,
@@ -102,18 +102,10 @@ export default function FutbolcuPuanlariPage() {
   }, [filtered, sortKey, sortDir]);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-4xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
-      <header className="flex items-center justify-between">
-        <h1 className="font-display text-lg font-semibold sm:text-xl">
-          Futbolcu Puanları
-        </h1>
-        <Link
-          href="/"
-          className="text-xs text-foreground/50 underline underline-offset-2"
-        >
-          Ana sayfa
-        </Link>
-      </header>
+    <>
+      <AppHeader />
+      <main className="mx-auto flex max-w-4xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
+        <h1 className="font-display text-lg font-semibold sm:text-xl">Futbolcu Puanları</h1>
 
       <select
         value={selectedFilter}
@@ -214,6 +206,7 @@ export default function FutbolcuPuanlariPage() {
           </table>
         </div>
       )}
-    </main>
+      </main>
+    </>
   );
 }
