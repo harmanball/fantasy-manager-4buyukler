@@ -9,19 +9,28 @@ export function JerseyIcon({ team, size = 56 }: { team: TeamCode; size?: number 
   const t = TEAMS[team];
   return (
     <div
-      className="team-badge shrink-0"
-      style={
-        {
-          width: size,
-          height: size,
-          "--c1": t.c1,
-          "--c2": t.c2,
-          clipPath: JERSEY_CLIP,
-          filter: "drop-shadow(0 0 0.5px rgba(0,0,0,0.35))",
-        } as React.CSSProperties
-      }
+      className="relative shrink-0"
+      style={{ width: size, height: size }}
       role="img"
       aria-label={`${t.name} forması`}
-    />
+    >
+      {/* Arka plan katmanı: aynı forma kalıbı, biraz büyütülmüş siyah —
+          beyaz/açık renkli formaların (ör. Beşiktaş) her zeminde net
+          görünmesini sağlayan bir çerçeve efekti yaratır. */}
+      <div
+        className="absolute inset-0 bg-charcoal"
+        style={{ clipPath: JERSEY_CLIP, transform: "scale(1.12)" }}
+      />
+      <div
+        className="team-badge absolute inset-0"
+        style={
+          {
+            "--c1": t.c1,
+            "--c2": t.c2,
+            clipPath: JERSEY_CLIP,
+          } as React.CSSProperties
+        }
+      />
+    </div>
   );
 }
