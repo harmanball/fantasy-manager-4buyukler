@@ -29,6 +29,7 @@ export default function KadroPage() {
   const [lastWeekGameweekId, setLastWeekGameweekId] = useState<number | null>(null);
   const [lastWeekTotal, setLastWeekTotal] = useState<number | null>(null);
   const [overallRank, setOverallRank] = useState<number | null>(null);
+  const [squadName, setSquadName] = useState<string | null>(null);
   const [overallTotal, setOverallTotal] = useState<number | null>(null);
   const [weeklyRank, setWeeklyRank] = useState<number | null>(null);
   const [gameweek, setGameweek] = useState<{ id: number; name: string | null } | null>(null);
@@ -81,6 +82,19 @@ export default function KadroPage() {
         setOverallTotal(r.total);
       }
     });
+  }, [session]);
+
+  // Takım adı (profil)
+  useEffect(() => {
+    if (!session) return;
+    supabase
+      .from("profiles")
+      .select("squad_name, username")
+      .eq("id", session.user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setSquadName(data.squad_name || data.username);
+      });
   }, [session]);
 
   // Bu haftaki lig sıralaman
@@ -244,6 +258,12 @@ export default function KadroPage() {
           </button>
         </div>
       </header>
+
+      {squadName && (
+        <h2 className="text-center font-display text-2xl font-bold text-charcoal sm:text-3xl">
+          {squadName}
+        </h2>
+      )}
 
       {(overallRank !== null || lastWeekTotal !== null) && (
         <div className="flex flex-col divide-y divide-gold/25 rounded-lg border border-gold/40 bg-gold/10 px-4 py-1">
