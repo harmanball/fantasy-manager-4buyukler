@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 import { Formation, SQUAD_SIZE } from "@/lib/teams";
-import { fetchPlayers } from "@/lib/players";
+import { fetchPlayers, Player } from "@/lib/players";
 import { fetchOpenGameweek, fetchUserSquad, buildSquadFromPicks } from "@/lib/squad";
 import { fetchFinishedGameweeks } from "@/lib/gameweekResult";
 import { fetchLastFinishedGameweekPoints } from "@/lib/playerPoints";
@@ -13,6 +13,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { FormationPicker } from "@/components/FormationPicker";
 import { Pitch, SquadSlot, buildSlots } from "@/components/Pitch";
 import { StatCards } from "@/components/StatCards";
+import { PlayerPointsModal } from "@/components/PlayerPointsModal";
 
 export default function TakimPage() {
   const { session, loading: sessionLoading } = useSession();
@@ -30,6 +31,7 @@ export default function TakimPage() {
   const [captainId, setCaptainId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [modalPlayer, setModalPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
     if (!sessionLoading && !session) router.push("/giris");
@@ -124,8 +126,9 @@ export default function TakimPage() {
             slots={slots}
             captainId={captainId}
             lastWeekPoints={lastWeekPoints}
-            lastWeekGameweekId={lastWeekGameweekId}
-            onSlotTap={() => {}}
+            onSlotTap={(slot) => {
+              if (slot.player) setModalPlayer(slot.player);
+            }}
           />
 
           <StatCards
@@ -134,6 +137,14 @@ export default function TakimPage() {
             captainName={captainName}
           />
         </>
+      )}
+
+      {modalPlayer && (
+        <PlayerPointsModal
+          player={modalPlayer}
+          gameweekId={lastWeekGameweekId}
+          onClose={() => setModalPlayer(null)}
+        />
       )}
       </main>
     </>
