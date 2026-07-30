@@ -8,7 +8,8 @@ export default function GirisPage() {
   const [mode, setMode] = useState<"giris" | "kayit">("giris");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [squadName, setSquadName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [checkEmail, setCheckEmail] = useState(false);
@@ -17,13 +18,19 @@ export default function GirisPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (mode === "kayit" && password !== passwordConfirm) {
+      setError("Şifreler birbiriyle eşleşmiyor.");
+      return;
+    }
+
     setLoading(true);
 
     if (mode === "kayit") {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { username } },
+        options: { data: { squad_name: squadName } },
       });
       setLoading(false);
       if (error) {
@@ -74,10 +81,10 @@ export default function GirisPage() {
         {mode === "kayit" && (
           <input
             type="text"
-            placeholder="Kullanıcı adı"
+            placeholder="Takım adı"
             required
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={squadName}
+            onChange={(e) => setSquadName(e.target.value)}
             className="h-11 rounded-lg border border-charcoal/15 px-3 text-sm outline-none focus:border-pitch"
           />
         )}
@@ -99,6 +106,17 @@ export default function GirisPage() {
           onChange={(e) => setPassword(e.target.value)}
           className="h-11 rounded-lg border border-charcoal/15 px-3 text-sm outline-none focus:border-pitch"
         />
+        {mode === "kayit" && (
+          <input
+            type="password"
+            placeholder="Şifre (tekrar)"
+            required
+            minLength={6}
+            value={passwordConfirm}
+            onChange={(e) => setPasswordConfirm(e.target.value)}
+            className="h-11 rounded-lg border border-charcoal/15 px-3 text-sm outline-none focus:border-pitch"
+          />
+        )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
