@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useSession } from "@/lib/useSession";
 import {
   fetchFinishedGameweeks,
@@ -11,6 +10,7 @@ import {
   GameweekResultRow,
 } from "@/lib/gameweekResult";
 import { PlayerPointsModal } from "@/components/PlayerPointsModal";
+import { AppHeader } from "@/components/AppHeader";
 import { positionLabel } from "@/lib/positionLabels";
 
 export default function PuanlarimPage() {
@@ -57,33 +57,20 @@ export default function PuanlarimPage() {
 
   if (sessionLoading || !session) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-2xl items-center justify-center px-3">
-        <p className="text-sm text-foreground/50">Yükleniyor…</p>
-      </main>
+      <>
+        <AppHeader />
+        <main className="mx-auto flex min-h-[calc(100dvh-57px)] max-w-2xl items-center justify-center px-3">
+          <p className="text-sm text-foreground/50">Yükleniyor…</p>
+        </main>
+      </>
     );
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
-      <header className="flex items-center justify-between">
-        <h1 className="font-display text-lg font-semibold sm:text-xl">
-          Puanlarım
-        </h1>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/kadro"
-            className="text-xs text-foreground/50 underline underline-offset-2"
-          >
-            Kadro
-          </Link>
-          <Link
-            href="/siralama"
-            className="text-xs text-foreground/50 underline underline-offset-2"
-          >
-            Lig Sıralaması
-          </Link>
-        </div>
-      </header>
+    <>
+      <AppHeader />
+      <main className="mx-auto flex max-w-2xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
+        <h1 className="font-display text-lg font-semibold sm:text-xl">Puanlarım</h1>
 
       {weeks.length === 0 ? (
         <p className="rounded-lg border border-charcoal/10 bg-white px-4 py-6 text-center text-sm text-foreground/60">
@@ -171,6 +158,7 @@ export default function PuanlarimPage() {
           }
         />
       )}
-    </main>
+      </main>
+    </>
   );
 }
