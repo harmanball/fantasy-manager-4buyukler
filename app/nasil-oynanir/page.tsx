@@ -102,7 +102,7 @@ export default function NasilOynanirPage() {
         <Bul>Yalnızca Süper Lig maçları puanlanır.</Bul>
       </Section>
 
-      <Section title="Puanlama Tablosu">
+      <Section title="Oyuncu Puanlama Tablosu">
         <div className="overflow-x-auto rounded-lg border border-charcoal/10">
           <table className="w-full min-w-[520px] text-xs sm:text-sm">
             <thead className="bg-background">
@@ -156,7 +156,7 @@ export default function NasilOynanirPage() {
           >
             www.fotmob.com
           </a>{" "}
-          referans alınarak girilir.
+          referans alınır.
         </Bul>
       </Section>
 
