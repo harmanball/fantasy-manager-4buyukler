@@ -6,11 +6,11 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 
+// Hamburger menüsündeki liste — Puanlarım ve Lig Sıralaması artık
+// üst barda sabit göründüğü için burada tekrarlanmıyor.
 const NAV_ITEMS = [
   { href: "/", label: "Ana sayfa" },
   { href: "/kadro", label: "Kadro" },
-  { href: "/puanlarim", label: "Puanlarım" },
-  { href: "/siralama", label: "Lig Sıralaması" },
   { href: "/futbolcu-puanlari", label: "Futbolcu Puanları" },
 ];
 
@@ -66,22 +66,38 @@ export function AppHeader() {
               />
             </svg>
           </button>
-          <span className="font-display text-sm font-semibold sm:text-base">
+          <span className="hidden font-display text-sm font-semibold sm:inline sm:text-base">
             Fantasy Manager
           </span>
+        </div>
+
+        {/* Üst barın tam ortasında sabit iki link */}
+        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 whitespace-nowrap sm:gap-4">
+          <Link
+            href="/puanlarim"
+            className="text-[11px] font-medium text-foreground/70 underline underline-offset-2 hover:text-foreground sm:text-sm"
+          >
+            Puanlarım
+          </Link>
+          <Link
+            href="/siralama"
+            className="text-[11px] font-medium text-foreground/70 underline underline-offset-2 hover:text-foreground sm:text-sm"
+          >
+            Lig Sıralaması
+          </Link>
         </div>
 
         {session ? (
           <Link
             href="/kadro"
-            className="rounded-full bg-charcoal px-4 py-2 text-xs font-medium text-ivory sm:text-sm"
+            className="whitespace-nowrap rounded-full bg-charcoal px-3 py-2 text-[11px] font-medium text-ivory sm:px-4 sm:text-sm"
           >
-            {squadName ?? "Kadro"}
+            {squadName ? `${squadName} Kadro` : "Kadro"}
           </Link>
         ) : (
           <Link
             href="/giris"
-            className="rounded-full bg-charcoal px-4 py-2 text-xs font-medium text-ivory sm:text-sm"
+            className="whitespace-nowrap rounded-full bg-charcoal px-3 py-2 text-[11px] font-medium text-ivory sm:px-4 sm:text-sm"
           >
             Giriş yap
           </Link>
