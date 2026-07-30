@@ -37,7 +37,7 @@ const COLS: { key: SortableKey; label: string; align: "left" | "right" }[] = [
   { key: "kart_puani", label: "Kart", align: "right" },
   { key: "kk_gol_puani", label: "KK Gol", align: "right" },
   { key: "pen_kacan_puani", label: "Pen.Kaçan", align: "right" },
-  { key: "mac_puani_bonusu", label: "Maç Reytingi Bonus", align: "right" },
+  { key: "mac_puani_bonusu", label: "Reytingi Bonus", align: "right" },
 ];
 
 export default function FutbolcuPuanlariPage() {
@@ -139,6 +139,19 @@ export default function FutbolcuPuanlariPage() {
         className="h-10 w-full rounded-lg border border-charcoal/15 bg-white px-3 text-sm outline-none focus:border-pitch"
       />
 
+      <p className="text-center text-[11px] text-foreground/40">
+        Bu istatistikler için{" "}
+        <a
+          href="https://www.fotmob.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2"
+        >
+          www.fotmob.com
+        </a>{" "}
+        referans alınır.
+      </p>
+
       {loading ? (
         <p className="py-10 text-center text-sm text-foreground/50">
           Yükleniyor…
@@ -150,7 +163,7 @@ export default function FutbolcuPuanlariPage() {
         </p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-charcoal/10 bg-white">
-          <table className="w-full min-w-[760px] text-xs">
+          <table className="w-full text-[11px] sm:text-xs">
             <thead className="bg-background">
               <tr>
                 {COLS.map((c, i) => {
@@ -159,7 +172,7 @@ export default function FutbolcuPuanlariPage() {
                     <th
                       key={c.key}
                       onClick={() => handleSort(c.key)}
-                      className={`cursor-pointer select-none whitespace-nowrap p-2 font-semibold hover:bg-charcoal/5 ${
+                      className={`cursor-pointer select-none whitespace-nowrap p-1 px-1.5 font-semibold hover:bg-charcoal/5 sm:p-2 ${
                         c.align === "right" ? "text-right" : "text-left"
                       } ${i === 0 ? "sticky left-0 bg-background" : ""}`}
                     >
@@ -179,41 +192,28 @@ export default function FutbolcuPuanlariPage() {
                   key={r.player_id}
                   className={i % 2 === 0 ? "bg-white" : "bg-background/60"}
                 >
-                  <td className="sticky left-0 whitespace-nowrap bg-inherit p-2 font-medium">
+                  <td className="sticky left-0 whitespace-nowrap bg-inherit p-1 px-1.5 font-medium sm:p-2">
                     {r.name}
                   </td>
-                  <td className="p-2 text-foreground/60">{r.team}</td>
-                  <td className="p-2 text-right font-display font-semibold">
+                  <td className="p-1 px-1.5 text-foreground/60 sm:p-2">{r.team}</td>
+                  <td className="p-1 px-1.5 text-right font-display font-semibold sm:p-2">
                     {r.toplam_puan}
                   </td>
-                  <td className="p-2 text-right">{r.mac_sayisi}</td>
-                  <td className="p-2 text-right">{r.oynama_puani}</td>
-                  <td className="p-2 text-right">{r.gol_puani}</td>
-                  <td className="p-2 text-right">{r.asist_puani}</td>
-                  <td className="p-2 text-right">{r.temiz_kale_puani}</td>
-                  <td className="p-2 text-right">{r.kart_puani}</td>
-                  <td className="p-2 text-right">{r.kk_gol_puani}</td>
-                  <td className="p-2 text-right">{r.pen_kacan_puani}</td>
-                  <td className="p-2 text-right">{r.mac_puani_bonusu}</td>
+                  <td className="p-1 px-1.5 text-right sm:p-2">{r.mac_sayisi}</td>
+                  <td className="p-1 px-1.5 text-right sm:p-2">{r.oynama_puani}</td>
+                  <td className="p-1 px-1.5 text-right sm:p-2">{r.gol_puani}</td>
+                  <td className="p-1 px-1.5 text-right sm:p-2">{r.asist_puani}</td>
+                  <td className="p-1 px-1.5 text-right sm:p-2">{r.temiz_kale_puani}</td>
+                  <td className="p-1 px-1.5 text-right sm:p-2">{r.kart_puani}</td>
+                  <td className="p-1 px-1.5 text-right sm:p-2">{r.kk_gol_puani}</td>
+                  <td className="p-1 px-1.5 text-right sm:p-2">{r.pen_kacan_puani}</td>
+                  <td className="p-1 px-1.5 text-right sm:p-2">{r.mac_puani_bonusu}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
-
-      <p className="text-center text-[11px] text-foreground/40">
-        Bu istatistikler için{" "}
-        <a
-          href="https://www.fotmob.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline underline-offset-2"
-        >
-          www.fotmob.com
-        </a>{" "}
-        referans alınır.
-      </p>
     </main>
   );
 }
