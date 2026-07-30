@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Player, Position } from "@/lib/players";
 import { TeamCode } from "@/lib/teams";
 import { TeamBadge } from "./TeamBadge";
+import { positionLabel } from "@/lib/positionLabels";
 
 const TEAM_FILTERS: ("Tümü" | TeamCode)[] = ["Tümü", "GS", "FB", "BJK", "TS"];
 
@@ -46,7 +47,7 @@ export function PlayerSheet({
       >
         <div className="flex shrink-0 items-center justify-between border-b border-charcoal/10 px-4 py-3">
           <h2 className="font-display text-base font-medium">
-            Oyuncu ekle — {position}
+            Oyuncu ekle — {positionLabel(position)}
           </h2>
           <button
             onClick={onClose}
