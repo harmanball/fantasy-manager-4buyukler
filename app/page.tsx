@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { TEAMS } from "@/lib/teams";
 
 export default function Home() {
   return (
@@ -66,14 +65,17 @@ export default function Home() {
           </div>
 
           <div className="flex h-1.5 w-full max-w-[280px] overflow-hidden rounded-full">
-            {(Object.keys(TEAMS) as (keyof typeof TEAMS)[]).map((code) => (
-              <div
-                key={code}
-                className="flex-1"
-                style={{
-                  background: `linear-gradient(90deg, ${TEAMS[code].c1} 50%, ${TEAMS[code].c2} 50%)`,
-                }}
-              />
+            {[
+              "#FFFFFF", // beyaz
+              "#000000", // siyah
+              "#00338D", // lacivert
+              "#FFED00", // açık sarı
+              "#FDB912", // koyu sarı
+              "#A90432", // kırmızı
+              "#7A1E3C", // bordo
+              "#5CB8E4", // mavi
+            ].map((color, i) => (
+              <div key={i} className="flex-1" style={{ background: color }} />
             ))}
           </div>
         </div>
