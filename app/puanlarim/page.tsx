@@ -12,6 +12,7 @@ import {
 import { PlayerPointsModal } from "@/components/PlayerPointsModal";
 import { AppHeader } from "@/components/AppHeader";
 import { positionLabel } from "@/lib/positionLabels";
+import { TeamCode } from "@/lib/teams";
 
 export default function PuanlarimPage() {
   const { session, loading: sessionLoading } = useSession();
@@ -145,7 +146,12 @@ export default function PuanlarimPage() {
 
       {selectedPlayer && selectedGw && (
         <PlayerPointsModal
-          playerId={selectedPlayer.playerId}
+          player={{
+            id: selectedPlayer.playerId,
+            name: selectedPlayer.name,
+            team: selectedPlayer.team as TeamCode,
+            position: selectedPlayer.position,
+          }}
           gameweekId={selectedGw}
           onClose={() => setSelectedPlayer(null)}
           extraHeader={
