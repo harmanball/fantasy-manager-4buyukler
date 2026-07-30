@@ -215,7 +215,7 @@ export default function KadroPage() {
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
       <header className="flex items-center justify-between">
         <h1 className="font-display text-lg font-semibold sm:text-xl">
-          Kadromu kur
+          Kadro
         </h1>
         <div className="flex items-center gap-3">
           <Link
@@ -234,7 +234,7 @@ export default function KadroPage() {
             href="/siralama"
             className="text-xs text-foreground/50 underline underline-offset-2"
           >
-            Sıralama
+            Lig Sıralaması
           </Link>
           <button
             onClick={handleLogout}
@@ -244,20 +244,6 @@ export default function KadroPage() {
           </button>
         </div>
       </header>
-
-      {!gameweek && !playersLoading && (
-        <p className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-charcoal">
-          Henüz açık bir hafta yok — kadro kaydı yakında açılacak.
-        </p>
-      )}
-
-      <FormationPicker value={formation} onChange={changeFormation} />
-
-      {lastWeekName && (
-        <p className="text-center text-[11px] text-foreground/50">
-          Oyuncu rozetlerindeki puanlar son hafta ({lastWeekName}) sonuçlarını gösterir
-        </p>
-      )}
 
       {(overallRank !== null || lastWeekTotal !== null) && (
         <div className="flex flex-col divide-y divide-gold/25 rounded-lg border border-gold/40 bg-gold/10 px-4 py-1">
@@ -286,6 +272,20 @@ export default function KadroPage() {
             </span>
           </div>
         </div>
+      )}
+
+      {!gameweek && !playersLoading && (
+        <p className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-charcoal">
+          Henüz açık bir hafta yok — kadro kaydı yakında açılacak.
+        </p>
+      )}
+
+      <FormationPicker value={formation} onChange={changeFormation} />
+
+      {lastWeekName && (
+        <p className="text-center text-[11px] text-foreground/50">
+          Oyuncu rozetlerindeki puanlar son hafta ({lastWeekName}) sonuçlarını gösterir
+        </p>
       )}
 
       {playersLoading || !squadLoaded ? (
