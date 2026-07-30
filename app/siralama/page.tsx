@@ -109,11 +109,6 @@ export default function SiralamaPage() {
                           </span>
                         )}
                       </p>
-                      {row.squad_name && (
-                        <p className="text-xs text-foreground/50">
-                          {row.username}
-                        </p>
-                      )}
                     </div>
                   </div>
                   <span className="shrink-0 font-display text-base font-semibold">
