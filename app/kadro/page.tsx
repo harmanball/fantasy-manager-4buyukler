@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Formation, TEAM_LIMIT, SQUAD_SIZE } from "@/lib/teams";
 import { fetchPlayers, Player, Position } from "@/lib/players";
 import { fetchOpenGameweek, fetchUserSquad, saveSquad, buildSquadFromPicks } from "@/lib/squad";
@@ -11,6 +10,7 @@ import { fetchGameweekResult } from "@/lib/gameweekResult";
 import { fetchUserOverallRank, fetchUserGameweekRank } from "@/lib/leaderboard";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
+import { AppHeader } from "@/components/AppHeader";
 import { FormationPicker } from "@/components/FormationPicker";
 import { Pitch, SquadSlot, buildSlots } from "@/components/Pitch";
 import { StatCards } from "@/components/StatCards";
@@ -216,52 +216,22 @@ export default function KadroPage() {
     setSaveMessage(error ? `Hata: ${error}` : "Kadron kaydedildi ✓");
   }
 
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    router.push("/giris");
-  }
-
   if (sessionLoading || !session) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-3xl items-center justify-center px-3">
-        <p className="text-sm text-foreground/50">Yükleniyor…</p>
-      </main>
+      <>
+        <AppHeader />
+        <main className="mx-auto flex min-h-[calc(100dvh-57px)] max-w-3xl items-center justify-center px-3">
+          <p className="text-sm text-foreground/50">Yükleniyor…</p>
+        </main>
+      </>
     );
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
-      <header className="flex items-center justify-between">
-        <h1 className="font-display text-lg font-semibold sm:text-xl">
-          Kadro
-        </h1>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="text-xs text-foreground/50 underline underline-offset-2"
-          >
-            Anasayfa
-          </Link>
-          <Link
-            href="/puanlarim"
-            className="text-xs text-foreground/50 underline underline-offset-2"
-          >
-            Puanlarım
-          </Link>
-          <Link
-            href="/siralama"
-            className="text-xs text-foreground/50 underline underline-offset-2"
-          >
-            Lig Sıralaması
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="text-xs text-foreground/50 underline underline-offset-2"
-          >
-            Çıkış yap
-          </button>
-        </div>
-      </header>
+    <>
+      <AppHeader />
+      <main className="mx-auto flex max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
+        <h1 className="font-display text-lg font-semibold sm:text-xl">Kadro</h1>
 
       {squadName && (
         <h2 className="text-center font-display text-2xl font-bold text-charcoal sm:text-3xl">
@@ -371,6 +341,7 @@ export default function KadroPage() {
           onClose={() => setActionPlayer(null)}
         />
       )}
-    </main>
+      </main>
+    </>
   );
 }
