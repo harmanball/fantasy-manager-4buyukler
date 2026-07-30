@@ -69,12 +69,20 @@ export default function PuanlarimPage() {
         <h1 className="font-display text-lg font-semibold sm:text-xl">
           Puanlarım
         </h1>
-        <Link
-          href="/siralama"
-          className="text-xs text-foreground/50 underline underline-offset-2"
-        >
-          Lig Sıralaması
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/kadro"
+            className="text-xs text-foreground/50 underline underline-offset-2"
+          >
+            Kadro
+          </Link>
+          <Link
+            href="/siralama"
+            className="text-xs text-foreground/50 underline underline-offset-2"
+          >
+            Lig Sıralaması
+          </Link>
+        </div>
       </header>
 
       {weeks.length === 0 ? (
