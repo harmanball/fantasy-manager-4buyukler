@@ -2,20 +2,38 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { fetchLeaderboard, LeaderboardRow } from "@/lib/leaderboard";
+import { fetchLeaderboard, fetchGameweekLeaderboard, LeaderboardRow } from "@/lib/leaderboard";
+import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
 import { useSession } from "@/lib/useSession";
 
 export default function SiralamaPage() {
   const { session } = useSession();
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
+  const [weeks, setWeeks] = useState<FinishedGameweek[]>([]);
+  const [selectedFilter, setSelectedFilter] = useState<"total" | number>("total");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchLeaderboard().then((r) => {
+    fetchFinishedGameweeks().then(setWeeks);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      const r =
+        selectedFilter === "total"
+          ? await fetchLeaderboard()
+          : await fetchGameweekLeaderboard(selectedFilter);
+      if (cancelled) return;
       setRows(r);
       setLoading(false);
-    });
-  }, []);
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedFilter]);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
@@ -38,6 +56,21 @@ export default function SiralamaPage() {
           </Link>
         </div>
       </header>
+
+      <select
+        value={selectedFilter}
+        onChange={(e) =>
+          setSelectedFilter(e.target.value === "total" ? "total" : Number(e.target.value))
+        }
+        className="h-10 w-full rounded-lg border border-charcoal/15 bg-white px-3 text-sm"
+      >
+        <option value="total">Genel Toplam</option>
+        {weeks.map((w) => (
+          <option key={w.id} value={w.id}>
+            {w.name || `${w.week_number}. Hafta`}
+          </option>
+        ))}
+      </select>
 
       {loading ? (
         <p className="py-10 text-center text-sm text-foreground/50">
