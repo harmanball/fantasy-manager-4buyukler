@@ -2,23 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { positionLabel } from "@/lib/positionLabels";
+import { TeamCode } from "@/lib/teams";
+import { JerseyIcon } from "./JerseyIcon";
 import {
   fetchPlayerGameweekBreakdown,
   PlayerGameweekBreakdown,
 } from "@/lib/gameweekBreakdown";
-
-function PlayerSilhouette() {
-  return (
-    <svg viewBox="0 0 64 64" className="h-14 w-14" aria-hidden="true">
-      <circle cx="32" cy="32" r="32" fill="#0F3D2E" />
-      <circle cx="32" cy="24" r="11" fill="#F5F1E8" />
-      <path
-        d="M12 58c1-12 9-19 20-19s19 7 20 19"
-        fill="#F5F1E8"
-      />
-    </svg>
-  );
-}
 
 const ROWS: { key: keyof PlayerGameweekBreakdown; label: string }[] = [
   { key: "oynamaPuani", label: "Maça çıkma" },
@@ -94,7 +83,7 @@ export function PlayerPointsModal({
           <>
             <div className="mb-4 flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <PlayerSilhouette />
+                <JerseyIcon team={data.team as TeamCode} size={56} />
                 <div>
                   <p className="font-display text-base font-semibold leading-tight">
                     {data.name}
