@@ -37,7 +37,7 @@ const COLS: { key: SortableKey; label: string; align: "left" | "right" }[] = [
   { key: "kart_puani", label: "Kart", align: "right" },
   { key: "kk_gol_puani", label: "KK Gol", align: "right" },
   { key: "pen_kacan_puani", label: "Pen.Kaçan", align: "right" },
-  { key: "mac_puani_bonusu", label: "Maç Puanı Bonus", align: "right" },
+  { key: "mac_puani_bonusu", label: "Maç Reytingi Bonus", align: "right" },
 ];
 
 export default function FutbolcuPuanlariPage() {
@@ -201,6 +201,19 @@ export default function FutbolcuPuanlariPage() {
           </table>
         </div>
       )}
+
+      <p className="text-center text-[11px] text-foreground/40">
+        Bu istatistikler için{" "}
+        <a
+          href="https://www.fotmob.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2"
+        >
+          www.fotmob.com
+        </a>{" "}
+        referans alınır.
+      </p>
     </main>
   );
 }
