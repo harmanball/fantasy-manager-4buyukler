@@ -2,6 +2,7 @@
 
 import { Player } from "@/lib/players";
 import { TeamBadge } from "./TeamBadge";
+import { positionLabel } from "@/lib/positionLabels";
 
 export function PlayerActionSheet({
   player,
@@ -30,7 +31,7 @@ export function PlayerActionSheet({
           <div>
             <p className="font-medium leading-tight">{player.name}</p>
             <p className="text-xs text-foreground/50">
-              {player.team} · {player.position}
+              {player.team} · {positionLabel(player.position)}
             </p>
           </div>
         </div>
