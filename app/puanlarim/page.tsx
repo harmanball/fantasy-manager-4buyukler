@@ -73,7 +73,7 @@ export default function PuanlarimPage() {
           href="/siralama"
           className="text-xs text-foreground/50 underline underline-offset-2"
         >
-          Sıralama
+          Lig Sıralaması
         </Link>
       </header>
 
