@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 import { Formation, SQUAD_SIZE } from "@/lib/teams";
@@ -10,6 +9,7 @@ import { fetchPlayers } from "@/lib/players";
 import { fetchOpenGameweek, fetchUserSquad, buildSquadFromPicks } from "@/lib/squad";
 import { fetchFinishedGameweeks } from "@/lib/gameweekResult";
 import { fetchLastFinishedGameweekPoints } from "@/lib/playerPoints";
+import { AppHeader } from "@/components/AppHeader";
 import { FormationPicker } from "@/components/FormationPicker";
 import { Pitch, SquadSlot, buildSlots } from "@/components/Pitch";
 import { StatCards } from "@/components/StatCards";
@@ -91,33 +91,20 @@ export default function TakimPage() {
 
   if (sessionLoading || !session || loading) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-3xl items-center justify-center px-3">
-        <p className="text-sm text-foreground/50">Yükleniyor…</p>
-      </main>
+      <>
+        <AppHeader />
+        <main className="mx-auto flex min-h-[calc(100dvh-57px)] max-w-3xl items-center justify-center px-3">
+          <p className="text-sm text-foreground/50">Yükleniyor…</p>
+        </main>
+      </>
     );
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
-      <header className="flex items-center justify-between">
-        <h1 className="font-display text-lg font-semibold sm:text-xl">
-          {ownerName}
-        </h1>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="text-xs text-foreground/50 underline underline-offset-2"
-          >
-            Anasayfa
-          </Link>
-          <Link
-            href="/siralama"
-            className="text-xs text-foreground/50 underline underline-offset-2"
-          >
-            Lig Sıralaması
-          </Link>
-        </div>
-      </header>
+    <>
+      <AppHeader />
+      <main className="mx-auto flex max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
+        <h1 className="font-display text-lg font-semibold sm:text-xl">{ownerName}</h1>
 
       {notFound ? (
         <p className="rounded-lg border border-charcoal/10 bg-white px-4 py-6 text-center text-sm text-foreground/60">
@@ -148,6 +135,7 @@ export default function TakimPage() {
           />
         </>
       )}
-    </main>
+      </main>
+    </>
   );
 }
