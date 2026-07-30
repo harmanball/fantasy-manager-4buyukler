@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 
-// Hamburger menüsündeki liste — Puanlarım ve Lig Sıralaması artık
-// üst barda sabit göründüğü için burada tekrarlanmıyor.
+// Puanlarım ve Lig Sıralaması hem üst barda hem hamburger menüsünde yer alır.
 const NAV_ITEMS = [
   { href: "/", label: "Ana sayfa" },
   { href: "/kadro", label: "Kadro" },
+  { href: "/puanlarim", label: "Puanlarım" },
+  { href: "/siralama", label: "Lig Sıralaması" },
   { href: "/futbolcu-puanlari", label: "Futbolcu Puanları" },
 ];
 
@@ -55,9 +56,9 @@ export function AppHeader() {
             onClick={() => setMenuOpen((o) => !o)}
             aria-label="Menü"
             aria-expanded={menuOpen}
-            className="flex h-9 w-9 items-center justify-center rounded-md text-charcoal hover:bg-charcoal/5"
+            className="flex h-11 w-11 items-center justify-center rounded-md text-charcoal hover:bg-charcoal/5"
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path
                 d="M2 5h16M2 10h16M2 15h16"
                 stroke="currentColor"
@@ -66,8 +67,8 @@ export function AppHeader() {
               />
             </svg>
           </button>
-          <span className="hidden font-display text-sm font-semibold sm:inline sm:text-base">
-            Fantasy Manager
+          <span className="hidden font-display text-base font-semibold sm:inline sm:text-xl">
+            Fantasy Manager: 4 Büyükler
           </span>
         </div>
 
