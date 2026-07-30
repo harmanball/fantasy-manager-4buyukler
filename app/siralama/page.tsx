@@ -9,6 +9,7 @@ import {
 } from "@/lib/leaderboard";
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
 import { useSession } from "@/lib/useSession";
+import { AppHeader } from "@/components/AppHeader";
 
 export default function SiralamaPage() {
   const { session } = useSession();
@@ -43,26 +44,10 @@ export default function SiralamaPage() {
   }, [selectedFilter]);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
-      <header className="flex items-center justify-between">
-        <h1 className="font-display text-lg font-semibold sm:text-xl">
-          Lig Sıralaması
-        </h1>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/puanlarim"
-            className="text-xs text-foreground/50 underline underline-offset-2"
-          >
-            Puanlarım
-          </Link>
-          <Link
-            href="/kadro"
-            className="text-xs text-foreground/50 underline underline-offset-2"
-          >
-            Kadro
-          </Link>
-        </div>
-      </header>
+    <>
+      <AppHeader />
+      <main className="mx-auto flex max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
+        <h1 className="font-display text-lg font-semibold sm:text-xl">Lig Sıralaması</h1>
 
       <select
         value={selectedFilter}
@@ -140,6 +125,7 @@ export default function SiralamaPage() {
           })}
         </ol>
       )}
-    </main>
+      </main>
+    </>
   );
 }
