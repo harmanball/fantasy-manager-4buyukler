@@ -7,6 +7,7 @@ import { Formation, TEAM_LIMIT, SQUAD_SIZE } from "@/lib/teams";
 import { fetchPlayers, Player, Position } from "@/lib/players";
 import { fetchOpenGameweek, fetchUserSquad, saveSquad, buildSquadFromPicks } from "@/lib/squad";
 import { fetchPlayerPointsMap, fetchLastFinishedGameweekPoints } from "@/lib/playerPoints";
+import { fetchGameweekResult } from "@/lib/gameweekResult";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 import { FormationPicker } from "@/components/FormationPicker";
@@ -25,6 +26,7 @@ export default function KadroPage() {
   const [lastWeekPoints, setLastWeekPoints] = useState<Record<string, number>>({});
   const [lastWeekName, setLastWeekName] = useState<string | null>(null);
   const [lastWeekGameweekId, setLastWeekGameweekId] = useState<number | null>(null);
+  const [lastWeekTotal, setLastWeekTotal] = useState<number | null>(null);
   const [gameweek, setGameweek] = useState<{ id: number; name: string | null } | null>(null);
 
   const [formation, setFormation] = useState<Formation>("4-3-3");
@@ -57,6 +59,14 @@ export default function KadroPage() {
       setLastWeekPoints(map);
     });
   }, []);
+
+  // Kullanıcının son bitmiş haftadaki gerçek (çarpanlı) toplam puanı
+  useEffect(() => {
+    if (!session || !lastWeekGameweekId) return;
+    fetchGameweekResult(session.user.id, lastWeekGameweekId).then(({ total }) => {
+      setLastWeekTotal(total);
+    });
+  }, [session, lastWeekGameweekId]);
 
   // Kaydedilmiş kadroyu bir kez geri yükle (oyuncular ve hafta bilgisi hazır olunca)
   useEffect(() => {
@@ -224,6 +234,15 @@ export default function KadroPage() {
         <p className="text-center text-[11px] text-foreground/50">
           Oyuncu rozetlerindeki puanlar son hafta ({lastWeekName}) sonuçlarını gösterir
         </p>
+      )}
+
+      {lastWeekTotal !== null && (
+        <div className="rounded-lg border border-gold/40 bg-gold/10 px-4 py-3 text-center">
+          <p className="text-xs text-foreground/60">Bu haftaki toplam puanın</p>
+          <p className="font-display text-2xl font-semibold text-charcoal">
+            {lastWeekTotal}
+          </p>
+        </div>
       )}
 
       {playersLoading || !squadLoaded ? (
