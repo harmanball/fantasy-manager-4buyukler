@@ -8,6 +8,7 @@ import { fetchPlayers, Player, Position } from "@/lib/players";
 import { fetchOpenGameweek, fetchUserSquad, saveSquad, buildSquadFromPicks } from "@/lib/squad";
 import { fetchPlayerPointsMap, fetchLastFinishedGameweekPoints } from "@/lib/playerPoints";
 import { fetchGameweekResult } from "@/lib/gameweekResult";
+import { fetchUserOverallRank, fetchUserGameweekRank } from "@/lib/leaderboard";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 import { FormationPicker } from "@/components/FormationPicker";
@@ -27,6 +28,9 @@ export default function KadroPage() {
   const [lastWeekName, setLastWeekName] = useState<string | null>(null);
   const [lastWeekGameweekId, setLastWeekGameweekId] = useState<number | null>(null);
   const [lastWeekTotal, setLastWeekTotal] = useState<number | null>(null);
+  const [overallRank, setOverallRank] = useState<number | null>(null);
+  const [overallTotal, setOverallTotal] = useState<number | null>(null);
+  const [weeklyRank, setWeeklyRank] = useState<number | null>(null);
   const [gameweek, setGameweek] = useState<{ id: number; name: string | null } | null>(null);
 
   const [formation, setFormation] = useState<Formation>("4-3-3");
@@ -65,6 +69,25 @@ export default function KadroPage() {
     if (!session || !lastWeekGameweekId) return;
     fetchGameweekResult(session.user.id, lastWeekGameweekId).then(({ total }) => {
       setLastWeekTotal(total);
+    });
+  }, [session, lastWeekGameweekId]);
+
+  // Genel lig sıralaman ve genel toplam puanın
+  useEffect(() => {
+    if (!session) return;
+    fetchUserOverallRank(session.user.id).then((r) => {
+      if (r) {
+        setOverallRank(r.rank);
+        setOverallTotal(r.total);
+      }
+    });
+  }, [session]);
+
+  // Bu haftaki lig sıralaman
+  useEffect(() => {
+    if (!session || !lastWeekGameweekId) return;
+    fetchUserGameweekRank(session.user.id, lastWeekGameweekId).then((r) => {
+      if (r) setWeeklyRank(r.rank);
     });
   }, [session, lastWeekGameweekId]);
 
@@ -236,12 +259,32 @@ export default function KadroPage() {
         </p>
       )}
 
-      {lastWeekTotal !== null && (
-        <div className="rounded-lg border border-gold/40 bg-gold/10 px-4 py-3 text-center">
-          <p className="text-xs text-foreground/60">Bu haftaki toplam puanın</p>
-          <p className="font-display text-2xl font-semibold text-charcoal">
-            {lastWeekTotal}
-          </p>
+      {(overallRank !== null || lastWeekTotal !== null) && (
+        <div className="flex flex-col divide-y divide-gold/25 rounded-lg border border-gold/40 bg-gold/10 px-4 py-1">
+          <div className="flex items-center justify-between py-2 text-sm">
+            <span className="text-foreground/60">Genel Lig Sıralaman:</span>
+            <span className="font-display font-semibold text-charcoal">
+              {overallRank !== null ? `#${overallRank}` : "—"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-2 text-sm">
+            <span className="text-foreground/60">Bu Haftaki Lig Sıralaman:</span>
+            <span className="font-display font-semibold text-charcoal">
+              {weeklyRank !== null ? `#${weeklyRank}` : "—"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-2 text-sm">
+            <span className="text-foreground/60">Genel Toplam Puanın:</span>
+            <span className="font-display font-semibold text-charcoal">
+              {overallTotal ?? "—"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-2 text-sm">
+            <span className="text-foreground/60">Bu Haftaki Toplam Puanın:</span>
+            <span className="font-display font-semibold text-charcoal">
+              {lastWeekTotal ?? "—"}
+            </span>
+          </div>
         </div>
       )}
 
