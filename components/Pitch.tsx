@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { Formation, FORMATION_LAYOUT } from "@/lib/teams";
 import { Player, Position } from "@/lib/players";
 import { TeamBadge } from "./TeamBadge";
-import { PlayerPointsModal } from "./PlayerPointsModal";
 import { positionLabel } from "@/lib/positionLabels";
 
 export interface SquadSlot {
@@ -57,23 +55,22 @@ function layoutSlots(slots: SquadSlot[]): PositionedSlot[] {
   return positioned;
 }
 
+// Not: dolu bir slota (avatara ya da puan rozetine) dokunmak AYNI eylemi
+// tetikler — onSlotTap(slot) — ve üst bileşen (kadro/takım sayfası) tek,
+// birleşik bir pop-up açar. Puan rozeti artık ayrı bir tıklama alanı değil,
+// sadece görsel bir gösterge.
 export function Pitch({
   slots,
   captainId,
   lastWeekPoints,
-  lastWeekGameweekId,
   onSlotTap,
 }: {
   slots: SquadSlot[];
   captainId: string | null;
   lastWeekPoints?: Record<string, number>;
-  lastWeekGameweekId?: number | null;
   onSlotTap: (slot: SquadSlot) => void;
 }) {
   const positioned = layoutSlots(slots);
-  const [pointsModalPlayerId, setPointsModalPlayerId] = useState<string | null>(
-    null
-  );
 
   return (
     <div className="mx-auto w-full max-w-[360px] sm:max-w-[440px]">
@@ -113,7 +110,7 @@ export function Pitch({
             style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
             aria-label={
               slot.player
-                ? `${slot.player.name}, ${positionLabel(slot.position)} — düzenle`
+                ? `${slot.player.name}, ${positionLabel(slot.position)} — detay ve düzenle`
                 : `Boş ${positionLabel(slot.position)} slotu — oyuncu ekle`
             }
           >
@@ -137,15 +134,8 @@ export function Pitch({
                   {slot.player.team}
                 </span>
                 {lastWeekPoints?.[slot.player.id] !== undefined && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (lastWeekGameweekId) {
-                        setPointsModalPlayerId(slot.player!.id);
-                      }
-                    }}
-                    className={`cursor-pointer rounded px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ring-transparent transition-all hover:scale-110 hover:ring-ivory/70 ${
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
                       lastWeekPoints[slot.player.id] > 0
                         ? "bg-green-500/90 text-ivory"
                         : lastWeekPoints[slot.player.id] < 0
@@ -155,21 +145,13 @@ export function Pitch({
                   >
                     {lastWeekPoints[slot.player.id] > 0 ? "+" : ""}
                     {lastWeekPoints[slot.player.id]}
-                  </button>
+                  </span>
                 )}
               </span>
             )}
           </div>
         ))}
       </div>
-
-      {pointsModalPlayerId && lastWeekGameweekId && (
-        <PlayerPointsModal
-          playerId={pointsModalPlayerId}
-          gameweekId={lastWeekGameweekId}
-          onClose={() => setPointsModalPlayerId(null)}
-        />
-      )}
     </div>
   );
 }
