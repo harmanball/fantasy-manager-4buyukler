@@ -48,3 +48,24 @@ export async function fetchGameweekLeaderboard(
     };
   });
 }
+
+// Kadro ekranındaki "Genel Lig Sıralaman" / "Genel Toplam Puanın" için
+export async function fetchUserOverallRank(
+  userId: string
+): Promise<{ rank: number; total: number } | null> {
+  const rows = await fetchLeaderboard();
+  const idx = rows.findIndex((r) => r.user_id === userId);
+  if (idx === -1) return null;
+  return { rank: idx + 1, total: rows[idx].total_points };
+}
+
+// Kadro ekranındaki "Bu Haftaki Lig Sıralaman" için
+export async function fetchUserGameweekRank(
+  userId: string,
+  gameweekId: number
+): Promise<{ rank: number; total: number } | null> {
+  const rows = await fetchGameweekLeaderboard(gameweekId);
+  const idx = rows.findIndex((r) => r.user_id === userId);
+  if (idx === -1) return null;
+  return { rank: idx + 1, total: rows[idx].total_points };
+}
