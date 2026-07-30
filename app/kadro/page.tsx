@@ -33,6 +33,7 @@ export default function KadroPage() {
   const [overallTotal, setOverallTotal] = useState<number | null>(null);
   const [weeklyRank, setWeeklyRank] = useState<number | null>(null);
   const [gameweek, setGameweek] = useState<{ id: number; name: string | null } | null>(null);
+  const [gameweekLoading, setGameweekLoading] = useState(true);
 
   const [formation, setFormation] = useState<Formation>("4-3-3");
   const [slots, setSlots] = useState<SquadSlot[]>(() => buildSlots("4-3-3"));
@@ -56,7 +57,10 @@ export default function KadroPage() {
       setPlayers(p);
       setPlayersLoading(false);
     });
-    fetchOpenGameweek().then(setGameweek);
+    fetchOpenGameweek().then((gw) => {
+      setGameweek(gw);
+      setGameweekLoading(false);
+    });
     fetchPlayerPointsMap().then(setPointsMap);
     fetchLastFinishedGameweekPoints().then(({ gameweekId, gameweekName, map }) => {
       setLastWeekGameweekId(gameweekId);
@@ -107,7 +111,7 @@ export default function KadroPage() {
 
   // Kaydedilmiş kadroyu bir kez geri yükle (oyuncular ve hafta bilgisi hazır olunca)
   useEffect(() => {
-    if (playersLoading || squadLoaded || !session) return;
+    if (playersLoading || gameweekLoading || squadLoaded || !session) return;
 
     async function loadSavedSquad() {
       if (!gameweek) {
@@ -125,7 +129,7 @@ export default function KadroPage() {
     }
 
     loadSavedSquad();
-  }, [playersLoading, squadLoaded, session, gameweek, players]);
+  }, [playersLoading, gameweekLoading, squadLoaded, session, gameweek, players]);
 
   function changeFormation(f: Formation) {
     const newSlots = buildSlots(f);
