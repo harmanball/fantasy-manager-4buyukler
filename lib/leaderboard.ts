@@ -19,3 +19,32 @@ export async function fetchLeaderboard(): Promise<LeaderboardRow[]> {
   }
   return data ?? [];
 }
+
+// Sıralama sayfasındaki hafta filtresi için: tek bir haftanın sıralaması
+export async function fetchGameweekLeaderboard(
+  gameweekId: number
+): Promise<LeaderboardRow[]> {
+  const { data, error } = await supabase
+    .from("user_gameweek_scores")
+    .select("user_id, points, profiles(username, squad_name)")
+    .eq("gameweek_id", gameweekId)
+    .order("points", { ascending: false });
+
+  if (error) {
+    console.error("Haftalık sıralama çekilemedi:", error.message);
+    return [];
+  }
+
+  return (data ?? []).map((row) => {
+    const profileRel = row.profiles as unknown as
+      | { username: string; squad_name: string | null }
+      | { username: string; squad_name: string | null }[];
+    const profile = Array.isArray(profileRel) ? profileRel[0] : profileRel;
+    return {
+      user_id: row.user_id as string,
+      username: profile?.username ?? "?",
+      squad_name: profile?.squad_name ?? null,
+      total_points: row.points as number,
+    };
+  });
+}
