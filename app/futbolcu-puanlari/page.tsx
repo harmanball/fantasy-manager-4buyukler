@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   fetchPlayerPointsBreakdown,
+  fetchGameweekPlayersBreakdown,
   PlayerPointsBreakdown,
 } from "@/lib/playerPoints";
+import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
 
 type SortableKey = keyof Pick<
   PlayerPointsBreakdown,
@@ -40,17 +42,34 @@ const COLS: { key: SortableKey; label: string; align: "left" | "right" }[] = [
 
 export default function FutbolcuPuanlariPage() {
   const [rows, setRows] = useState<PlayerPointsBreakdown[]>([]);
+  const [weeks, setWeeks] = useState<FinishedGameweek[]>([]);
+  const [selectedFilter, setSelectedFilter] = useState<"total" | number>("total");
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortableKey>("toplam_puan");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
-    fetchPlayerPointsBreakdown().then((r) => {
+    fetchFinishedGameweeks().then(setWeeks);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      const r =
+        selectedFilter === "total"
+          ? await fetchPlayerPointsBreakdown()
+          : await fetchGameweekPlayersBreakdown(selectedFilter);
+      if (cancelled) return;
       setRows(r);
       setLoading(false);
-    });
-  }, []);
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedFilter]);
 
   function handleSort(key: SortableKey) {
     if (key === sortKey) {
@@ -95,6 +114,21 @@ export default function FutbolcuPuanlariPage() {
           Ana sayfa
         </Link>
       </header>
+
+      <select
+        value={selectedFilter}
+        onChange={(e) =>
+          setSelectedFilter(e.target.value === "total" ? "total" : Number(e.target.value))
+        }
+        className="h-10 w-full rounded-lg border border-charcoal/15 bg-white px-3 text-sm"
+      >
+        <option value="total">Genel Toplam</option>
+        {weeks.map((w) => (
+          <option key={w.id} value={w.id}>
+            {w.name || `${w.week_number}. Hafta`}
+          </option>
+        ))}
+      </select>
 
       <input
         type="text"
