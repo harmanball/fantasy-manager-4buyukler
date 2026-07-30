@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 export default function GirisPage() {
@@ -57,6 +58,12 @@ export default function GirisPage() {
   if (checkEmail) {
     return (
       <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-10">
+        <Link
+          href="/"
+          className="mb-4 text-sm text-foreground/50 underline underline-offset-2"
+        >
+          ← Ana sayfa
+        </Link>
         <div className="rounded-xl border border-charcoal/10 bg-white p-6 text-center">
           <p className="font-display text-lg font-medium">E-postanı kontrol et</p>
           <p className="mt-2 text-sm text-foreground/60">
@@ -70,6 +77,12 @@ export default function GirisPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-10">
+      <Link
+        href="/"
+        className="mb-4 text-sm text-foreground/50 underline underline-offset-2"
+      >
+        ← Ana sayfa
+      </Link>
       <h1 className="font-display mb-1 text-xl font-semibold">
         {mode === "giris" ? "Giriş yap" : "Hesap oluştur"}
       </h1>
