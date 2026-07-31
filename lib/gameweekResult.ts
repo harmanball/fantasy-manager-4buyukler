@@ -100,3 +100,30 @@ export async function fetchGameweekResult(
   const total = rows.reduce((sum, r) => sum + r.finalPoints, 0);
   return { rows, total };
 }
+
+export interface WeeklyPoint {
+  weekNumber: number;
+  points: number;
+}
+
+// Puanlarım sayfasındaki performans grafiği için: kullanıcının bitmiş
+// haftalardaki gerçek (çarpanlı) toplam puanlarının zaman serisi.
+export async function fetchUserWeeklySeries(userId: string): Promise<WeeklyPoint[]> {
+  const { data, error } = await supabase
+    .from("user_gameweek_scores")
+    .select("points, gameweeks(week_number)")
+    .eq("user_id", userId);
+
+  if (error || !data) return [];
+
+  const series = data.map((row) => {
+    const gwRel = row.gameweeks as unknown as
+      | { week_number: number }
+      | { week_number: number }[];
+    const gw = Array.isArray(gwRel) ? gwRel[0] : gwRel;
+    return { weekNumber: gw?.week_number ?? 0, points: row.points as number };
+  });
+
+  series.sort((a, b) => a.weekNumber - b.weekNumber);
+  return series;
+}
