@@ -10,6 +10,7 @@ import {
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
 import { useSession } from "@/lib/useSession";
 import { AppHeader } from "@/components/AppHeader";
+import { SkeletonRow } from "@/components/Skeleton";
 
 export default function SiralamaPage() {
   const { session } = useSession();
@@ -65,9 +66,13 @@ export default function SiralamaPage() {
       </select>
 
       {loading ? (
-        <p className="py-10 text-center text-sm text-foreground/50">
-          Yükleniyor…
-        </p>
+        <div className="flex flex-col gap-1.5">
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+        </div>
       ) : rows.length === 0 ? (
         <p className="rounded-lg border border-charcoal/10 bg-white px-4 py-6 text-center text-sm text-foreground/60">
           Henüz kimse puan almadı — ilk hafta tamamlanınca sıralama burada
