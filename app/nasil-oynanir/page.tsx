@@ -1,4 +1,5 @@
 import { AppHeader } from "@/components/AppHeader";
+import { PageHeader } from "@/components/PageHeader";
 
 function Section({
   title,
@@ -46,7 +47,7 @@ export default function NasilOynanirPage() {
     <>
       <AppHeader />
       <main className="mx-auto flex max-w-2xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10">
-        <h1 className="font-display text-xl font-semibold sm:text-2xl">Nasıl Oynanır?</h1>
+        <PageHeader icon="info" title="Nasıl Oynanır?" />
 
         <Section title="Kadro Kurma">
         <Bul>
