@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
+import { shareText, getSiteUrl } from "@/lib/share";
 
 // Puanlarım ve Lig Sıralaması hem üst barda hem hamburger menüsünde yer alır.
 const NAV_ITEMS = [
@@ -13,6 +14,8 @@ const NAV_ITEMS = [
   { href: "/puanlarim", label: "Puanlarım" },
   { href: "/siralama", label: "Lig Sıralaması" },
   { href: "/futbolcu-puanlari", label: "Futbolcu Puanları" },
+  { href: "/haftanin-takimi", label: "Haftanın Takımı" },
+  { href: "/profil", label: "Profil" },
 ];
 
 export function AppHeader() {
@@ -46,6 +49,13 @@ export function AppHeader() {
     await supabase.auth.signOut();
     setMenuOpen(false);
     router.push("/giris");
+  }
+
+  function handleInvite() {
+    setMenuOpen(false);
+    shareText(
+      `Fantasy Manager: 4 Büyükler'de kadromu kurdum, gel sen de katıl! ${getSiteUrl()}`
+    );
   }
 
   return (
@@ -122,6 +132,12 @@ export function AppHeader() {
                 {item.label}
               </Link>
             ))}
+            <button
+              onClick={handleInvite}
+              className="block w-full px-4 py-2.5 text-left text-sm text-gold hover:bg-charcoal/5"
+            >
+              Arkadaşlarını davet et
+            </button>
             {session && (
               <button
                 onClick={handleLogout}
