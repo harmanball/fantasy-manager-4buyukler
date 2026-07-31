@@ -17,6 +17,8 @@ import { StatCards } from "@/components/StatCards";
 import { PlayerSheet } from "@/components/PlayerSheet";
 import { PlayerPointsModal } from "@/components/PlayerPointsModal";
 import { CaptainPickerSheet } from "@/components/CaptainPickerSheet";
+import { Skeleton } from "@/components/Skeleton";
+import { shareText, getSiteUrl } from "@/lib/share";
 
 export default function KadroPage() {
   const { session, loading: sessionLoading } = useSession();
@@ -278,6 +280,19 @@ export default function KadroPage() {
         </div>
       )}
 
+      {lastWeekTotal !== null && (
+        <button
+          onClick={() =>
+            shareText(
+              `Fantasy Manager: 4 Büyükler'de ${lastWeekName ?? "bu hafta"} ${lastWeekTotal} puan aldım! ${getSiteUrl()}`
+            )
+          }
+          className="rounded-lg border border-charcoal/15 py-2.5 text-sm font-medium text-foreground hover:bg-charcoal/5"
+        >
+          Sonucunu paylaş
+        </button>
+      )}
+
       {!gameweek && !playersLoading && (
         <p className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-charcoal">
           Henüz açık bir hafta yok — kadro kaydı yakında açılacak.
@@ -293,9 +308,7 @@ export default function KadroPage() {
       )}
 
       {playersLoading || !squadLoaded ? (
-        <div className="mx-auto flex aspect-[3/4] w-full max-w-[360px] items-center justify-center rounded-lg bg-pitch sm:max-w-[440px]">
-          <p className="text-sm text-ivory/60">Kadron yükleniyor…</p>
-        </div>
+        <Skeleton className="mx-auto aspect-[3/4] w-full max-w-[360px] sm:max-w-[440px]" />
       ) : (
         <Pitch
           slots={slots}
