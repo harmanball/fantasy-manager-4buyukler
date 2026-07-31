@@ -13,6 +13,7 @@ import {
 } from "@/lib/gameweekResult";
 import { PlayerPointsModal } from "@/components/PlayerPointsModal";
 import { AppHeader } from "@/components/AppHeader";
+import { PageHeader } from "@/components/PageHeader";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { SkeletonRow } from "@/components/Skeleton";
 import { positionLabel } from "@/lib/positionLabels";
@@ -81,7 +82,7 @@ export default function PuanlarimPage() {
     <>
       <AppHeader />
       <main className="mx-auto flex max-w-2xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
-        <h1 className="font-display text-lg font-semibold sm:text-xl">Puanlarım</h1>
+        <PageHeader icon="chart" title="Puanlarım" />
 
       {weeks.length === 0 ? (
         <p className="rounded-lg border border-charcoal/10 bg-white px-4 py-6 text-center text-sm text-foreground/60">
