@@ -10,7 +10,9 @@ import {
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
 import { useSession } from "@/lib/useSession";
 import { AppHeader } from "@/components/AppHeader";
+import { PageHeader } from "@/components/PageHeader";
 import { SkeletonRow } from "@/components/Skeleton";
+import { Podium } from "@/components/Podium";
 
 export default function SiralamaPage() {
   const { session } = useSession();
@@ -48,7 +50,7 @@ export default function SiralamaPage() {
     <>
       <AppHeader />
       <main className="mx-auto flex max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
-        <h1 className="font-display text-lg font-semibold sm:text-xl">Lig Sıralaması</h1>
+        <PageHeader icon="trophy" title="Lig Sıralaması" />
 
       <select
         value={selectedFilter}
@@ -79,51 +81,55 @@ export default function SiralamaPage() {
           görünecek.
         </p>
       ) : (
-        <ol className="flex flex-col gap-1.5">
-          {rows.map((row, i) => {
-            const isMe = session?.user.id === row.user_id;
-            return (
-              <li key={row.user_id}>
-                <Link
-                  href={isMe ? "/kadro" : `/takim/${row.user_id}`}
-                  className={`flex items-center justify-between rounded-lg border px-3 py-2.5 transition-colors active:bg-charcoal/5 ${
-                    isMe
-                      ? "border-gold bg-gold/10"
-                      : "border-charcoal/10 bg-white"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex w-9 shrink-0 items-center justify-end gap-1 text-right text-sm font-medium text-foreground/50">
-                      {i + 1}
-                      {row.rankChange === "up" && (
-                        <span className="text-green-600" aria-label="yükseldi">▲</span>
-                      )}
-                      {row.rankChange === "down" && (
-                        <span className="text-red-600" aria-label="düştü">▼</span>
-                      )}
-                      {(row.rankChange === "same" || row.rankChange === null) && (
-                        <span className="text-foreground/25" aria-label="değişiklik yok">–</span>
-                      )}
-                    </span>
-                    <div>
-                      <p className="text-sm font-medium leading-tight">
-                        {row.squad_name || row.username}
-                        {isMe && (
-                          <span className="ml-1.5 text-xs font-normal text-gold">
-                            (sen)
-                          </span>
+        <>
+          <Podium rows={rows} currentUserId={session?.user.id} />
+          <ol className="flex flex-col gap-1.5">
+            {(rows.length >= 3 ? rows.slice(3) : rows).map((row, idx) => {
+              const i = rows.length >= 3 ? idx + 3 : idx;
+              const isMe = session?.user.id === row.user_id;
+              return (
+                <li key={row.user_id}>
+                  <Link
+                    href={isMe ? "/kadro" : `/takim/${row.user_id}`}
+                    className={`flex items-center justify-between rounded-lg border px-3 py-2.5 transition-colors active:bg-charcoal/5 ${
+                      isMe
+                        ? "border-gold bg-gold/10"
+                        : "border-charcoal/10 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex w-9 shrink-0 items-center justify-end gap-1 text-right text-sm font-medium text-foreground/50">
+                        {i + 1}
+                        {row.rankChange === "up" && (
+                          <span className="text-green-600" aria-label="yükseldi">▲</span>
                         )}
-                      </p>
+                        {row.rankChange === "down" && (
+                          <span className="text-red-600" aria-label="düştü">▼</span>
+                        )}
+                        {(row.rankChange === "same" || row.rankChange === null) && (
+                          <span className="text-foreground/25" aria-label="değişiklik yok">–</span>
+                        )}
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium leading-tight">
+                          {row.squad_name || row.username}
+                          {isMe && (
+                            <span className="ml-1.5 text-xs font-normal text-gold">
+                              (sen)
+                            </span>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <span className="shrink-0 font-display text-base font-semibold">
-                    {row.total_points}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ol>
+                    <span className="shrink-0 font-display text-base font-semibold">
+                      {row.total_points}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        </>
       )}
       </main>
     </>
