@@ -8,6 +8,7 @@ import {
 } from "@/lib/playerPoints";
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
 import { AppHeader } from "@/components/AppHeader";
+import { PageHeader } from "@/components/PageHeader";
 import { Skeleton } from "@/components/Skeleton";
 
 type SortableKey = keyof Pick<
@@ -106,7 +107,7 @@ export default function FutbolcuPuanlariPage() {
     <>
       <AppHeader />
       <main className="mx-auto flex max-w-4xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
-        <h1 className="font-display text-lg font-semibold sm:text-xl">Futbolcu Puanları</h1>
+        <PageHeader icon="users" title="Futbolcu Puanları" />
 
       <select
         value={selectedFilter}
