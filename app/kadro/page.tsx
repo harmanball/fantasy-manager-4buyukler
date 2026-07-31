@@ -243,11 +243,10 @@ export default function KadroPage() {
     <>
       <AppHeader />
       <main className="mx-auto flex max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
-        <h1 className="font-display text-lg font-semibold sm:text-xl">Kadro</h1>
 
       {squadName && (
         <h2 className="text-center font-display text-2xl font-bold text-charcoal sm:text-3xl">
-          {squadName}
+          {squadName} Takım Kadro
         </h2>
       )}
 
