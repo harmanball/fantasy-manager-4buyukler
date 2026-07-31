@@ -6,11 +6,15 @@ import { useSession } from "@/lib/useSession";
 import {
   fetchFinishedGameweeks,
   fetchGameweekResult,
+  fetchUserWeeklySeries,
   FinishedGameweek,
   GameweekResultRow,
+  WeeklyPoint,
 } from "@/lib/gameweekResult";
 import { PlayerPointsModal } from "@/components/PlayerPointsModal";
 import { AppHeader } from "@/components/AppHeader";
+import { PerformanceChart } from "@/components/PerformanceChart";
+import { SkeletonRow } from "@/components/Skeleton";
 import { positionLabel } from "@/lib/positionLabels";
 import { TeamCode } from "@/lib/teams";
 
@@ -26,6 +30,12 @@ export default function PuanlarimPage() {
   const [selectedPlayer, setSelectedPlayer] = useState<GameweekResultRow | null>(
     null
   );
+  const [weeklySeries, setWeeklySeries] = useState<WeeklyPoint[]>([]);
+
+  useEffect(() => {
+    if (!session) return;
+    fetchUserWeeklySeries(session.user.id).then(setWeeklySeries);
+  }, [session]);
 
   useEffect(() => {
     if (!sessionLoading && !session) router.push("/giris");
@@ -91,6 +101,8 @@ export default function PuanlarimPage() {
             ))}
           </select>
 
+          <PerformanceChart data={weeklySeries} />
+
           <div className="rounded-lg border border-gold/40 bg-gold/10 px-4 py-3 text-center">
             <p className="text-xs text-foreground/60">Bu haftaki toplam puanın</p>
             <p className="font-display text-2xl font-semibold text-charcoal">
@@ -99,9 +111,12 @@ export default function PuanlarimPage() {
           </div>
 
           {loading ? (
-            <p className="py-10 text-center text-sm text-foreground/50">
-              Yükleniyor…
-            </p>
+            <div className="flex flex-col gap-1.5">
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+            </div>
           ) : rows.length === 0 ? (
             <p className="rounded-lg border border-charcoal/10 bg-white px-4 py-6 text-center text-sm text-foreground/60">
               Bu hafta için kayıtlı bir kadron bulunamadı.
