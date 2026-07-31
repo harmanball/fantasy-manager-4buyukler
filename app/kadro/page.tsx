@@ -298,6 +298,36 @@ export default function KadroPage() {
         </p>
       )}
 
+      {squadLoaded && filledCount === 0 && (
+        <div className="relative overflow-hidden rounded-lg bg-pitch px-5 py-7 text-center">
+          <svg
+            viewBox="0 0 300 160"
+            className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.15]"
+            aria-hidden="true"
+          >
+            <circle cx="150" cy="80" r="40" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+          </svg>
+          <div className="relative">
+            <svg width="34" height="34" viewBox="0 0 24 24" className="mx-auto text-gold" aria-hidden="true">
+              <path
+                d="M8 3 L12 5 L16 3 L20 6 L18 9 L16 8 L16 20 L8 20 L8 8 L6 9 L4 6 Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <p className="mt-2 font-display text-base font-semibold text-ivory sm:text-lg">
+              Henüz kadron boş
+            </p>
+            <p className="mx-auto mt-1.5 max-w-[220px] text-xs leading-relaxed text-ivory/65">
+              11 oyuncunu seç, kaptanını belirle, ilk haftana hazırlan.
+            </p>
+          </div>
+        </div>
+      )}
+
       <FormationPicker value={formation} onChange={changeFormation} />
 
       {lastWeekName && (
