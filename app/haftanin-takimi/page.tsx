@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
+import { PageHeader } from "@/components/PageHeader";
 import { Pitch, SquadSlot, buildSlots } from "@/components/Pitch";
 import { PlayerPointsModal } from "@/components/PlayerPointsModal";
 import { Skeleton } from "@/components/Skeleton";
@@ -61,7 +62,7 @@ export default function HaftaninTakimiPage() {
     <>
       <AppHeader />
       <main className="mx-auto flex max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
-        <h1 className="font-display text-lg font-semibold sm:text-xl">Haftanın Takımı</h1>
+        <PageHeader icon="star" title="Haftanın Takımı" />
 
         {weeks.length === 0 && !loading ? (
           <p className="rounded-lg border border-charcoal/10 bg-white px-4 py-6 text-center text-sm text-foreground/60">
