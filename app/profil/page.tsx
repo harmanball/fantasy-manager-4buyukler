@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 import { AppHeader } from "@/components/AppHeader";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function ProfilPage() {
   const { session, loading: sessionLoading } = useSession();
@@ -104,7 +105,7 @@ export default function ProfilPage() {
     <>
       <AppHeader />
       <main className="mx-auto flex max-w-md flex-col gap-6 px-3 py-4 sm:px-6 sm:py-6">
-        <h1 className="font-display text-lg font-semibold sm:text-xl">Profil</h1>
+        <PageHeader icon="user" title="Profil" />
 
         <form
           onSubmit={handleSquadNameSave}
