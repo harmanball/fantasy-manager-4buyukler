@@ -8,6 +8,7 @@ import {
 } from "@/lib/playerPoints";
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
 import { AppHeader } from "@/components/AppHeader";
+import { Skeleton } from "@/components/Skeleton";
 
 type SortableKey = keyof Pick<
   PlayerPointsBreakdown,
@@ -145,9 +146,13 @@ export default function FutbolcuPuanlariPage() {
       </p>
 
       {loading ? (
-        <p className="py-10 text-center text-sm text-foreground/50">
-          Yükleniyor…
-        </p>
+        <div className="flex flex-col gap-1.5">
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+        </div>
       ) : sorted.length === 0 ? (
         <p className="rounded-lg border border-charcoal/10 bg-white px-4 py-6 text-center text-sm text-foreground/60">
           Henüz istatistik girilmedi — ilk hafta işlenince puanlar burada
