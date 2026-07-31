@@ -1,7 +1,16 @@
 import { WeeklyPoint } from "@/lib/gameweekResult";
 
 export function PerformanceChart({ data }: { data: WeeklyPoint[] }) {
-  if (data.length < 2) return null;
+  if (data.length < 2) {
+    return (
+      <div className="rounded-lg border border-charcoal/10 bg-white p-4 text-center">
+        <p className="font-display mb-1 text-sm font-semibold">Haftalık formun</p>
+        <p className="text-xs text-foreground/50">
+          En az 2 hafta tamamlanınca formun burada bir grafikle görünecek.
+        </p>
+      </div>
+    );
+  }
 
   const width = 320;
   const height = 130;
