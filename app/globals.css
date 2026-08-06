@@ -35,7 +35,19 @@
 }
 
 body {
-  background: var(--background);
+  /* harmanball.com'daki gibi, biçilmiş çim şeridi zemin — koyu yeşilin
+     iki tonu dikey şeritler halinde dönüşüyor. Sayfa içeriği (beyaz
+     kartlar) bu zeminin üzerinde yüzüyor. */
+  background-color: var(--pitch);
+  background-image: repeating-linear-gradient(
+    90deg,
+    #0f3d2e 0px,
+    #0f3d2e 42px,
+    #134634 42px,
+    #134634 84px
+  );
+  background-attachment: fixed;
+  min-height: 100dvh;
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
