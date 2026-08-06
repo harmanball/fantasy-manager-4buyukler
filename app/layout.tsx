@@ -18,10 +18,6 @@ export const metadata: Metadata = {
   title: "Fantasy Manager: 4 Büyükler",
   description:
     "Galatasaray, Fenerbahçe, Beşiktaş ve Trabzonspor'dan kadronu kur, kaptanını seç, her hafta yarış.",
-  icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
-  },
 };
 
 export const viewport: Viewport = {
