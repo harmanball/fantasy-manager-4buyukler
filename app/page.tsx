@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 
 export default function Home() {
   return (
@@ -22,13 +21,6 @@ export default function Home() {
         </svg>
 
         <div className="relative flex flex-col items-start">
-          <Image
-            src="/logo.png"
-            alt="Fantasy Manager: 4 Büyükler logosu"
-            width={72}
-            height={72}
-            className="mb-4 h-16 w-16 rounded-xl object-cover sm:h-[72px] sm:w-[72px]"
-          />
           <span className="mb-5 rounded-full border border-gold bg-gold/15 px-3 py-1 text-xs font-medium text-gold">
             harmanball ailesinden — yeni mod
           </span>
