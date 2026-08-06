@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
@@ -78,13 +77,6 @@ export function AppHeader() {
               />
             </svg>
           </button>
-          <Image
-            src="/logo.png"
-            alt="Fantasy Manager: 4 Büyükler logosu"
-            width={36}
-            height={36}
-            className="h-9 w-9 shrink-0 rounded-lg object-cover"
-          />
           <span className="hidden font-display text-base font-semibold sm:inline sm:text-xl">
             Fantasy Manager: 4 Büyükler
           </span>
