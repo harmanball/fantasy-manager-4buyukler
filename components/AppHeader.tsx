@@ -6,16 +6,17 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 import { shareText, getSiteUrl } from "@/lib/share";
+import { Icon, IconName } from "./Icon";
 
 // Puanlarım ve Lig Sıralaması hem üst barda hem hamburger menüsünde yer alır.
-const NAV_ITEMS = [
-  { href: "/", label: "Ana sayfa" },
-  { href: "/kadro", label: "Kadro" },
-  { href: "/puanlarim", label: "Puanlarım" },
-  { href: "/siralama", label: "Lig Sıralaması" },
-  { href: "/futbolcu-puanlari", label: "Futbolcu Puanları" },
-  { href: "/haftanin-takimi", label: "Haftanın Takımı" },
-  { href: "/profil", label: "Profil" },
+const NAV_ITEMS: { href: string; label: string; icon: IconName }[] = [
+  { href: "/", label: "Ana sayfa", icon: "home" },
+  { href: "/kadro", label: "Kadro", icon: "shirt" },
+  { href: "/puanlarim", label: "Puanlarım", icon: "chart" },
+  { href: "/siralama", label: "Lig Sıralaması", icon: "trophy" },
+  { href: "/futbolcu-puanlari", label: "Futbolcu Puanları", icon: "users" },
+  { href: "/haftanin-takimi", label: "Haftanın Takımı", icon: "star" },
+  { href: "/profil", label: "Profil", icon: "user" },
 ];
 
 export function AppHeader() {
@@ -127,22 +128,25 @@ export function AppHeader() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className="block px-4 py-2.5 text-sm text-foreground hover:bg-charcoal/5"
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-charcoal/5"
               >
+                <Icon name={item.icon} size={16} className="shrink-0 text-pitch" />
                 {item.label}
               </Link>
             ))}
             <button
               onClick={handleInvite}
-              className="block w-full px-4 py-2.5 text-left text-sm text-gold hover:bg-charcoal/5"
+              className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-gold hover:bg-charcoal/5"
             >
+              <Icon name="share" size={16} className="shrink-0" />
               Arkadaşlarını davet et
             </button>
             {session && (
               <button
                 onClick={handleLogout}
-                className="block w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-charcoal/5"
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-red-600 hover:bg-charcoal/5"
               >
+                <Icon name="logout" size={16} className="shrink-0" />
                 Çıkış
               </button>
             )}
