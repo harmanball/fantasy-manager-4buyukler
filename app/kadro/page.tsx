@@ -19,6 +19,7 @@ import { PlayerPointsModal } from "@/components/PlayerPointsModal";
 import { CaptainPickerSheet } from "@/components/CaptainPickerSheet";
 import { Skeleton } from "@/components/Skeleton";
 import { shareText, getSiteUrl } from "@/lib/share";
+import { isTransferWindowOpen } from "@/lib/transferWindow";
 
 export default function KadroPage() {
   const { session, loading: sessionLoading } = useSession();
@@ -45,6 +46,8 @@ export default function KadroPage() {
   const [activeSlotId, setActiveSlotId] = useState<string | null>(null);
   const [modalPlayer, setModalPlayer] = useState<Player | null>(null);
   const [captainPickerOpen, setCaptainPickerOpen] = useState(false);
+  const [forceEdit, setForceEdit] = useState(false);
+  const showEditor = isTransferWindowOpen() || forceEdit;
 
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -301,7 +304,45 @@ export default function KadroPage() {
         </p>
       )}
 
-      {squadLoaded && filledCount === 0 && (
+      {squadLoaded && !showEditor && (
+        <div className="relative overflow-hidden rounded-lg bg-pitch px-5 py-7 text-center">
+          <svg
+            viewBox="0 0 300 160"
+            className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.15]"
+            aria-hidden="true"
+          >
+            <circle cx="150" cy="80" r="40" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+          </svg>
+          <div className="relative">
+            <svg width="34" height="34" viewBox="0 0 24 24" className="mx-auto text-gold" aria-hidden="true">
+              <path
+                d="M8 3 L12 5 L16 3 L20 6 L18 9 L16 8 L16 20 L8 20 L8 8 L6 9 L4 6 Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <p className="mt-2 font-display text-base font-semibold text-ivory sm:text-lg">
+              Transfer penceresi kapalı
+            </p>
+            <p className="mx-auto mt-1.5 max-w-[260px] text-xs leading-relaxed text-ivory/65">
+              Bu hafta için kadro güncelleme ve transfer zamanı kapalı. Kadro
+              değişiklikleri yalnızca Salı, Çarşamba ve Perşembe günleri
+              yapılabilir.
+            </p>
+            <button
+              onClick={() => setForceEdit(true)}
+              className="mt-4 rounded-lg bg-gold px-5 py-2.5 text-sm font-medium text-charcoal"
+            >
+              Sonraki hafta için düzenle
+            </button>
+          </div>
+        </div>
+      )}
+
+      {squadLoaded && showEditor && filledCount === 0 && (
         <div className="relative overflow-hidden rounded-lg bg-pitch px-5 py-7 text-center">
           <svg
             viewBox="0 0 300 160"
@@ -331,39 +372,43 @@ export default function KadroPage() {
         </div>
       )}
 
-      <FormationPicker value={formation} onChange={changeFormation} />
+      {showEditor && (
+        <>
+          <FormationPicker value={formation} onChange={changeFormation} />
 
-      {lastWeekName && (
-        <p className="text-center text-[11px] text-foreground/50">
-          Oyuncu rozetlerindeki puanlar son hafta ({lastWeekName}) sonuçlarını gösterir
-        </p>
+          {lastWeekName && (
+            <p className="text-center text-[11px] text-foreground/50">
+              Oyuncu rozetlerindeki puanlar son hafta ({lastWeekName}) sonuçlarını gösterir
+            </p>
+          )}
+
+          {playersLoading || !squadLoaded ? (
+            <Skeleton className="mx-auto aspect-[3/4] w-full max-w-[360px] sm:max-w-[440px]" />
+          ) : (
+            <Pitch
+              slots={slots}
+              captainId={captainId}
+              lastWeekPoints={lastWeekPoints}
+              onSlotTap={handleSlotTap}
+            />
+          )}
+
+          <StatCards
+            filledCount={filledCount}
+            totalSlots={SQUAD_SIZE}
+            captainName={captainName}
+            onCaptainClick={() => setCaptainPickerOpen(true)}
+          />
+
+          <button
+            disabled={!canSave || saving}
+            onClick={handleSave}
+            className="rounded-lg bg-pitch py-3 text-sm font-medium text-ivory disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            {saving ? "Kaydediliyor…" : "KADROMU KAYDET VE DONDUR"}
+          </button>
+        </>
       )}
-
-      {playersLoading || !squadLoaded ? (
-        <Skeleton className="mx-auto aspect-[3/4] w-full max-w-[360px] sm:max-w-[440px]" />
-      ) : (
-        <Pitch
-          slots={slots}
-          captainId={captainId}
-          lastWeekPoints={lastWeekPoints}
-          onSlotTap={handleSlotTap}
-        />
-      )}
-
-      <StatCards
-        filledCount={filledCount}
-        totalSlots={SQUAD_SIZE}
-        captainName={captainName}
-        onCaptainClick={() => setCaptainPickerOpen(true)}
-      />
-
-      <button
-        disabled={!canSave || saving}
-        onClick={handleSave}
-        className="rounded-lg bg-pitch py-3 text-sm font-medium text-ivory disabled:cursor-not-allowed disabled:opacity-30"
-      >
-        {saving ? "Kaydediliyor…" : "KADROMU KAYDET VE DONDUR"}
-      </button>
 
       {saveMessage && (
         <div
