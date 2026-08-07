@@ -95,8 +95,10 @@ export default function TakimPage() {
     return (
       <>
         <AppHeader />
-        <main className="mx-auto flex min-h-[calc(100dvh-57px)] max-w-3xl items-center justify-center px-3">
-          <p className="text-sm text-foreground/50">Yükleniyor…</p>
+        <main className="mx-auto flex min-h-[calc(100dvh-57px)] max-w-3xl items-center justify-center px-3 py-4">
+          <p className="rounded-xl bg-background px-6 py-4 text-sm text-foreground/50">
+            Yükleniyor…
+          </p>
         </main>
       </>
     );
@@ -105,7 +107,8 @@ export default function TakimPage() {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto flex max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
+      <main className="mx-auto max-w-3xl px-3 py-4 sm:px-6 sm:py-6">
+      <div className="flex flex-col gap-4 rounded-xl bg-background p-4 sm:p-6">
         <h1 className="font-display text-lg font-semibold sm:text-xl">{ownerName}</h1>
 
       {notFound ? (
@@ -146,6 +149,7 @@ export default function TakimPage() {
           onClose={() => setModalPlayer(null)}
         />
       )}
+      </div>
       </main>
     </>
   );
