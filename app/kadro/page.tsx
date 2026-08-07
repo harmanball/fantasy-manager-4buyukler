@@ -232,8 +232,10 @@ export default function KadroPage() {
     return (
       <>
         <AppHeader />
-        <main className="mx-auto flex min-h-[calc(100dvh-57px)] max-w-3xl items-center justify-center px-3">
-          <p className="text-sm text-foreground/50">Yükleniyor…</p>
+        <main className="mx-auto flex min-h-[calc(100dvh-57px)] max-w-3xl items-center justify-center px-3 py-4">
+          <p className="rounded-xl bg-background px-6 py-4 text-sm text-foreground/50">
+            Yükleniyor…
+          </p>
         </main>
       </>
     );
@@ -242,7 +244,8 @@ export default function KadroPage() {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto flex max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
+      <main className="mx-auto max-w-3xl px-3 py-4 sm:px-6 sm:py-6">
+      <div className="flex flex-col gap-4 rounded-xl bg-background p-4 sm:p-6">
 
       {squadName && (
         <h2 className="text-center font-display text-2xl font-bold text-charcoal sm:text-3xl">
@@ -428,6 +431,7 @@ export default function KadroPage() {
           onClose={() => setCaptainPickerOpen(false)}
         />
       )}
+      </div>
       </main>
     </>
   );
