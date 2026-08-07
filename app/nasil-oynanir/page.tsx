@@ -46,7 +46,8 @@ export default function NasilOynanirPage() {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto flex max-w-2xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10">
+      <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className="flex flex-col gap-8 rounded-xl bg-background p-4 sm:p-6">
         <PageHeader icon="info" title="Nasıl Oynanır?" />
 
         <Section title="Kadro Kurma">
@@ -167,6 +168,7 @@ export default function NasilOynanirPage() {
       <Section title="Sezon">
         <Bul>Oyun tam sezon boyunca sürer: 2026-27 Süper Lig sezonu, 34 hafta.</Bul>
       </Section>
+      </div>
       </main>
     </>
   );
