@@ -19,7 +19,7 @@ import { PlayerPointsModal } from "@/components/PlayerPointsModal";
 import { CaptainPickerSheet } from "@/components/CaptainPickerSheet";
 import { Skeleton } from "@/components/Skeleton";
 import { shareText, getSiteUrl } from "@/lib/share";
-import { isTransferWindowOpen } from "@/lib/transferWindow";
+import { fetchIsTransferWindowOpen } from "@/lib/transferWindow";
 
 export default function KadroPage() {
   const { session, loading: sessionLoading } = useSession();
@@ -47,7 +47,12 @@ export default function KadroPage() {
   const [modalPlayer, setModalPlayer] = useState<Player | null>(null);
   const [captainPickerOpen, setCaptainPickerOpen] = useState(false);
   const [forceEdit, setForceEdit] = useState(false);
-  const showEditor = isTransferWindowOpen() || forceEdit;
+  const [windowOpen, setWindowOpen] = useState<boolean | null>(null);
+  const showEditor = windowOpen === true || forceEdit;
+
+  useEffect(() => {
+    fetchIsTransferWindowOpen().then(setWindowOpen);
+  }, []);
   const [savedPickIds, setSavedPickIds] = useState<Set<string>>(new Set());
 
   const [saving, setSaving] = useState(false);
@@ -263,7 +268,7 @@ export default function KadroPage() {
       <main className="mx-auto max-w-3xl px-3 py-4 sm:px-6 sm:py-6">
       <div className="flex flex-col gap-4 rounded-xl bg-background p-4 sm:p-6">
 
-      {forceEdit && !isTransferWindowOpen() && (
+      {forceEdit && windowOpen === false && (
         <p className="text-center text-xs font-semibold uppercase tracking-wide text-gold">
           Gelecek Hafta Kadrosu
         </p>
@@ -323,7 +328,7 @@ export default function KadroPage() {
         </p>
       )}
 
-      {squadLoaded && !showEditor && (
+      {squadLoaded && windowOpen !== null && !showEditor && (
         <div className="relative overflow-hidden rounded-lg bg-pitch px-5 py-7 text-center">
           <svg
             viewBox="0 0 300 160"
