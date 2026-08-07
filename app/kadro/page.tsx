@@ -362,7 +362,7 @@ export default function KadroPage() {
         onClick={handleSave}
         className="rounded-lg bg-pitch py-3 text-sm font-medium text-ivory disabled:cursor-not-allowed disabled:opacity-30"
       >
-        {saving ? "Kaydediliyor…" : "Kadromu kaydet"}
+        {saving ? "Kaydediliyor…" : "KADROMU KAYDET VE DONDUR"}
       </button>
 
       {saveMessage && (
