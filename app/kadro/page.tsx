@@ -20,6 +20,7 @@ import { CaptainPickerSheet } from "@/components/CaptainPickerSheet";
 import { Skeleton } from "@/components/Skeleton";
 import { shareText, getSiteUrl } from "@/lib/share";
 import { fetchIsTransferWindowOpen } from "@/lib/transferWindow";
+import { fetchSquadFrozen, setSquadFrozen } from "@/lib/squadFreeze";
 
 export default function KadroPage() {
   const { session, loading: sessionLoading } = useSession();
@@ -48,7 +49,9 @@ export default function KadroPage() {
   const [captainPickerOpen, setCaptainPickerOpen] = useState(false);
   const [forceEdit, setForceEdit] = useState(false);
   const [windowOpen, setWindowOpen] = useState<boolean | null>(null);
-  const showEditor = windowOpen === true || forceEdit;
+  const [frozen, setFrozen] = useState(false);
+  const [frozenLoaded, setFrozenLoaded] = useState(false);
+  const showEditor = (windowOpen === true || forceEdit) && !frozen;
 
   useEffect(() => {
     fetchIsTransferWindowOpen().then(setWindowOpen);
@@ -145,6 +148,15 @@ export default function KadroPage() {
     loadSavedSquad();
   }, [playersLoading, gameweekLoading, squadLoaded, session, gameweek, players]);
 
+  // Kullanıcının bu hafta için kadrosunu bilerek dondurup dondurmadığını çek
+  useEffect(() => {
+    if (!session || !gameweek) return;
+    fetchSquadFrozen(session.user.id, gameweek.id).then((f) => {
+      setFrozen(f);
+      setFrozenLoaded(true);
+    });
+  }, [session, gameweek]);
+
   function changeFormation(f: Formation) {
     const newSlots = buildSlots(f);
     const existing = slots.filter((s) => s.player);
@@ -230,16 +242,20 @@ export default function KadroPage() {
     !!gameweek &&
     !!session;
 
-  async function handleSave() {
-    if (!session || !gameweek) return;
-    setSaving(true);
-    setSaveMessage(null);
-    const picks = slots
+  function buildPicks() {
+    return slots
       .filter((s) => s.player)
       .map((s) => ({
         playerId: s.player!.id,
         isCaptain: s.player!.id === captainId,
       }));
+  }
+
+  async function handleSave() {
+    if (!session || !gameweek) return;
+    setSaving(true);
+    setSaveMessage(null);
+    const picks = buildPicks();
     const { error } = await saveSquad({
       userId: session.user.id,
       gameweekId: gameweek.id,
@@ -250,6 +266,34 @@ export default function KadroPage() {
     if (!error) {
       setSavedPickIds(new Set(picks.map((p) => p.playerId)));
     }
+  }
+
+  // Kaydet + bu hafta için kadroyu bilerek dondur — dondurulduktan sonra
+  // transfer penceresi açık olsa bile bu hafta için değişiklik yapılamaz.
+  async function handleFreeze() {
+    if (!session || !gameweek) return;
+    setSaving(true);
+    setSaveMessage(null);
+    const picks = buildPicks();
+    const { error: saveError } = await saveSquad({
+      userId: session.user.id,
+      gameweekId: gameweek.id,
+      picks,
+    });
+    if (saveError) {
+      setSaving(false);
+      setSaveMessage(`Hata: ${saveError}`);
+      return;
+    }
+    const { error: freezeError } = await setSquadFrozen(session.user.id, gameweek.id, true);
+    setSaving(false);
+    if (freezeError) {
+      setSaveMessage(`Hata: ${freezeError}`);
+      return;
+    }
+    setSavedPickIds(new Set(picks.map((p) => p.playerId)));
+    setFrozen(true);
+    setSaveMessage("Kadron kaydedildi ve bu hafta için donduruldu 🔒");
   }
 
   if (sessionLoading || !session) {
@@ -331,7 +375,30 @@ export default function KadroPage() {
         </p>
       )}
 
-      {squadLoaded && windowOpen !== null && !showEditor && (
+      {squadLoaded && frozenLoaded && frozen && (
+        <div className="relative overflow-hidden rounded-lg bg-pitch px-5 py-7 text-center">
+          <svg
+            viewBox="0 0 300 160"
+            className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.15]"
+            aria-hidden="true"
+          >
+            <circle cx="150" cy="80" r="40" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+          </svg>
+          <div className="relative">
+            <span className="text-2xl" aria-hidden="true">🔒</span>
+            <p className="mt-2 font-display text-base font-semibold text-ivory sm:text-lg">
+              Kadron donduruldu
+            </p>
+            <p className="mx-auto mt-1.5 max-w-[260px] text-xs leading-relaxed text-ivory/65">
+              Bu hafta için kadronu kendi isteğinle dondurdun. Bu haftaki
+              kadron artık değiştirilemez — bir sonraki transfer
+              penceresinde tekrar düzenleyebilirsin.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {squadLoaded && windowOpen !== null && frozenLoaded && !frozen && !showEditor && (
         <div className="relative overflow-hidden rounded-lg bg-pitch px-5 py-7 text-center">
           <svg
             viewBox="0 0 300 160"
@@ -428,13 +495,22 @@ export default function KadroPage() {
       />
 
       {showEditor && (
-        <button
-          disabled={!canSave || saving}
-          onClick={handleSave}
-          className="rounded-lg bg-pitch py-3 text-sm font-medium text-ivory disabled:cursor-not-allowed disabled:opacity-30"
-        >
-          {saving ? "Kaydediliyor…" : "KADROMU KAYDET VE DONDUR"}
-        </button>
+        <div className="flex gap-2">
+          <button
+            disabled={!canSave || saving}
+            onClick={handleSave}
+            className="flex-1 rounded-lg bg-pitch py-3 text-sm font-medium text-ivory disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            {saving ? "…" : "KADROMU KAYDET"}
+          </button>
+          <button
+            disabled={!canSave || saving}
+            onClick={handleFreeze}
+            className="flex-1 rounded-lg border-2 border-pitch py-3 text-sm font-medium text-pitch disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            {saving ? "…" : "KADROMU DONDUR 🔒"}
+          </button>
+        </div>
       )}
 
       {saveMessage && (
