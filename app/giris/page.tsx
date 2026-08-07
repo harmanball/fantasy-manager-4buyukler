@@ -58,18 +58,20 @@ export default function GirisPage() {
   if (checkEmail) {
     return (
       <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-10">
-        <Link
-          href="/"
-          className="mb-4 text-sm text-foreground/50 underline underline-offset-2"
-        >
-          ← Ana sayfa
-        </Link>
-        <div className="rounded-xl border border-charcoal/10 bg-white p-6 text-center">
-          <p className="font-display text-lg font-medium">E-postanı kontrol et</p>
-          <p className="mt-2 text-sm text-foreground/60">
-            {email} adresine bir onay linki gönderdik. Onayladıktan sonra giriş
-            yapabilirsin.
-          </p>
+        <div className="rounded-xl bg-background p-4">
+          <Link
+            href="/"
+            className="mb-4 inline-block text-sm text-foreground/50 underline underline-offset-2"
+          >
+            ← Ana sayfa
+          </Link>
+          <div className="rounded-xl border border-charcoal/10 bg-white p-6 text-center">
+            <p className="font-display text-lg font-medium">E-postanı kontrol et</p>
+            <p className="mt-2 text-sm text-foreground/60">
+              {email} adresine bir onay linki gönderdik. Onayladıktan sonra giriş
+              yapabilirsin.
+            </p>
+          </div>
         </div>
       </main>
     );
@@ -77,9 +79,10 @@ export default function GirisPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-10">
+      <div className="rounded-xl bg-background p-4">
       <Link
         href="/"
-        className="mb-4 text-sm text-foreground/50 underline underline-offset-2"
+        className="mb-4 inline-block text-sm text-foreground/50 underline underline-offset-2"
       >
         ← Ana sayfa
       </Link>
@@ -153,6 +156,7 @@ export default function GirisPage() {
           ? "Hesabın yok mu? Kayıt ol"
           : "Zaten hesabın var mı? Giriş yap"}
       </button>
+      </div>
     </main>
   );
 }
