@@ -99,6 +99,12 @@ export default function NasilOynanirPage() {
           isteğe bağlı olarak bir sonraki hafta için düzenleme yapmaya devam
           edebilir.
         </Bul>
+        <Bul>
+          <strong>Kaydet</strong> ile kadron kaydedilir ama pencere açık
+          olduğu sürece tekrar değiştirilebilir. <strong>Dondur</strong> ile
+          kadron o hafta için kendi isteğinle erken kilitlenir — pencere
+          hâlâ açık olsa bile artık değiştirilemez.
+        </Bul>
         <Bul>Yalnızca Süper Lig maçları puanlanır.</Bul>
       </Section>
 
