@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { ADMIN_EMAILS } from "@/lib/adminConfig";
 import { fetchPlayers, Player } from "@/lib/players";
 import { parseStatsBlock, ParsedStatRow } from "@/lib/statsParser";
+import { fetchTransferWindowOverride, TransferWindowOverride } from "@/lib/transferWindow";
 
 interface GameweekRow {
   id: number;
@@ -41,6 +42,9 @@ export default function AdminPage() {
   const [creatingWeek, setCreatingWeek] = useState(false);
   const [createMsg, setCreateMsg] = useState<string | null>(null);
 
+  const [transferOverride, setTransferOverride] = useState<TransferWindowOverride>(0);
+  const [transferSaving, setTransferSaving] = useState(false);
+
   useEffect(() => {
     if (!sessionLoading && !session) router.push("/giris");
   }, [sessionLoading, session, router]);
@@ -56,6 +60,7 @@ export default function AdminPage() {
         if (data && data.length > 0) setSelectedGw(data[0].id);
       });
     fetchPlayers().then(setPlayers);
+    fetchTransferWindowOverride().then(setTransferOverride);
   }, [isAdmin]);
 
   const knownKeys = new Set(
@@ -93,6 +98,22 @@ export default function AdminPage() {
           ? ` — eşleşmeyenler: ${json.unmatched.join(", ")}`
           : "")
     );
+  }
+
+  async function handleSetTransferWindow(value: TransferWindowOverride) {
+    setTransferSaving(true);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    const res = await fetch("/api/admin/set-transfer-window", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ override: value }),
+    });
+    setTransferSaving(false);
+    if (res.ok) setTransferOverride(value);
   }
 
   async function handleCreateWeek(e: React.FormEvent) {
@@ -156,6 +177,50 @@ export default function AdminPage() {
       <h1 className="font-display text-lg font-semibold sm:text-xl">
         Yönetici Paneli
       </h1>
+
+      <section className="rounded-lg border border-charcoal/10 bg-white p-4">
+        <h2 className="mb-1 text-sm font-semibold">Transfer Penceresi</h2>
+        <p className="mb-3 text-xs text-foreground/50">
+          Normalde yalnızca Salı/Çarşamba/Perşembe açıktır. Buradan geçici
+          olarak ezebilirsin (örn. sezon başlamadan önce her gün açık
+          tutmak için).
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleSetTransferWindow(0)}
+            disabled={transferSaving}
+            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium ${
+              transferOverride === 0
+                ? "border-pitch bg-pitch text-ivory"
+                : "border-charcoal/20 text-foreground/70"
+            }`}
+          >
+            Otomatik
+          </button>
+          <button
+            onClick={() => handleSetTransferWindow(1)}
+            disabled={transferSaving}
+            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium ${
+              transferOverride === 1
+                ? "border-green-600 bg-green-600 text-white"
+                : "border-charcoal/20 text-foreground/70"
+            }`}
+          >
+            Zorla Aç
+          </button>
+          <button
+            onClick={() => handleSetTransferWindow(2)}
+            disabled={transferSaving}
+            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium ${
+              transferOverride === 2
+                ? "border-red-600 bg-red-600 text-white"
+                : "border-charcoal/20 text-foreground/70"
+            }`}
+          >
+            Zorla Kapat
+          </button>
+        </div>
+      </section>
 
       <section className="rounded-lg border border-charcoal/10 bg-white p-4">
         <h2 className="mb-3 text-sm font-semibold">Yeni Hafta Oluştur</h2>
