@@ -81,17 +81,23 @@ export default function NasilOynanirPage() {
 
       <Section title="Hafta ve Değişiklik Penceresi">
         <Bul>
-          Kadro, diziliş ve kaptan değişiklikleri yalnızca{" "}
+          Kadro, diziliş, kaptan ve transfer değişiklikleri yalnızca{" "}
           <strong>Salı–Çarşamba–Perşembe</strong> günleri yapılabilir.
+        </Bul>
+        <Bul>
+          Haftada en fazla <strong>5 transfer</strong> yapılabilir. Bu sınır
+          1. haftada uygulanmaz (herkes ilk kez kadro kurar), 2. haftadan
+          itibaren geçerli olur.
         </Bul>
         <Bul>
           Kadro, her durumda o haftanın ilk 4-büyük maçının başlama saatinde
           kesin olarak kilitlenir.
         </Bul>
         <Bul>
-          İlk kayıt istisnası: yeni katılan bir kullanıcı ilk kadrosunu
-          haftanın herhangi bir gününde kurabilir (o haftanın kilidinden önce
-          olmak şartıyla).
+          Pencere dışında (örneğin Cumartesi) siteye giren bir kullanıcı o
+          hafta için değişiklik yapamaz — kadro sayfası bunu bildirir, ama
+          isteğe bağlı olarak bir sonraki hafta için düzenleme yapmaya devam
+          edebilir.
         </Bul>
         <Bul>Yalnızca Süper Lig maçları puanlanır.</Bul>
       </Section>
