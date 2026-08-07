@@ -48,6 +48,7 @@ export default function KadroPage() {
   const [captainPickerOpen, setCaptainPickerOpen] = useState(false);
   const [forceEdit, setForceEdit] = useState(false);
   const showEditor = isTransferWindowOpen() || forceEdit;
+  const [savedPickIds, setSavedPickIds] = useState<Set<string>>(new Set());
 
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -132,6 +133,7 @@ export default function KadroPage() {
         setSlots(result.slots);
         setCaptainId(result.captainId);
       }
+      setSavedPickIds(new Set(saved.map((s) => s.playerId)));
       setSquadLoaded(true);
     }
 
@@ -154,8 +156,13 @@ export default function KadroPage() {
 
   // Dolu bir slota (avatar ya da puan rozeti — ikisi de aynı alan) dokunmak
   // birleşik puan detayı + kaptan/çıkarma penceresini açar. Boş slot ise
-  // oyuncu ekleme panelini açar.
+  // oyuncu ekleme panelini açar. Transfer penceresi kapalıyken (showEditor
+  // false) sadece görüntüleme yapılır, değişiklik yaptırılmaz.
   function handleSlotTap(slot: SquadSlot) {
+    if (!showEditor) {
+      if (slot.player) setModalPlayer(slot.player);
+      return;
+    }
     if (slot.player) {
       setModalPlayer(slot.player);
       setActiveSlotId(slot.id);
@@ -205,6 +212,9 @@ export default function KadroPage() {
   const captainName =
     slots.find((s) => s.player?.id === captainId)?.player?.name ?? null;
 
+  const transfersUsed = squadPlayers.filter((p) => !savedPickIds.has(p.id)).length;
+  const TRANSFER_LIMIT = 4;
+
   const canSave =
     filledCount === SQUAD_SIZE &&
     !Object.values(teamCounts).some((c) => c > TEAM_LIMIT) &&
@@ -229,6 +239,9 @@ export default function KadroPage() {
     });
     setSaving(false);
     setSaveMessage(error ? `Hata: ${error}` : "Kadron kaydedildi ✓");
+    if (!error) {
+      setSavedPickIds(new Set(picks.map((p) => p.playerId)));
+    }
   }
 
   if (sessionLoading || !session) {
@@ -249,6 +262,12 @@ export default function KadroPage() {
       <AppHeader />
       <main className="mx-auto max-w-3xl px-3 py-4 sm:px-6 sm:py-6">
       <div className="flex flex-col gap-4 rounded-xl bg-background p-4 sm:p-6">
+
+      {forceEdit && !isTransferWindowOpen() && (
+        <p className="text-center text-xs font-semibold uppercase tracking-wide text-gold">
+          Gelecek Hafta Kadrosu
+        </p>
+      )}
 
       {squadName && (
         <h2 className="text-center font-display text-2xl font-bold text-charcoal sm:text-3xl">
@@ -372,42 +391,42 @@ export default function KadroPage() {
         </div>
       )}
 
+      <FormationPicker value={formation} onChange={showEditor ? changeFormation : () => {}} />
+
+      {lastWeekName && (
+        <p className="text-center text-[11px] text-foreground/50">
+          Oyuncu rozetlerindeki puanlar son hafta ({lastWeekName}) sonuçlarını gösterir
+        </p>
+      )}
+
+      {playersLoading || !squadLoaded ? (
+        <Skeleton className="mx-auto aspect-[3/4] w-full max-w-[360px] sm:max-w-[440px]" />
+      ) : (
+        <Pitch
+          slots={slots}
+          captainId={captainId}
+          lastWeekPoints={lastWeekPoints}
+          onSlotTap={handleSlotTap}
+        />
+      )}
+
+      <StatCards
+        filledCount={filledCount}
+        totalSlots={SQUAD_SIZE}
+        captainName={captainName}
+        onCaptainClick={showEditor ? () => setCaptainPickerOpen(true) : undefined}
+        transfersUsed={showEditor ? transfersUsed : undefined}
+        transfersMax={showEditor ? TRANSFER_LIMIT : undefined}
+      />
+
       {showEditor && (
-        <>
-          <FormationPicker value={formation} onChange={changeFormation} />
-
-          {lastWeekName && (
-            <p className="text-center text-[11px] text-foreground/50">
-              Oyuncu rozetlerindeki puanlar son hafta ({lastWeekName}) sonuçlarını gösterir
-            </p>
-          )}
-
-          {playersLoading || !squadLoaded ? (
-            <Skeleton className="mx-auto aspect-[3/4] w-full max-w-[360px] sm:max-w-[440px]" />
-          ) : (
-            <Pitch
-              slots={slots}
-              captainId={captainId}
-              lastWeekPoints={lastWeekPoints}
-              onSlotTap={handleSlotTap}
-            />
-          )}
-
-          <StatCards
-            filledCount={filledCount}
-            totalSlots={SQUAD_SIZE}
-            captainName={captainName}
-            onCaptainClick={() => setCaptainPickerOpen(true)}
-          />
-
-          <button
-            disabled={!canSave || saving}
-            onClick={handleSave}
-            className="rounded-lg bg-pitch py-3 text-sm font-medium text-ivory disabled:cursor-not-allowed disabled:opacity-30"
-          >
-            {saving ? "Kaydediliyor…" : "KADROMU KAYDET VE DONDUR"}
-          </button>
-        </>
+        <button
+          disabled={!canSave || saving}
+          onClick={handleSave}
+          className="rounded-lg bg-pitch py-3 text-sm font-medium text-ivory disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          {saving ? "Kaydediliyor…" : "KADROMU KAYDET VE DONDUR"}
+        </button>
       )}
 
       {saveMessage && (
@@ -456,11 +475,15 @@ export default function KadroPage() {
           player={modalPlayer}
           gameweekId={lastWeekGameweekId}
           isCaptain={modalPlayer.id === captainId}
-          onMakeCaptain={() => {
-            setCaptainId(modalPlayer.id);
-            setModalPlayer(null);
-          }}
-          onRemove={removeFromSlot}
+          onMakeCaptain={
+            showEditor
+              ? () => {
+                  setCaptainId(modalPlayer.id);
+                  setModalPlayer(null);
+                }
+              : undefined
+          }
+          onRemove={showEditor ? removeFromSlot : undefined}
           onClose={() => setModalPlayer(null)}
         />
       )}
