@@ -36,7 +36,7 @@ export default function KadroPage() {
   const [squadName, setSquadName] = useState<string | null>(null);
   const [overallTotal, setOverallTotal] = useState<number | null>(null);
   const [weeklyRank, setWeeklyRank] = useState<number | null>(null);
-  const [gameweek, setGameweek] = useState<{ id: number; name: string | null } | null>(null);
+  const [gameweek, setGameweek] = useState<{ id: number; name: string | null; week_number: number } | null>(null);
   const [gameweekLoading, setGameweekLoading] = useState(true);
 
   const [formation, setFormation] = useState<Formation>("4-3-3");
@@ -218,7 +218,10 @@ export default function KadroPage() {
     slots.find((s) => s.player?.id === captainId)?.player?.name ?? null;
 
   const transfersUsed = squadPlayers.filter((p) => !savedPickIds.has(p.id)).length;
-  const TRANSFER_LIMIT = 4;
+  const TRANSFER_LIMIT = 5;
+  // 1. hafta herkes ilk kez kadro kurduğu için transfer sınırı uygulanmaz —
+  // sınır yalnızca 2. haftadan itibaren devreye girer.
+  const transferLimitActive = (gameweek?.week_number ?? 1) >= 2;
 
   const canSave =
     filledCount === SQUAD_SIZE &&
@@ -420,8 +423,8 @@ export default function KadroPage() {
         totalSlots={SQUAD_SIZE}
         captainName={captainName}
         onCaptainClick={showEditor ? () => setCaptainPickerOpen(true) : undefined}
-        transfersUsed={showEditor ? transfersUsed : undefined}
-        transfersMax={showEditor ? TRANSFER_LIMIT : undefined}
+        transfersUsed={showEditor && transferLimitActive ? transfersUsed : undefined}
+        transfersMax={showEditor && transferLimitActive ? TRANSFER_LIMIT : undefined}
       />
 
       {showEditor && (
