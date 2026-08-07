@@ -94,8 +94,10 @@ export default function ProfilPage() {
     return (
       <>
         <AppHeader />
-        <main className="mx-auto flex min-h-[calc(100dvh-57px)] max-w-md items-center justify-center px-3">
-          <p className="text-sm text-foreground/50">Yükleniyor…</p>
+        <main className="mx-auto flex min-h-[calc(100dvh-57px)] max-w-md items-center justify-center px-3 py-4">
+          <p className="rounded-xl bg-background px-6 py-4 text-sm text-foreground/50">
+            Yükleniyor…
+          </p>
         </main>
       </>
     );
@@ -104,7 +106,8 @@ export default function ProfilPage() {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto flex max-w-md flex-col gap-6 px-3 py-4 sm:px-6 sm:py-6">
+      <main className="mx-auto max-w-md px-3 py-4 sm:px-6 sm:py-6">
+      <div className="flex flex-col gap-6 rounded-xl bg-background p-4 sm:p-6">
         <PageHeader icon="user" title="Profil" />
 
         <form
@@ -184,6 +187,7 @@ export default function ProfilPage() {
           </button>
           {passwordMsg && <p className="text-xs text-foreground/70">{passwordMsg}</p>}
         </form>
+      </div>
       </main>
     </>
   );
