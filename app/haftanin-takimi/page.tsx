@@ -61,7 +61,8 @@ export default function HaftaninTakimiPage() {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto flex max-w-3xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
+      <main className="mx-auto max-w-3xl px-3 py-4 sm:px-6 sm:py-6">
+      <div className="flex flex-col gap-4 rounded-xl bg-background p-4 sm:p-6">
         <PageHeader icon="star" title="Haftanın Takımı" />
 
         {weeks.length === 0 && !loading ? (
@@ -109,6 +110,7 @@ export default function HaftaninTakimiPage() {
             onClose={() => setModalPlayer(null)}
           />
         )}
+      </div>
       </main>
     </>
   );
