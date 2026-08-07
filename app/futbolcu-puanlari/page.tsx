@@ -106,7 +106,8 @@ export default function FutbolcuPuanlariPage() {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto flex max-w-4xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-6">
+      <main className="mx-auto max-w-4xl px-3 py-4 sm:px-6 sm:py-6">
+      <div className="flex flex-col gap-4 rounded-xl bg-background p-4 sm:p-6">
         <PageHeader icon="users" title="Futbolcu Puanları" />
 
       <select
@@ -212,6 +213,7 @@ export default function FutbolcuPuanlariPage() {
           </table>
         </div>
       )}
+      </div>
       </main>
     </>
   );
