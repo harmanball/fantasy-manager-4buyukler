@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Formation, TEAM_LIMIT, SQUAD_SIZE } from "@/lib/teams";
 import { fetchPlayers, Player, Position } from "@/lib/players";
-import { fetchOpenGameweek, fetchUserSquad, saveSquad, buildSquadFromPicks } from "@/lib/squad";
+import { fetchOpenGameweek, fetchUserSquad, saveSquad, buildSquadFromPicks, fetchPreviousWeekSquad } from "@/lib/squad";
 import { fetchPlayerPointsMap, fetchLastFinishedGameweekPoints } from "@/lib/playerPoints";
 import { fetchGameweekResult } from "@/lib/gameweekResult";
 import { fetchUserOverallRank, fetchUserGameweekRank } from "@/lib/leaderboard";
@@ -56,7 +56,7 @@ export default function KadroPage() {
   useEffect(() => {
     fetchIsTransferWindowOpen().then(setWindowOpen);
   }, []);
-  const [savedPickIds, setSavedPickIds] = useState<Set<string>>(new Set());
+  const [transferBaselineIds, setTransferBaselineIds] = useState<Set<string>>(new Set());
 
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -141,7 +141,8 @@ export default function KadroPage() {
         setSlots(result.slots);
         setCaptainId(result.captainId);
       }
-      setSavedPickIds(new Set(saved.map((s) => s.playerId)));
+      const prevWeek = await fetchPreviousWeekSquad(session!.user.id, gameweek.week_number);
+      setTransferBaselineIds(new Set(prevWeek.map((s) => s.playerId)));
       setSquadLoaded(true);
     }
 
@@ -229,7 +230,7 @@ export default function KadroPage() {
   const captainName =
     slots.find((s) => s.player?.id === captainId)?.player?.name ?? null;
 
-  const transfersUsed = squadPlayers.filter((p) => !savedPickIds.has(p.id)).length;
+  const transfersUsed = squadPlayers.filter((p) => !transferBaselineIds.has(p.id)).length;
   const TRANSFER_LIMIT = 5;
   // 1. hafta herkes ilk kez kadro kurduğu için transfer sınırı uygulanmaz —
   // sınır yalnızca 2. haftadan itibaren devreye girer.
@@ -240,7 +241,8 @@ export default function KadroPage() {
     !Object.values(teamCounts).some((c) => c > TEAM_LIMIT) &&
     !!captainId &&
     !!gameweek &&
-    !!session;
+    !!session &&
+    !(transferLimitActive && transfersUsed > TRANSFER_LIMIT);
 
   function buildPicks() {
     return slots
@@ -263,9 +265,6 @@ export default function KadroPage() {
     });
     setSaving(false);
     setSaveMessage(error ? `Hata: ${error}` : "Kadron kaydedildi ✓");
-    if (!error) {
-      setSavedPickIds(new Set(picks.map((p) => p.playerId)));
-    }
   }
 
   // Kaydet + bu hafta için kadroyu bilerek dondur — dondurulduktan sonra
@@ -291,7 +290,6 @@ export default function KadroPage() {
       setSaveMessage(`Hata: ${freezeError}`);
       return;
     }
-    setSavedPickIds(new Set(picks.map((p) => p.playerId)));
     setFrozen(true);
     setSaveMessage("Kadron kaydedildi ve bu hafta için donduruldu 🔒");
   }
@@ -493,6 +491,13 @@ export default function KadroPage() {
         transfersUsed={showEditor && transferLimitActive ? transfersUsed : undefined}
         transfersMax={showEditor && transferLimitActive ? TRANSFER_LIMIT : undefined}
       />
+
+      {showEditor && transferLimitActive && transfersUsed > TRANSFER_LIMIT && (
+        <p className="text-center text-xs font-medium text-red-600">
+          Haftalık transfer sınırını ({TRANSFER_LIMIT}) aştın — kaydetmeden
+          önce bazı değişiklikleri geri al.
+        </p>
+      )}
 
       {showEditor && (
         <div className="flex gap-2">
