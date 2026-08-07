@@ -121,3 +121,23 @@ export async function saveSquad({
   }
   return { error: null };
 }
+
+// Transfer sayacının SABİT karşılaştırma noktası: bir önceki haftanın
+// (varsa) kaydedilmiş kadrosu. Bu, o hafta içinde kaç kez kaydedersen
+// kaydet DEĞİŞMEZ — sayaç "haftanın kaç transferini kullandın" sorusuna
+// doğru cevap verir, "son kaydettiğinden bu yana ne değişti" sorusuna değil.
+export async function fetchPreviousWeekSquad(
+  userId: string,
+  currentWeekNumber: number
+): Promise<SavedPick[]> {
+  if (currentWeekNumber < 2) return [];
+
+  const { data: prevGw } = await supabase
+    .from("gameweeks")
+    .select("id")
+    .eq("week_number", currentWeekNumber - 1)
+    .maybeSingle();
+
+  if (!prevGw) return [];
+  return fetchUserSquad(userId, prevGw.id);
+}
