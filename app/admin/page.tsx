@@ -132,16 +132,18 @@ export default function AdminPage() {
 
   if (sessionLoading || !session) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-2xl items-center justify-center px-3">
-        <p className="text-sm text-foreground/50">Yükleniyor…</p>
+      <main className="mx-auto flex min-h-dvh max-w-2xl items-center justify-center px-3 py-4">
+        <p className="rounded-xl bg-background px-6 py-4 text-sm text-foreground/50">
+          Yükleniyor…
+        </p>
       </main>
     );
   }
 
   if (!isAdmin) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-2xl items-center justify-center px-3">
-        <p className="text-sm text-foreground/60">
+      <main className="mx-auto flex min-h-dvh max-w-2xl items-center justify-center px-3 py-4">
+        <p className="rounded-xl bg-background px-6 py-4 text-sm text-foreground/60">
           Bu sayfa yalnızca yönetici için.
         </p>
       </main>
@@ -149,7 +151,8 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 px-3 py-4 sm:px-6 sm:py-6">
+    <main className="mx-auto max-w-2xl px-3 py-4 sm:px-6 sm:py-6">
+    <div className="flex flex-col gap-6 rounded-xl bg-background p-4 sm:p-6">
       <h1 className="font-display text-lg font-semibold sm:text-xl">
         Yönetici Paneli
       </h1>
@@ -286,6 +289,7 @@ export default function AdminPage() {
           <p className="mt-2 text-sm text-foreground/70">{resultMsg}</p>
         )}
       </section>
+    </div>
     </main>
   );
 }
