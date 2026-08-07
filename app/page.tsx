@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center px-4 py-10 sm:px-6">
-      <div className="relative overflow-hidden rounded-xl bg-pitch px-5 py-10 sm:px-10 sm:py-16">
+      <div className="relative overflow-hidden rounded-xl border-2 border-gold/60 bg-pitch px-5 py-10 shadow-lg sm:px-10 sm:py-16">
         {/* Dekoratif saha deseni — viewBox kare (1:1), "slice" kırpma ile
             konteyner ne oranda olursa olsun daire/kutular asla bozulmaz */}
         <svg
