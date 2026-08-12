@@ -21,6 +21,28 @@ import { Skeleton } from "@/components/Skeleton";
 import { shareText, getSiteUrl } from "@/lib/share";
 import { fetchIsTransferWindowOpen } from "@/lib/transferWindow";
 
+// Transfer penceresi her zaman bir sonraki Cuma 00:00'da kapanır
+// (Salı/Çarşamba/Perşembe açık kuralına göre).
+function getWindowCloseTime(): Date {
+  const now = new Date();
+  let daysUntil = (5 - now.getDay() + 7) % 7;
+  if (daysUntil === 0) daysUntil = 7;
+  const close = new Date(now);
+  close.setDate(now.getDate() + daysUntil);
+  close.setHours(0, 0, 0, 0);
+  return close;
+}
+
+function formatWindowCloseTime(): string {
+  const close = getWindowCloseTime();
+  const dateStr = close.toLocaleDateString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    weekday: "long",
+  });
+  return `${dateStr} 00:00`;
+}
+
 export default function KadroPage() {
   const { session, loading: sessionLoading } = useSession();
   const router = useRouter();
@@ -393,6 +415,38 @@ export default function KadroPage() {
             </p>
             <p className="mx-auto mt-1.5 max-w-[220px] text-xs leading-relaxed text-ivory/65">
               11 oyuncunu seç, kaptanını belirle, ilk haftana hazırlan.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {squadLoaded && showEditor && filledCount > 0 && (
+        <div className="relative overflow-hidden rounded-lg bg-pitch px-5 py-7 text-center">
+          <svg
+            viewBox="0 0 300 160"
+            className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.15]"
+            aria-hidden="true"
+          >
+            <circle cx="150" cy="80" r="40" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
+          </svg>
+          <div className="relative">
+            <svg width="34" height="34" viewBox="0 0 24 24" className="mx-auto text-gold" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" />
+              <path
+                d="M12 7 V12 L15.5 14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <p className="mt-2 font-display text-base font-semibold text-ivory sm:text-lg">
+              Transfer penceresi açık
+            </p>
+            <p className="mx-auto mt-1.5 max-w-[240px] text-xs leading-relaxed text-ivory/65">
+              Transfer penceresi {formatWindowCloseTime()}&apos;da kapanacak.
+              Unutmadan kaydetmeyi unutma.
             </p>
           </div>
         </div>
