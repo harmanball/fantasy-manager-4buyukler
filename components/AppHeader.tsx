@@ -20,6 +20,26 @@ const NAV_ITEMS: { href: string; label: string; icon: IconName }[] = [
   { href: "/profil", label: "Profil", icon: "user" },
 ];
 
+function PitchLogo() {
+  return (
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 100 100"
+      className="shrink-0 rounded-md"
+      aria-hidden="true"
+    >
+      <rect x="4" y="4" width="92" height="92" rx="10" fill="#0F3D2E" />
+      <rect x="12" y="12" width="76" height="76" fill="none" stroke="#F5F1E8" strokeWidth="4" />
+      <line x1="12" y1="50" x2="88" y2="50" stroke="#F5F1E8" strokeWidth="4" />
+      <circle cx="50" cy="50" r="14" fill="none" stroke="#F5F1E8" strokeWidth="4" />
+      <circle cx="50" cy="50" r="3" fill="#F5F1E8" />
+      <rect x="30" y="12" width="40" height="14" fill="none" stroke="#F5F1E8" strokeWidth="4" />
+      <rect x="30" y="74" width="40" height="14" fill="none" stroke="#F5F1E8" strokeWidth="4" />
+    </svg>
+  );
+}
+
 export function AppHeader() {
   const { session } = useSession();
   const router = useRouter();
@@ -79,9 +99,12 @@ export function AppHeader() {
               />
             </svg>
           </button>
-          <span className="hidden font-display text-base font-semibold sm:inline sm:text-xl">
-            Fantasy Manager: 4 Büyükler
-          </span>
+          <Link href="/" className="flex items-center gap-2">
+            <PitchLogo />
+            <span className="hidden font-display text-base font-semibold sm:inline sm:text-xl">
+              Fantasy Manager: 4 Büyükler
+            </span>
+          </Link>
         </div>
 
         {/* Üst barın tam ortasında sabit iki link */}
