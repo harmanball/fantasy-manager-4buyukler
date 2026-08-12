@@ -56,6 +56,7 @@ export default function KadroPage() {
 
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [squadLoaded, setSquadLoaded] = useState(false);
 
   useEffect(() => {
@@ -142,6 +143,15 @@ export default function KadroPage() {
 
     loadSavedSquad();
   }, [playersLoading, gameweekLoading, squadLoaded, session, gameweek, players]);
+
+  // Kadrondaki tüm oyuncuları ve kaptanı kaldırır (diziliş aynı kalır).
+  // Yalnızca ekrandaki durumu sıfırlar — "Kadromu Kaydet"e basana kadar
+  // veritabanındaki kayıtlı kadroya dokunmaz.
+  function handleReset() {
+    setSlots(buildSlots(formation));
+    setCaptainId(null);
+    setResetConfirmOpen(false);
+  }
 
   function changeFormation(f: Formation) {
     const newSlots = buildSlots(f);
@@ -422,6 +432,48 @@ export default function KadroPage() {
         >
           {saving ? "Kaydediliyor…" : "KADROMU KAYDET"}
         </button>
+      )}
+
+      {showEditor && (
+        <button
+          onClick={() => setResetConfirmOpen(true)}
+          className="rounded-lg border-2 border-red-600 py-3 text-sm font-medium text-red-600"
+        >
+          KADROYU SIFIRLA
+        </button>
+      )}
+
+      {resetConfirmOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/50"
+          onClick={() => setResetConfirmOpen(false)}
+        >
+          <div
+            className="mx-4 rounded-2xl bg-background px-6 py-8 text-center shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="font-display text-lg font-semibold">Emin misin?</p>
+            <p className="mt-2 max-w-[260px] text-sm text-foreground/60">
+              Kadrondaki tüm oyuncular ve kaptan seçimin kaldırılacak. Bu
+              işlem, sen "Kadromu Kaydet"e basana kadar kaydedilmiş kadronu
+              değiştirmez.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={() => setResetConfirmOpen(false)}
+                className="flex-1 rounded-lg border border-charcoal/15 py-2.5 text-sm font-medium text-foreground"
+              >
+                Vazgeç
+              </button>
+              <button
+                onClick={handleReset}
+                className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white"
+              >
+                Evet, Sıfırla
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {saveMessage && (
