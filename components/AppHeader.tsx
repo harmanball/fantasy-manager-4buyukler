@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 import { shareText, getSiteUrl } from "@/lib/share";
+import { useInstallPrompt } from "@/lib/useInstallPrompt";
 import { Icon, IconName } from "./Icon";
 
 // Puanlarım ve Lig Sıralaması hem üst barda hem hamburger menüsünde yer alır.
@@ -40,11 +41,27 @@ function PitchLogo() {
   );
 }
 
+function InstallIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3v12m0 0l-4-4m4 4l4-4M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function AppHeader() {
   const { session } = useSession();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [squadName, setSquadName] = useState<string | null>(null);
+  const [iosInstructionsOpen, setIosInstructionsOpen] = useState(false);
+  const { canInstall, promptInstall } = useInstallPrompt();
 
   useEffect(() => {
     let cancelled = false;
@@ -78,6 +95,12 @@ export function AppHeader() {
     shareText(
       `Fantasy Manager: 4 Büyükler'de kadromu kurdum, gel sen de katıl! ${getSiteUrl()}`
     );
+  }
+
+  async function handleInstallClick() {
+    setMenuOpen(false);
+    const result = await promptInstall();
+    if (result === "ios") setIosInstructionsOpen(true);
   }
 
   return (
@@ -123,21 +146,34 @@ export function AppHeader() {
           </Link>
         </div>
 
-        {session ? (
-          <Link
-            href="/kadro"
-            className="whitespace-nowrap rounded-full bg-charcoal px-3 py-2 text-[11px] font-medium text-ivory sm:px-4 sm:text-sm"
-          >
-            {squadName ? `${squadName} Kadro` : "Kadro"}
-          </Link>
-        ) : (
-          <Link
-            href="/giris"
-            className="whitespace-nowrap rounded-full bg-charcoal px-3 py-2 text-[11px] font-medium text-ivory sm:px-4 sm:text-sm"
-          >
-            Giriş yap
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          {canInstall && (
+            <button
+              onClick={handleInstallClick}
+              aria-label="Uygulamayı ana ekrana ekle"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gold text-gold sm:h-auto sm:w-auto sm:gap-1.5 sm:rounded-full sm:px-3 sm:py-2"
+            >
+              <InstallIcon />
+              <span className="hidden text-xs font-medium sm:inline">Yükle</span>
+            </button>
+          )}
+
+          {session ? (
+            <Link
+              href="/kadro"
+              className="whitespace-nowrap rounded-full bg-charcoal px-3 py-2 text-[11px] font-medium text-ivory sm:px-4 sm:text-sm"
+            >
+              {squadName ? `${squadName} Kadro` : "Kadro"}
+            </Link>
+          ) : (
+            <Link
+              href="/giris"
+              className="whitespace-nowrap rounded-full bg-charcoal px-3 py-2 text-[11px] font-medium text-ivory sm:px-4 sm:text-sm"
+            >
+              Giriş yap
+            </Link>
+          )}
+        </div>
       </header>
 
       {menuOpen && (
@@ -158,6 +194,15 @@ export function AppHeader() {
                 {item.label}
               </Link>
             ))}
+            {canInstall && (
+              <button
+                onClick={handleInstallClick}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-foreground hover:bg-charcoal/5"
+              >
+                <InstallIcon />
+                Ana ekrana ekle
+              </button>
+            )}
             <button
               onClick={handleInvite}
               className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-gold hover:bg-charcoal/5"
@@ -176,6 +221,36 @@ export function AppHeader() {
             )}
           </nav>
         </>
+      )}
+
+      {iosInstructionsOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/50"
+          onClick={() => setIosInstructionsOpen(false)}
+        >
+          <div
+            className="mx-4 max-w-xs rounded-2xl bg-background px-6 py-6 text-center shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="font-display text-base font-semibold">
+              Ana ekrana ekle
+            </p>
+            <ol className="mt-3 flex flex-col gap-2 text-left text-sm text-foreground/70">
+              <li>
+                1. Alttaki paylaşım simgesine{" "}
+                <span aria-hidden="true">⬆️</span> dokun
+              </li>
+              <li>2. &quot;Ana Ekrana Ekle&quot; seçeneğini seç</li>
+              <li>3. Sağ üstteki &quot;Ekle&quot;ye dokun</li>
+            </ol>
+            <button
+              onClick={() => setIosInstructionsOpen(false)}
+              className="mt-5 w-full rounded-lg bg-pitch py-2.5 text-sm font-medium text-ivory"
+            >
+              Anladım
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
