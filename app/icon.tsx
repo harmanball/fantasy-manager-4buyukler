@@ -6,14 +6,14 @@ export const contentType = "image/png";
 export default function Icon() {
   return new ImageResponse(
     (
-      <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="16" cy="16" r="15" fill="#F5F1E8" stroke="#111111" strokeWidth="1.6" />
-        <polygon points="16,9 20.3,12.1 18.7,17.1 13.3,17.1 11.7,12.1" fill="#111111" />
-        <line x1="16" y1="9" x2="16" y2="3" stroke="#111111" strokeWidth="1.3" />
-        <line x1="20.3" y1="12.1" x2="26.2" y2="10.2" stroke="#111111" strokeWidth="1.3" />
-        <line x1="18.7" y1="17.1" x2="22.2" y2="22.7" stroke="#111111" strokeWidth="1.3" />
-        <line x1="13.3" y1="17.1" x2="9.8" y2="22.7" stroke="#111111" strokeWidth="1.3" />
-        <line x1="11.7" y1="12.1" x2="5.8" y2="10.2" stroke="#111111" strokeWidth="1.3" />
+      <svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="4" width="92" height="92" rx="10" fill="#0F3D2E" />
+        <rect x="12" y="12" width="76" height="76" fill="none" stroke="#F5F1E8" strokeWidth="3" />
+        <line x1="12" y1="50" x2="88" y2="50" stroke="#F5F1E8" strokeWidth="3" />
+        <circle cx="50" cy="50" r="14" fill="none" stroke="#F5F1E8" strokeWidth="3" />
+        <circle cx="50" cy="50" r="2.5" fill="#F5F1E8" />
+        <rect x="30" y="12" width="40" height="14" fill="none" stroke="#F5F1E8" strokeWidth="3" />
+        <rect x="30" y="74" width="40" height="14" fill="none" stroke="#F5F1E8" strokeWidth="3" />
       </svg>
     ),
     { ...size }
