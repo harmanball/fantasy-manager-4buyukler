@@ -34,13 +34,16 @@ function getWindowCloseTime(): Date {
 }
 
 function formatWindowCloseTime(): string {
+  // Gerçek kapanış anı Cuma 00:00 — ama kullanıcıya "Perşembe 23:59"
+  // olarak gösteriyoruz, aynı anı ifade eden daha sezgisel bir yazım.
   const close = getWindowCloseTime();
-  const dateStr = close.toLocaleDateString("tr-TR", {
+  const displayMoment = new Date(close.getTime() - 60 * 1000);
+  const dateStr = displayMoment.toLocaleDateString("tr-TR", {
     day: "numeric",
     month: "long",
     weekday: "long",
   });
-  return `${dateStr} 00:00`;
+  return `${dateStr} 23:59`;
 }
 
 export default function KadroPage() {
