@@ -130,31 +130,15 @@ export function AppHeader() {
           </Link>
         </div>
 
-        {/* Üst barın tam ortasında sabit iki link */}
-        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 whitespace-nowrap sm:gap-4">
-          <Link
-            href="/puanlarim"
-            className="text-[11px] font-medium text-foreground/70 underline underline-offset-2 hover:text-foreground sm:text-sm"
-          >
-            Puanlarım
-          </Link>
-          <Link
-            href="/siralama"
-            className="text-[11px] font-medium text-foreground/70 underline underline-offset-2 hover:text-foreground sm:text-sm"
-          >
-            Lig Sıralaması
-          </Link>
-        </div>
-
         <div className="flex items-center gap-2">
           {canInstall && (
             <button
               onClick={handleInstallClick}
               aria-label="Uygulamayı ana ekrana ekle"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gold text-gold sm:h-auto sm:w-auto sm:gap-1.5 sm:rounded-full sm:px-3 sm:py-2"
+              className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gold px-3 py-2 text-[11px] font-semibold text-charcoal sm:text-sm"
             >
               <InstallIcon />
-              <span className="hidden text-xs font-medium sm:inline">Yükle</span>
+              Yükle
             </button>
           )}
 
@@ -175,6 +159,21 @@ export function AppHeader() {
           )}
         </div>
       </header>
+
+      <div className="flex items-center justify-center gap-4 border-b border-charcoal/10 bg-background py-1.5">
+        <Link
+          href="/puanlarim"
+          className="text-xs font-medium text-foreground/70 underline underline-offset-2 hover:text-foreground"
+        >
+          Puanlarım
+        </Link>
+        <Link
+          href="/siralama"
+          className="text-xs font-medium text-foreground/70 underline underline-offset-2 hover:text-foreground"
+        >
+          Lig Sıralaması
+        </Link>
+      </div>
 
       {menuOpen && (
         <>
