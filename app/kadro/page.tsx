@@ -172,10 +172,21 @@ export default function KadroPage() {
   // Kadrondaki tüm oyuncuları ve kaptanı kaldırır (diziliş aynı kalır).
   // Yalnızca ekrandaki durumu sıfırlar — "Kadromu Kaydet"e basana kadar
   // veritabanındaki kayıtlı kadroya dokunmaz.
-  function handleReset() {
+  // Kadrondaki tüm oyuncuları ve kaptanı kaldırır (diziliş aynı kalır) —
+  // hem ekrandaki durumu hem veritabanındaki kaydedilmiş kadroyu siler,
+  // bu yüzden sayfa yenilense bile eski kadro geri gelmez.
+  async function handleReset() {
+    setResetConfirmOpen(false);
+    if (session && gameweek) {
+      await supabase
+        .from("user_picks")
+        .delete()
+        .eq("user_id", session.user.id)
+        .eq("gameweek_id", gameweek.id);
+    }
     setSlots(buildSlots(formation));
     setCaptainId(null);
-    setResetConfirmOpen(false);
+    setSaveMessage("Kadron sıfırlandı ✓");
   }
 
   function changeFormation(f: Formation) {
@@ -511,9 +522,8 @@ export default function KadroPage() {
           >
             <p className="font-display text-lg font-semibold">Emin misin?</p>
             <p className="mt-2 max-w-[260px] text-sm text-foreground/60">
-              Kadrondaki tüm oyuncular ve kaptan seçimin kaldırılacak. Bu
-              işlem, sen "Kadromu Kaydet"e basana kadar kaydedilmiş kadronu
-              değiştirmez.
+              Kadrondaki tüm oyuncular ve kaptan seçimin kalıcı olarak
+              silinecek — bu işlem geri alınamaz.
             </p>
             <div className="mt-5 flex gap-2">
               <button
