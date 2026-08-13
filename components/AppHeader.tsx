@@ -139,7 +139,7 @@ export function AppHeader() {
               className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-gold px-3 py-2 text-[11px] font-semibold text-charcoal sm:text-sm"
             >
               <InstallIcon />
-              Yükle
+              Uyg. Yükle
             </button>
           )}
 
@@ -207,7 +207,7 @@ export function AppHeader() {
                 className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-foreground hover:bg-charcoal/5"
               >
                 <InstallIcon />
-                Ana ekrana ekle
+                Uygulama Yükle
               </button>
             )}
             <button
