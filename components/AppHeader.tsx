@@ -175,6 +175,12 @@ export function AppHeader() {
         >
           Lig Sıralaması
         </Link>
+        <Link
+          href="/nasil-oynanir"
+          className="text-xs font-medium text-foreground/70 underline underline-offset-2 hover:text-foreground"
+        >
+          Nasıl Oynanır?
+        </Link>
       </div>
 
       {menuOpen && (
