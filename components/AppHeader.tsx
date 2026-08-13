@@ -124,8 +124,9 @@ export function AppHeader() {
           </button>
           <Link href="/" className="flex items-center gap-2">
             <PitchLogo />
-            <span className="hidden font-display text-base font-semibold sm:inline sm:text-xl">
-              Fantasy Manager: 4 Büyükler
+            <span className="flex flex-col font-display font-semibold leading-tight">
+              <span className="text-[11px] sm:text-lg">Fantasy Manager:</span>
+              <span className="text-[11px] sm:text-lg">4 Büyükler</span>
             </span>
           </Link>
         </div>
