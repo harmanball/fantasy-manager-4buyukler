@@ -134,6 +134,15 @@ export default function GirisPage() {
           />
         )}
 
+        {mode === "giris" && (
+          <Link
+            href="/sifremi-unuttum"
+            className="-mt-1 self-end text-xs text-foreground/50 underline underline-offset-2"
+          >
+            Şifremi unuttum?
+          </Link>
+        )}
+
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <button
