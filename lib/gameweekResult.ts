@@ -19,15 +19,35 @@ export interface FinishedGameweek {
   name: string | null;
 }
 
+// "Bitmiş hafta" artık gameweeks.status alanına değil, o haftaya
+// gerçekten istatistik (player_stats) girilip girilmediğine bakarak
+// belirleniyor. Böylece admin, tüm maçlar bitmeden veri girmeye
+// başlasa bile (parça parça, takım takım) hafta erken "kapanmış"
+// görünmüyor ama girilen istatistikler anında sayfalara yansıyor.
 export async function fetchFinishedGameweeks(): Promise<FinishedGameweek[]> {
+  const { data: statsData, error: statsErr } = await supabase
+    .from("player_stats")
+    .select("gameweek_id");
+
+  if (statsErr) {
+    console.error("İstatistik verisi çekilemedi:", statsErr.message);
+    return [];
+  }
+
+  const gwIdsWithStats = Array.from(
+    new Set((statsData ?? []).map((s) => s.gameweek_id as number))
+  );
+
+  if (gwIdsWithStats.length === 0) return [];
+
   const { data, error } = await supabase
     .from("gameweeks")
     .select("id, week_number, name")
-    .eq("status", "finished")
+    .in("id", gwIdsWithStats)
     .order("week_number", { ascending: false });
 
   if (error) {
-    console.error("Bitmiş haftalar çekilemedi:", error.message);
+    console.error("Haftalar çekilemedi:", error.message);
     return [];
   }
   return data ?? [];
