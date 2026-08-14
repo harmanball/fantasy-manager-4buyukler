@@ -7,6 +7,7 @@ import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 import { shareText, getSiteUrl } from "@/lib/share";
 import { useInstallPrompt } from "@/lib/useInstallPrompt";
+import { useNotificationPermission } from "@/lib/useNotificationPermission";
 import { Icon, IconName } from "./Icon";
 
 // Puanlarım ve Lig Sıralaması hem üst barda hem hamburger menüsünde yer alır.
@@ -55,6 +56,20 @@ function InstallIcon() {
   );
 }
 
+function BellIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M6 8a6 6 0 1112 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6zM9.5 18a2.5 2.5 0 005 0"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function AppHeader() {
   const { session } = useSession();
   const router = useRouter();
@@ -62,6 +77,7 @@ export function AppHeader() {
   const [squadName, setSquadName] = useState<string | null>(null);
   const [iosInstructionsOpen, setIosInstructionsOpen] = useState(false);
   const { canInstall, promptInstall } = useInstallPrompt();
+  const { canPrompt: canAskNotifications, requestPermission } = useNotificationPermission();
 
   useEffect(() => {
     let cancelled = false;
@@ -101,6 +117,17 @@ export function AppHeader() {
     setMenuOpen(false);
     const result = await promptInstall();
     if (result === "ios") setIosInstructionsOpen(true);
+  }
+
+  async function handleNotificationClick() {
+    setMenuOpen(false);
+    if (!session) return;
+    const granted = await requestPermission(session.user.id);
+    if (!granted) {
+      alert(
+        "Bildirimlere izin verilmedi. Tarayıcı ayarlarından bu site için bildirimleri açabilirsin."
+      );
+    }
   }
 
   return (
@@ -208,6 +235,15 @@ export function AppHeader() {
               >
                 <InstallIcon />
                 Uygulama Yükle
+              </button>
+            )}
+            {session && canAskNotifications && (
+              <button
+                onClick={handleNotificationClick}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-foreground hover:bg-charcoal/5"
+              >
+                <BellIcon />
+                Bildirimleri Aç
               </button>
             )}
             <button
