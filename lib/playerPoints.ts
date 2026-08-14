@@ -31,16 +31,35 @@ export async function fetchPlayerPointsBreakdown(): Promise<PlayerPointsBreakdow
 }
 
 // Kadro kurma ekranında oyuncu adının yanında göstermek için: playerId -> toplam puan
-// Kadro kurma ekranında "geçen hafta bu oyuncu kaç puan kazandırdı" bilgisi için
+// Kadro kurma ekranında "geçen hafta bu oyuncu kaç puan kazandırdı" bilgisi için.
+// "Bitmiş hafta" artık gameweeks.status alanına değil, o haftaya gerçekten
+// istatistik (player_stats) girilip girilmediğine bakarak belirleniyor.
 export async function fetchLastFinishedGameweekPoints(): Promise<{
   gameweekId: number | null;
   gameweekName: string | null;
   map: Record<string, number>;
 }> {
+  const { data: statsGw, error: statsGwErr } = await supabase
+    .from("player_stats")
+    .select("gameweek_id");
+
+  if (statsGwErr) {
+    console.error("İstatistik verisi çekilemedi:", statsGwErr.message);
+    return { gameweekId: null, gameweekName: null, map: {} };
+  }
+
+  const gwIdsWithStats = Array.from(
+    new Set((statsGw ?? []).map((s) => s.gameweek_id as number))
+  );
+
+  if (gwIdsWithStats.length === 0) {
+    return { gameweekId: null, gameweekName: null, map: {} };
+  }
+
   const { data: gw } = await supabase
     .from("gameweeks")
     .select("id, week_number, name")
-    .eq("status", "finished")
+    .in("id", gwIdsWithStats)
     .order("week_number", { ascending: false })
     .limit(1)
     .maybeSingle();
