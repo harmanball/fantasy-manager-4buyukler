@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/transfer-window",
       "schedule": "0 6 * * 2"
+    },
+    {
+      "path": "/api/cron/transfer-window-closing",
+      "schedule": "0 9 * * 4"
     }
   ]
 }
