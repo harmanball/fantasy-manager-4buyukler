@@ -45,9 +45,20 @@ export default function AdminPage() {
   const [transferOverride, setTransferOverride] = useState<TransferWindowOverride>(0);
   const [transferSaving, setTransferSaving] = useState(false);
 
+  const [closingWeek, setClosingWeek] = useState(false);
+  const [closeMsg, setCloseMsg] = useState<string | null>(null);
+
   useEffect(() => {
     if (!sessionLoading && !session) router.push("/giris");
   }, [sessionLoading, session, router]);
+
+  function refreshGameweeks() {
+    return supabase
+      .from("gameweeks")
+      .select("id, week_number, name, status, deadline")
+      .order("week_number", { ascending: true })
+      .then(({ data }) => setGameweeks(data ?? []));
+  }
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -66,6 +77,8 @@ export default function AdminPage() {
   const knownKeys = new Set(
     players.map((p) => `${p.team}::${p.name.trim().toLowerCase()}`)
   );
+
+  const selectedGwRow = gameweeks.find((gw) => gw.id === selectedGw) ?? null;
 
   function handlePreview() {
     setParsed(parseStatsBlock(statsText));
@@ -116,6 +129,35 @@ export default function AdminPage() {
     if (res.ok) setTransferOverride(value);
   }
 
+  async function handleCloseWeek() {
+    if (!selectedGw) return;
+    const confirmed = window.confirm(
+      "Bu haftayı kapatmak istediğine emin misin? Tüm maçların istatistiklerini girdiğinden emin ol — kapattıktan sonra da tekrar açabilirsin ama normalde bunun gerekmemesi lazım."
+    );
+    if (!confirmed) return;
+
+    setClosingWeek(true);
+    setCloseMsg(null);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    const res = await fetch("/api/admin/close-gameweek", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ gameweekId: selectedGw }),
+    });
+    const json = await res.json();
+    setClosingWeek(false);
+    if (!res.ok) {
+      setCloseMsg(`Hata: ${json.error}`);
+      return;
+    }
+    setCloseMsg("Hafta kapatıldı ✓");
+    refreshGameweeks();
+  }
+
   async function handleCreateWeek(e: React.FormEvent) {
     e.preventDefault();
     setCreatingWeek(true);
@@ -144,11 +186,7 @@ export default function AdminPage() {
     setNewWeekNumber("");
     setNewWeekName("");
     setNewWeekDeadline("");
-    supabase
-      .from("gameweeks")
-      .select("id, week_number, name, status, deadline")
-      .order("week_number", { ascending: true })
-      .then(({ data }) => setGameweeks(data ?? []));
+    refreshGameweeks();
   }
 
   if (sessionLoading || !session) {
@@ -273,6 +311,26 @@ export default function AdminPage() {
             </option>
           ))}
         </select>
+
+        {selectedGwRow && (
+          <div className="mb-3 flex items-center justify-between rounded-lg border border-charcoal/10 bg-background px-3 py-2">
+            <span className="text-xs text-foreground/60">
+              Şu anki durum: <strong>{selectedGwRow.status}</strong>
+            </span>
+            <button
+              onClick={handleCloseWeek}
+              disabled={closingWeek || selectedGwRow.status === "finished"}
+              className="rounded-lg border border-red-600 px-3 py-1.5 text-xs font-medium text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {closingWeek
+                ? "…"
+                : selectedGwRow.status === "finished"
+                ? "Zaten Kapalı"
+                : "Haftayı Kapat"}
+            </button>
+          </div>
+        )}
+        {closeMsg && <p className="mb-3 text-xs text-foreground/70">{closeMsg}</p>}
 
         <label className="mb-1 block text-xs text-foreground/60">
           Veri bloğu
