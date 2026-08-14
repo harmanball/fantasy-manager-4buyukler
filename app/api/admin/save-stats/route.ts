@@ -1,4 +1,5 @@
 import { createAdminClient, requireAdmin } from "@/lib/supabaseAdmin";
+import { sendPushToAll } from "@/lib/sendPush";
 
 interface IncomingRow {
   team: string;
@@ -87,8 +88,23 @@ export async function POST(request: Request) {
     const { error: rpcErr } = await admin.rpc("calculate_gameweek_points", {
       gw_id: gameweekId,
     });
+
     if (rpcErr) {
       return Response.json({ error: `Puanlar hesaplanamadı: ${rpcErr.message}` }, { status: 500 });
+    }
+
+    // Puanlar başarıyla hesaplandı — tüm abonelere bildirim gönder.
+    // Bildirim gönderimi başarısız olsa bile puanlama işlemi zaten
+    // tamamlandığı için, bu adımdaki hatayı kullanıcıya (adminine)
+    // engelleyici bir hata olarak göstermiyoruz.
+    try {
+      await sendPushToAll({
+        title: "Puanlama tamamlandı 🏆",
+        body: "Bu haftanın puanları hesaplandı — sıralamanı hemen kontrol et.",
+        url: "/siralama",
+      });
+    } catch (pushErr) {
+      console.error("Bildirim gönderilemedi:", pushErr);
     }
   }
 
