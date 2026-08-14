@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { shareText, getSiteUrl } from "@/lib/share";
 import { useInstallPrompt } from "@/lib/useInstallPrompt";
 import { useNotificationPermission } from "@/lib/useNotificationPermission";
+import { ADMIN_EMAILS } from "@/lib/adminConfig";
 import { Icon, IconName } from "./Icon";
 
 // Puanlarım ve Lig Sıralaması hem üst barda hem hamburger menüsünde yer alır.
@@ -73,6 +74,7 @@ function BellIcon() {
 export function AppHeader() {
   const { session } = useSession();
   const router = useRouter();
+  const isAdmin = !!session?.user.email && ADMIN_EMAILS.includes(session.user.email);
   const [menuOpen, setMenuOpen] = useState(false);
   const [squadName, setSquadName] = useState<string | null>(null);
   const [iosInstructionsOpen, setIosInstructionsOpen] = useState(false);
@@ -228,6 +230,16 @@ export function AppHeader() {
                 {item.label}
               </Link>
             ))}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 border-t border-charcoal/10 px-4 py-2.5 text-sm text-foreground hover:bg-charcoal/5"
+              >
+                <Icon name="info" size={16} className="shrink-0 text-pitch" />
+                Admin
+              </Link>
+            )}
             {canInstall && (
               <button
                 onClick={handleInstallClick}
