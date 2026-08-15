@@ -15,6 +15,7 @@ type SortableKey = keyof Pick<
   PlayerPointsBreakdown,
   | "name"
   | "team"
+  | "position"
   | "toplam_puan"
   | "mac_sayisi"
   | "oynama_puani"
@@ -27,9 +28,23 @@ type SortableKey = keyof Pick<
   | "mac_puani_bonusu"
 >;
 
+// Veritabanındaki mevki kodlarını (GK/DEF/MID/FWD) Türkçe etikete çevirir.
+// Beklenmedik/eksik bir kod gelirse olduğu gibi gösterir, sayfa çökmez.
+const POSITION_LABELS: Record<string, string> = {
+  GK: "Kaleci",
+  DEF: "Defans",
+  MID: "Orta Saha",
+  FWD: "Santrfor",
+};
+
+function positionLabel(position: string): string {
+  return POSITION_LABELS[position] ?? position;
+}
+
 const COLS: { key: SortableKey; label: string; align: "left" | "right" }[] = [
   { key: "name", label: "Oyuncu", align: "left" },
   { key: "team", label: "Takım", align: "left" },
+  { key: "position", label: "Mevki", align: "left" },
   { key: "toplam_puan", label: "Toplam", align: "right" },
   { key: "mac_sayisi", label: "Maç", align: "right" },
   { key: "oynama_puani", label: "Oynama", align: "right" },
@@ -195,6 +210,9 @@ export default function FutbolcuPuanlariPage() {
                     {r.name}
                   </td>
                   <td className="p-1 px-1.5 text-foreground/60 sm:p-2">{r.team}</td>
+                  <td className="p-1 px-1.5 text-foreground/60 sm:p-2">
+                    {positionLabel(r.position)}
+                  </td>
                   <td className="p-1 px-1.5 text-right font-display font-semibold sm:p-2">
                     {r.toplam_puan}
                   </td>
