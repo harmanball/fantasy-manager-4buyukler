@@ -25,6 +25,29 @@ export async function fetchOpenGameweek(): Promise<OpenGameweek | null> {
   return data;
 }
 
+// "Sonraki hafta için düzenle" akışının hedeflediği GERÇEK hafta.
+// fetchOpenGameweek() her zaman en erken açık/yaklaşan haftayı döndürür
+// (mevcut hafta "finished" olarak kapatılana kadar hep o haftadır), bu
+// yüzden fark ayrı ve açık bir sorguyla belirlenir: mevcut haftanın
+// hafta_numarası + 1 olan hafta var mı? Admin panelden henüz
+// oluşturulmadıysa null döner — çağıran taraf bunu "düzenleme yapılamaz"
+// olarak yorumlamalı, asla mevcut haftaya geri düşmemeli.
+export async function fetchNextGameweek(
+  currentWeekNumber: number
+): Promise<OpenGameweek | null> {
+  const { data, error } = await supabase
+    .from("gameweeks")
+    .select("id, week_number, name")
+    .eq("week_number", currentWeekNumber + 1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Sonraki hafta bilgisi çekilemedi:", error.message);
+    return null;
+  }
+  return data;
+}
+
 export interface SavedPick {
   playerId: string;
   isCaptain: boolean;
