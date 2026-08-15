@@ -9,10 +9,12 @@ import { Skeleton } from "@/components/Skeleton";
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
 import { fetchTeamOfWeek, TeamOfWeekPlayer } from "@/lib/teamOfWeek";
 import { Player } from "@/lib/players";
+import { Formation } from "@/lib/teams";
 
 export default function HaftaninTakimiPage() {
   const [weeks, setWeeks] = useState<FinishedGameweek[]>([]);
   const [selectedGw, setSelectedGw] = useState<number | null>(null);
+  const [formation, setFormation] = useState<Formation>("4-3-3");
   const [slots, setSlots] = useState<SquadSlot[]>(() => buildSlots("4-3-3"));
   const [pointsMap, setPointsMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -31,12 +33,14 @@ export default function HaftaninTakimiPage() {
     let cancelled = false;
     async function load() {
       setLoading(true);
-      const team = await fetchTeamOfWeek(selectedGw!);
+      const result = await fetchTeamOfWeek(selectedGw!);
       if (cancelled) return;
 
-      const newSlots = buildSlots("4-3-3");
+      // Diziliş artık sabit değil — o haftanın puanlarına göre hesaplanan
+      // gerçek diziliş (örn. 4-5-1) kullanılıyor.
+      const newSlots = buildSlots(result.formation);
       (["GK", "DEF", "MID", "FWD"] as const).forEach((pos) => {
-        const inPos = team.filter((p: TeamOfWeekPlayer) => p.position === pos);
+        const inPos = result.players.filter((p: TeamOfWeekPlayer) => p.position === pos);
         const targets = newSlots.filter((s) => s.position === pos);
         inPos.forEach((p, i) => {
           if (targets[i]) {
@@ -46,8 +50,9 @@ export default function HaftaninTakimiPage() {
       });
 
       const map: Record<string, number> = {};
-      team.forEach((p) => (map[p.id] = p.points));
+      result.players.forEach((p) => (map[p.id] = p.points));
 
+      setFormation(result.formation);
       setSlots(newSlots);
       setPointsMap(map);
       setLoading(false);
@@ -97,8 +102,9 @@ export default function HaftaninTakimiPage() {
             )}
 
             <p className="text-center text-[11px] text-foreground/40">
-              O haftanın istatistiklerine göre otomatik oluşturulur — 4-3-3 diziliş, her
-              mevkide en yüksek puanı alan oyuncular.
+              O haftanın istatistiklerine göre otomatik oluşturulur — geçerli
+              dizilişler arasından en yüksek toplam puanı veren {formation}{" "}
+              seçildi, mevkilere en yüksek puanlı oyuncular yerleştirildi.
             </p>
           </>
         )}
