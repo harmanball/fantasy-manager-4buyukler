@@ -4,7 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Formation, TEAM_LIMIT, SQUAD_SIZE } from "@/lib/teams";
 import { fetchPlayers, Player, Position } from "@/lib/players";
-import { fetchOpenGameweek, fetchUserSquad, saveSquad, buildSquadFromPicks } from "@/lib/squad";
+import {
+  fetchOpenGameweek,
+  fetchNextGameweek,
+  fetchUserSquad,
+  saveSquad,
+  buildSquadFromPicks,
+  OpenGameweek,
+} from "@/lib/squad";
 import { fetchPlayerPointsMap, fetchLastFinishedGameweekPoints } from "@/lib/playerPoints";
 import { fetchGameweekResult } from "@/lib/gameweekResult";
 import { fetchUserOverallRank, fetchUserGameweekRank } from "@/lib/leaderboard";
@@ -61,8 +68,16 @@ export default function KadroPage() {
   const [squadName, setSquadName] = useState<string | null>(null);
   const [overallTotal, setOverallTotal] = useState<number | null>(null);
   const [weeklyRank, setWeeklyRank] = useState<number | null>(null);
-  const [gameweek, setGameweek] = useState<{ id: number; name: string | null; week_number: number } | null>(null);
+  const [gameweek, setGameweek] = useState<OpenGameweek | null>(null);
   const [gameweekLoading, setGameweekLoading] = useState(true);
+
+  // "Sonraki hafta için düzenle" akışının GERÇEK hedefi. gameweek her zaman
+  // en erken açık/yaklaşan haftadır (mevcut hafta kapatılana kadar hep
+  // odur) — forceEdit modunda kaydı/yüklemeyi buna değil, nextGameweek'e
+  // yönlendiriyoruz. Admin panelde bir sonraki hafta henüz oluşturulmadıysa
+  // null kalır ve düzenleme moduna hiç girilemez (mevcut haftayı asla ezmez).
+  const [nextGameweek, setNextGameweek] = useState<OpenGameweek | null>(null);
+  const [nextGameweekLoading, setNextGameweekLoading] = useState(true);
 
   const [formation, setFormation] = useState<Formation>("4-3-3");
   const [slots, setSlots] = useState<SquadSlot[]>(() => buildSlots("4-3-3"));
@@ -75,6 +90,10 @@ export default function KadroPage() {
   const [windowOpen, setWindowOpen] = useState<boolean | null>(null);
   const showEditor = windowOpen === true || forceEdit;
 
+  // O an gerçekten hangi haftaya yükleme/kayıt yapıldığı — showEditor'ün
+  // "görünüşte" hangi haftayı düzenlediğini göstermesiyle KARIŞTIRILMAMALI.
+  const effectiveGameweek = forceEdit ? nextGameweek : gameweek;
+
   useEffect(() => {
     fetchIsTransferWindowOpen().then(setWindowOpen);
   }, []);
@@ -82,7 +101,8 @@ export default function KadroPage() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
-  const [squadLoaded, setSquadLoaded] = useState(false);
+  const [squadLoadedForId, setSquadLoadedForId] = useState<number | null>(null);
+  const squadLoaded = squadLoadedForId !== null;
 
   useEffect(() => {
     if (!sessionLoading && !session) {
@@ -106,6 +126,20 @@ export default function KadroPage() {
       setLastWeekPoints(map);
     });
   }, []);
+
+  // Gerçek "bir sonraki hafta" var mı — mevcut hafta belli olur olmaz sorulur.
+  useEffect(() => {
+    if (!gameweek) {
+      setNextGameweek(null);
+      setNextGameweekLoading(false);
+      return;
+    }
+    setNextGameweekLoading(true);
+    fetchNextGameweek(gameweek.week_number).then((gw) => {
+      setNextGameweek(gw);
+      setNextGameweekLoading(false);
+    });
+  }, [gameweek]);
 
   // Kullanıcının son bitmiş haftadaki gerçek (çarpanlı) toplam puanı
   useEffect(() => {
@@ -147,42 +181,62 @@ export default function KadroPage() {
     });
   }, [session, lastWeekGameweekId]);
 
-  // Kaydedilmiş kadroyu bir kez geri yükle (oyuncular ve hafta bilgisi hazır olunca)
+  // Kaydedilmiş kadroyu, o an DÜZENLENEN gerçek haftaya göre yükler
+  // (effectiveGameweek — mevcut hafta ya da forceEdit'teyken nextGameweek).
+  // squadLoadedForId, hangi hafta id'si için yüklendiğini tutar; forceEdit
+  // açılıp kapanınca hedef hafta değiştiği için otomatik yeniden yüklenir.
   useEffect(() => {
-    if (playersLoading || gameweekLoading || squadLoaded || !session) return;
+    if (playersLoading || gameweekLoading || nextGameweekLoading || !session) return;
+
+    if (!effectiveGameweek) {
+      // forceEdit açık ama nextGameweek henüz yok (admin oluşturmamış) —
+      // gösterecek kayıtlı kadro olmadığı için ekranı boşaltıyoruz, ama
+      // ASLA mevcut haftanın kadrosunu bu duruma taşımıyoruz.
+      setSlots(buildSlots(formation));
+      setCaptainId(null);
+      setSquadLoadedForId(-1);
+      return;
+    }
+
+    if (squadLoadedForId === effectiveGameweek.id) return;
 
     async function loadSavedSquad() {
-      if (!gameweek) {
-        setSquadLoaded(true);
-        return;
-      }
-      const saved = await fetchUserSquad(session!.user.id, gameweek.id);
+      const saved = await fetchUserSquad(session!.user.id, effectiveGameweek!.id);
       const result = buildSquadFromPicks(saved, players);
       if (result) {
         setFormation(result.formation);
         setSlots(result.slots);
         setCaptainId(result.captainId);
+      } else {
+        setSlots(buildSlots(formation));
+        setCaptainId(null);
       }
-      setSquadLoaded(true);
+      setSquadLoadedForId(effectiveGameweek!.id);
     }
 
     loadSavedSquad();
-  }, [playersLoading, gameweekLoading, squadLoaded, session, gameweek, players]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    playersLoading,
+    gameweekLoading,
+    nextGameweekLoading,
+    session,
+    effectiveGameweek?.id,
+    players,
+  ]);
 
-  // Kadrondaki tüm oyuncuları ve kaptanı kaldırır (diziliş aynı kalır).
-  // Yalnızca ekrandaki durumu sıfırlar — "Kadromu Kaydet"e basana kadar
-  // veritabanındaki kayıtlı kadroya dokunmaz.
   // Kadrondaki tüm oyuncuları ve kaptanı kaldırır (diziliş aynı kalır) —
   // hem ekrandaki durumu hem veritabanındaki kaydedilmiş kadroyu siler,
-  // bu yüzden sayfa yenilense bile eski kadro geri gelmez.
+  // bu yüzden sayfa yenilense bile eski kadro geri gelmez. Hangi haftanın
+  // silineceği her zaman effectiveGameweek'e göre belirlenir.
   async function handleReset() {
     setResetConfirmOpen(false);
-    if (session && gameweek) {
+    if (session && effectiveGameweek) {
       await supabase
         .from("user_picks")
         .delete()
         .eq("user_id", session.user.id)
-        .eq("gameweek_id", gameweek.id);
+        .eq("gameweek_id", effectiveGameweek.id);
     }
     setSlots(buildSlots(formation));
     setCaptainId(null);
@@ -265,11 +319,11 @@ export default function KadroPage() {
     filledCount === SQUAD_SIZE &&
     !Object.values(teamCounts).some((c) => c > TEAM_LIMIT) &&
     !!captainId &&
-    !!gameweek &&
+    !!effectiveGameweek &&
     !!session;
 
   async function handleSave() {
-    if (!session || !gameweek) return;
+    if (!session || !effectiveGameweek) return;
     setSaving(true);
     setSaveMessage(null);
     const picks = slots
@@ -280,7 +334,7 @@ export default function KadroPage() {
       }));
     const { error } = await saveSquad({
       userId: session.user.id,
-      gameweekId: gameweek.id,
+      gameweekId: effectiveGameweek.id,
       picks,
     });
     setSaving(false);
@@ -394,12 +448,21 @@ export default function KadroPage() {
               değişiklikleri yalnızca Salı, Çarşamba ve Perşembe günleri
               yapılabilir.
             </p>
-            <button
-              onClick={() => setForceEdit(true)}
-              className="mt-4 rounded-lg bg-gold px-5 py-2.5 text-sm font-medium text-charcoal"
-            >
-              Sonraki hafta için düzenle
-            </button>
+            {nextGameweekLoading ? (
+              <p className="mt-4 text-xs text-ivory/50">Kontrol ediliyor…</p>
+            ) : nextGameweek ? (
+              <button
+                onClick={() => setForceEdit(true)}
+                className="mt-4 rounded-lg bg-gold px-5 py-2.5 text-sm font-medium text-charcoal"
+              >
+                Sonraki hafta için düzenle
+              </button>
+            ) : (
+              <p className="mx-auto mt-4 max-w-[260px] text-xs leading-relaxed text-ivory/50">
+                Sonraki hafta henüz yönetici tarafından oluşturulmadı — o
+                oluşturulunca burada düzenleme yapabileceksin.
+              </p>
+            )}
           </div>
         </div>
       )}
