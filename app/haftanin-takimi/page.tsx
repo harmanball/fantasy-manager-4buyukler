@@ -7,13 +7,17 @@ import { Pitch, SquadSlot, buildSlots } from "@/components/Pitch";
 import { PlayerPointsModal } from "@/components/PlayerPointsModal";
 import { Skeleton } from "@/components/Skeleton";
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
-import { fetchTeamOfWeek, TeamOfWeekPlayer } from "@/lib/teamOfWeek";
+import {
+  fetchTeamOfWeek,
+  fetchOverallTeamOfWeek,
+  TeamOfWeekPlayer,
+} from "@/lib/teamOfWeek";
 import { Player } from "@/lib/players";
 import { Formation } from "@/lib/teams";
 
 export default function HaftaninTakimiPage() {
   const [weeks, setWeeks] = useState<FinishedGameweek[]>([]);
-  const [selectedGw, setSelectedGw] = useState<number | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<"total" | number | null>(null);
   const [formation, setFormation] = useState<Formation>("4-3-3");
   const [slots, setSlots] = useState<SquadSlot[]>(() => buildSlots("4-3-3"));
   const [pointsMap, setPointsMap] = useState<Record<string, number>>({});
@@ -23,21 +27,27 @@ export default function HaftaninTakimiPage() {
   useEffect(() => {
     fetchFinishedGameweeks().then((w) => {
       setWeeks(w);
-      if (w.length > 0) setSelectedGw(w[0].id);
+      // Varsayılan görünüm hâlâ "en son bitmiş hafta" — sayfanın adı
+      // "Haftanın Takımı" olduğu için "Genel Toplam" ek bir seçenek,
+      // varsayılan değil.
+      if (w.length > 0) setSelectedFilter(w[0].id);
       else setLoading(false);
     });
   }, []);
 
   useEffect(() => {
-    if (!selectedGw) return;
+    if (selectedFilter === null) return;
     let cancelled = false;
     async function load() {
       setLoading(true);
-      const result = await fetchTeamOfWeek(selectedGw!);
+      const result =
+        selectedFilter === "total"
+          ? await fetchOverallTeamOfWeek()
+          : await fetchTeamOfWeek(selectedFilter as number);
       if (cancelled) return;
 
-      // Diziliş artık sabit değil — o haftanın puanlarına göre hesaplanan
-      // gerçek diziliş (örn. 4-5-1) kullanılıyor.
+      // Diziliş artık sabit değil — o haftanın (ya da genel toplamın)
+      // puanlarına göre hesaplanan gerçek diziliş (örn. 4-5-1) kullanılıyor.
       const newSlots = buildSlots(result.formation);
       (["GK", "DEF", "MID", "FWD"] as const).forEach((pos) => {
         const inPos = result.players.filter((p: TeamOfWeekPlayer) => p.position === pos);
@@ -61,7 +71,7 @@ export default function HaftaninTakimiPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedGw]);
+  }, [selectedFilter]);
 
   return (
     <>
@@ -77,10 +87,15 @@ export default function HaftaninTakimiPage() {
         ) : (
           <>
             <select
-              value={selectedGw ?? ""}
-              onChange={(e) => setSelectedGw(Number(e.target.value))}
+              value={selectedFilter ?? ""}
+              onChange={(e) =>
+                setSelectedFilter(
+                  e.target.value === "total" ? "total" : Number(e.target.value)
+                )
+              }
               className="h-10 w-full rounded-lg border border-charcoal/15 bg-white px-3 text-sm"
             >
+              <option value="total">Genel Toplam</option>
               {weeks.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name || `${w.week_number}. Hafta`}
@@ -102,17 +117,17 @@ export default function HaftaninTakimiPage() {
             )}
 
             <p className="text-center text-[11px] text-foreground/40">
-              O haftanın istatistiklerine göre otomatik oluşturulur — geçerli
-              dizilişler arasından en yüksek toplam puanı veren {formation}{" "}
-              seçildi, mevkilere en yüksek puanlı oyuncular yerleştirildi.
+              {selectedFilter === "total"
+                ? `Sezon başından bu yana biriken genel toplam puanlara göre otomatik oluşturulur — geçerli dizilişler arasından en yüksek toplamı veren ${formation} seçildi.`
+                : `O haftanın istatistiklerine göre otomatik oluşturulur — geçerli dizilişler arasından en yüksek toplam puanı veren ${formation} seçildi, mevkilere en yüksek puanlı oyuncular yerleştirildi.`}
             </p>
           </>
         )}
 
-        {modalPlayer && selectedGw && (
+        {modalPlayer && (
           <PlayerPointsModal
             player={modalPlayer}
-            gameweekId={selectedGw}
+            gameweekId={typeof selectedFilter === "number" ? selectedFilter : null}
             onClose={() => setModalPlayer(null)}
           />
         )}
