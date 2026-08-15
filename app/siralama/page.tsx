@@ -68,6 +68,13 @@ export default function SiralamaPage() {
         ))}
       </select>
 
+      {selectedFilter === "total" && (
+        <p className="text-center text-[11px] text-foreground/45">
+          Puanlar eşitse sıralama şuna göre belirlenir: önce en yüksek tek
+          hafta puanı, hâlâ eşitse en çok haftalık 1.lik sayısı.
+        </p>
+      )}
+
       {loading ? (
         <div className="flex flex-col gap-1.5">
           <SkeletonRow />
