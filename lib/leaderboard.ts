@@ -8,17 +8,78 @@ export interface LeaderboardRow {
   total_points: number;
 }
 
+interface TiebreakStats {
+  bestWeek: number;
+  firstPlaceCount: number;
+}
+
+// Genel Toplam'da puanlar eşitse kullanılacak belirleme kuralı:
+// 1) en yüksek tek hafta puanı, 2) hâlâ eşitse en çok haftalık 1.lik sayısı.
+// Bir haftada birden fazla kişi aynı en yüksek puanı almışsa, o hafta için
+// hepsi "1. sıra" sayılır (hiç kimse haksız yere dışarıda bırakılmaz).
+async function fetchTiebreakStats(): Promise<Map<string, TiebreakStats>> {
+  const { data, error } = await supabase
+    .from("user_gameweek_scores")
+    .select("user_id, gameweek_id, points");
+
+  const stats = new Map<string, TiebreakStats>();
+  if (error || !data) return stats;
+
+  const byGameweek = new Map<number, { user_id: string; points: number }[]>();
+  for (const row of data) {
+    const gwId = row.gameweek_id as number;
+    const entry = { user_id: row.user_id as string, points: row.points as number };
+    if (!byGameweek.has(gwId)) byGameweek.set(gwId, []);
+    byGameweek.get(gwId)!.push(entry);
+  }
+
+  function ensure(userId: string): TiebreakStats {
+    if (!stats.has(userId)) stats.set(userId, { bestWeek: 0, firstPlaceCount: 0 });
+    return stats.get(userId)!;
+  }
+
+  for (const rows of byGameweek.values()) {
+    const maxPoints = Math.max(...rows.map((r) => r.points));
+    for (const r of rows) {
+      const s = ensure(r.user_id);
+      if (r.points > s.bestWeek) s.bestWeek = r.points;
+      if (r.points === maxPoints) s.firstPlaceCount += 1;
+    }
+  }
+
+  return stats;
+}
+
 export async function fetchLeaderboard(): Promise<LeaderboardRow[]> {
   const { data, error } = await supabase
     .from("leaderboard")
-    .select("user_id, username, squad_name, total_points")
-    .order("total_points", { ascending: false });
+    .select("user_id, username, squad_name, total_points");
 
   if (error) {
     console.error("Sıralama çekilemedi:", error.message);
     return [];
   }
-  return data ?? [];
+
+  const tiebreak = await fetchTiebreakStats();
+
+  const rows = (data ?? []).map((r) => {
+    const t = tiebreak.get(r.user_id as string);
+    return {
+      row: r as LeaderboardRow,
+      bestWeek: t?.bestWeek ?? 0,
+      firstPlaceCount: t?.firstPlaceCount ?? 0,
+    };
+  });
+
+  rows.sort((a, b) => {
+    if (b.row.total_points !== a.row.total_points) {
+      return b.row.total_points - a.row.total_points;
+    }
+    if (b.bestWeek !== a.bestWeek) return b.bestWeek - a.bestWeek;
+    return b.firstPlaceCount - a.firstPlaceCount;
+  });
+
+  return rows.map((r) => r.row);
 }
 
 // Sıralama sayfasındaki hafta filtresi için: tek bir haftanın sıralaması
