@@ -6,7 +6,6 @@ import { Formation, TEAM_LIMIT, SQUAD_SIZE } from "@/lib/teams";
 import { fetchPlayers, Player, Position } from "@/lib/players";
 import {
   fetchOpenGameweek,
-  fetchNextGameweek,
   fetchUserSquad,
   saveSquad,
   buildSquadFromPicks,
@@ -71,14 +70,6 @@ export default function KadroPage() {
   const [gameweek, setGameweek] = useState<OpenGameweek | null>(null);
   const [gameweekLoading, setGameweekLoading] = useState(true);
 
-  // "Sonraki hafta için düzenle" akışının GERÇEK hedefi. gameweek her zaman
-  // en erken açık/yaklaşan haftadır (mevcut hafta kapatılana kadar hep
-  // odur) — forceEdit modunda kaydı/yüklemeyi buna değil, nextGameweek'e
-  // yönlendiriyoruz. Admin panelde bir sonraki hafta henüz oluşturulmadıysa
-  // null kalır ve düzenleme moduna hiç girilemez (mevcut haftayı asla ezmez).
-  const [nextGameweek, setNextGameweek] = useState<OpenGameweek | null>(null);
-  const [nextGameweekLoading, setNextGameweekLoading] = useState(true);
-
   const [formation, setFormation] = useState<Formation>("4-3-3");
   const [slots, setSlots] = useState<SquadSlot[]>(() => buildSlots("4-3-3"));
   const [captainId, setCaptainId] = useState<string | null>(null);
@@ -86,13 +77,8 @@ export default function KadroPage() {
   const [activeSlotId, setActiveSlotId] = useState<string | null>(null);
   const [modalPlayer, setModalPlayer] = useState<Player | null>(null);
   const [captainPickerOpen, setCaptainPickerOpen] = useState(false);
-  const [forceEdit, setForceEdit] = useState(false);
   const [windowOpen, setWindowOpen] = useState<boolean | null>(null);
-  const showEditor = windowOpen === true || forceEdit;
-
-  // O an gerçekten hangi haftaya yükleme/kayıt yapıldığı — showEditor'ün
-  // "görünüşte" hangi haftayı düzenlediğini göstermesiyle KARIŞTIRILMAMALI.
-  const effectiveGameweek = forceEdit ? nextGameweek : gameweek;
+  const showEditor = windowOpen === true;
 
   useEffect(() => {
     fetchIsTransferWindowOpen().then(setWindowOpen);
@@ -101,8 +87,7 @@ export default function KadroPage() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
-  const [squadLoadedForId, setSquadLoadedForId] = useState<number | null>(null);
-  const squadLoaded = squadLoadedForId !== null;
+  const [squadLoaded, setSquadLoaded] = useState(false);
 
   useEffect(() => {
     if (!sessionLoading && !session) {
@@ -126,20 +111,6 @@ export default function KadroPage() {
       setLastWeekPoints(map);
     });
   }, []);
-
-  // Gerçek "bir sonraki hafta" var mı — mevcut hafta belli olur olmaz sorulur.
-  useEffect(() => {
-    if (!gameweek) {
-      setNextGameweek(null);
-      setNextGameweekLoading(false);
-      return;
-    }
-    setNextGameweekLoading(true);
-    fetchNextGameweek(gameweek.week_number).then((gw) => {
-      setNextGameweek(gw);
-      setNextGameweekLoading(false);
-    });
-  }, [gameweek]);
 
   // Kullanıcının son bitmiş haftadaki gerçek (çarpanlı) toplam puanı
   useEffect(() => {
@@ -181,62 +152,39 @@ export default function KadroPage() {
     });
   }, [session, lastWeekGameweekId]);
 
-  // Kaydedilmiş kadroyu, o an DÜZENLENEN gerçek haftaya göre yükler
-  // (effectiveGameweek — mevcut hafta ya da forceEdit'teyken nextGameweek).
-  // squadLoadedForId, hangi hafta id'si için yüklendiğini tutar; forceEdit
-  // açılıp kapanınca hedef hafta değiştiği için otomatik yeniden yüklenir.
+  // Kaydedilmiş kadroyu bir kez geri yükle (oyuncular ve hafta bilgisi hazır olunca)
   useEffect(() => {
-    if (playersLoading || gameweekLoading || nextGameweekLoading || !session) return;
-
-    if (!effectiveGameweek) {
-      // forceEdit açık ama nextGameweek henüz yok (admin oluşturmamış) —
-      // gösterecek kayıtlı kadro olmadığı için ekranı boşaltıyoruz, ama
-      // ASLA mevcut haftanın kadrosunu bu duruma taşımıyoruz.
-      setSlots(buildSlots(formation));
-      setCaptainId(null);
-      setSquadLoadedForId(-1);
-      return;
-    }
-
-    if (squadLoadedForId === effectiveGameweek.id) return;
+    if (playersLoading || gameweekLoading || squadLoaded || !session) return;
 
     async function loadSavedSquad() {
-      const saved = await fetchUserSquad(session!.user.id, effectiveGameweek!.id);
+      if (!gameweek) {
+        setSquadLoaded(true);
+        return;
+      }
+      const saved = await fetchUserSquad(session!.user.id, gameweek.id);
       const result = buildSquadFromPicks(saved, players);
       if (result) {
         setFormation(result.formation);
         setSlots(result.slots);
         setCaptainId(result.captainId);
-      } else {
-        setSlots(buildSlots(formation));
-        setCaptainId(null);
       }
-      setSquadLoadedForId(effectiveGameweek!.id);
+      setSquadLoaded(true);
     }
 
     loadSavedSquad();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    playersLoading,
-    gameweekLoading,
-    nextGameweekLoading,
-    session,
-    effectiveGameweek?.id,
-    players,
-  ]);
+  }, [playersLoading, gameweekLoading, squadLoaded, session, gameweek, players]);
 
   // Kadrondaki tüm oyuncuları ve kaptanı kaldırır (diziliş aynı kalır) —
   // hem ekrandaki durumu hem veritabanındaki kaydedilmiş kadroyu siler,
-  // bu yüzden sayfa yenilense bile eski kadro geri gelmez. Hangi haftanın
-  // silineceği her zaman effectiveGameweek'e göre belirlenir.
+  // bu yüzden sayfa yenilense bile eski kadro geri gelmez.
   async function handleReset() {
     setResetConfirmOpen(false);
-    if (session && effectiveGameweek) {
+    if (session && gameweek) {
       await supabase
         .from("user_picks")
         .delete()
         .eq("user_id", session.user.id)
-        .eq("gameweek_id", effectiveGameweek.id);
+        .eq("gameweek_id", gameweek.id);
     }
     setSlots(buildSlots(formation));
     setCaptainId(null);
@@ -319,11 +267,11 @@ export default function KadroPage() {
     filledCount === SQUAD_SIZE &&
     !Object.values(teamCounts).some((c) => c > TEAM_LIMIT) &&
     !!captainId &&
-    !!effectiveGameweek &&
+    !!gameweek &&
     !!session;
 
   async function handleSave() {
-    if (!session || !effectiveGameweek) return;
+    if (!session || !gameweek) return;
     setSaving(true);
     setSaveMessage(null);
     const picks = slots
@@ -334,7 +282,7 @@ export default function KadroPage() {
       }));
     const { error } = await saveSquad({
       userId: session.user.id,
-      gameweekId: effectiveGameweek.id,
+      gameweekId: gameweek.id,
       picks,
     });
     setSaving(false);
@@ -359,12 +307,6 @@ export default function KadroPage() {
       <AppHeader />
       <main className="mx-auto max-w-3xl px-3 py-4 sm:px-6 sm:py-6">
       <div className="flex flex-col gap-4 rounded-xl bg-background p-4 sm:p-6">
-
-      {forceEdit && windowOpen === false && (
-        <p className="text-center text-xs font-semibold uppercase tracking-wide text-gold">
-          Gelecek Hafta Kadrosu
-        </p>
-      )}
 
       {squadName && (
         <h2 className="text-center font-display text-2xl font-bold text-charcoal sm:text-3xl">
@@ -448,21 +390,6 @@ export default function KadroPage() {
               değişiklikleri yalnızca Salı, Çarşamba ve Perşembe günleri
               yapılabilir.
             </p>
-            {nextGameweekLoading ? (
-              <p className="mt-4 text-xs text-ivory/50">Kontrol ediliyor…</p>
-            ) : nextGameweek ? (
-              <button
-                onClick={() => setForceEdit(true)}
-                className="mt-4 rounded-lg bg-gold px-5 py-2.5 text-sm font-medium text-charcoal"
-              >
-                Sonraki hafta için düzenle
-              </button>
-            ) : (
-              <p className="mx-auto mt-4 max-w-[260px] text-xs leading-relaxed text-ivory/50">
-                Sonraki hafta henüz yönetici tarafından oluşturulmadı — o
-                oluşturulunca burada düzenleme yapabileceksin.
-              </p>
-            )}
           </div>
         </div>
       )}
