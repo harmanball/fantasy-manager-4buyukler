@@ -13,6 +13,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageHeader } from "@/components/PageHeader";
 import { SkeletonRow } from "@/components/Skeleton";
 import { Podium } from "@/components/Podium";
+import { shareText, getSiteUrl } from "@/lib/share";
 
 export default function SiralamaPage() {
   const { session } = useSession();
@@ -46,6 +47,25 @@ export default function SiralamaPage() {
     };
   }, [selectedFilter]);
 
+  // Kullanıcının bu filtredeki kendi satırı ve sırası — paylaşım metni için.
+  const myRowIndex = session
+    ? rows.findIndex((r) => r.user_id === session.user.id)
+    : -1;
+  const myRow = myRowIndex >= 0 ? rows[myRowIndex] : null;
+  const myRank = myRowIndex >= 0 ? myRowIndex + 1 : null;
+
+  function handleShareRank() {
+    if (!myRow || !myRank) return;
+    const scopeText =
+      selectedFilter === "total"
+        ? "genel toplamda"
+        : weeks.find((w) => w.id === selectedFilter)?.name ||
+          `${weeks.find((w) => w.id === selectedFilter)?.week_number ?? ""}. haftada`;
+    shareText(
+      `Fantasy Manager: 4 Büyükler lig sıralamasında ${scopeText} #${myRank}. sıradayım, ${myRow.total_points} puanla! ${getSiteUrl()}`
+    );
+  }
+
   return (
     <>
       <AppHeader />
@@ -73,6 +93,15 @@ export default function SiralamaPage() {
           Puanlar eşitse sıralama şuna göre belirlenir: önce en yüksek tek
           hafta puanı, hâlâ eşitse en çok haftalık 1.lik sayısı.
         </p>
+      )}
+
+      {!loading && myRow && myRank && (
+        <button
+          onClick={handleShareRank}
+          className="rounded-lg border border-charcoal/15 py-2.5 text-sm font-medium text-foreground hover:bg-charcoal/5"
+        >
+          Sıralamamı paylaş
+        </button>
       )}
 
       {loading ? (
