@@ -12,7 +12,7 @@ import {
   buildSquadFromPicks,
   OpenGameweek,
 } from "@/lib/squad";
-import { fetchPlayerPointsMap, fetchLastFinishedGameweekPoints } from "@/lib/playerPoints";
+import { fetchPlayerPointsMap, fetchUserLastWeekPlayerPoints } from "@/lib/playerPoints";
 import { fetchGameweekResult } from "@/lib/gameweekResult";
 import { fetchUserOverallRank, fetchUserGameweekRank } from "@/lib/leaderboard";
 import { useSession } from "@/lib/useSession";
@@ -112,12 +112,22 @@ export default function KadroPage() {
       setGameweekLoading(false);
     });
     fetchPlayerPointsMap().then(setPointsMap);
-    fetchLastFinishedGameweekPoints().then(({ gameweekId, gameweekName, map }) => {
-      setLastWeekGameweekId(gameweekId);
-      setLastWeekName(gameweekName);
-      setLastWeekPoints(map);
-    });
   }, []);
+
+  // Kadro sahasındaki rozetler artık kişiye özel: kaptan ve Maçın Yıldızı
+  // çarpanlarını benim seçimlerime göre hesaba katıyor — bu yüzden session
+  // hazır olmadan çekilemez (fetchPlayerPointsMap ile pointsMap kişiden
+  // bağımsız olduğu için o hâlâ yukarıdaki effect'te kalıyor).
+  useEffect(() => {
+    if (!session) return;
+    fetchUserLastWeekPlayerPoints(session.user.id).then(
+      ({ gameweekId, gameweekName, map }) => {
+        setLastWeekGameweekId(gameweekId);
+        setLastWeekName(gameweekName);
+        setLastWeekPoints(map);
+      }
+    );
+  }, [session]);
 
   // Kullanıcının son bitmiş haftadaki gerçek (çarpanlı) toplam puanı
   useEffect(() => {
