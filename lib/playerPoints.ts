@@ -92,12 +92,11 @@ export async function fetchLastFinishedGameweekPoints(): Promise<{
 }
 
 // Kadro sahasındaki (Pitch) rozetler için: son bitmiş haftada, O KULLANICININ
-// gerçek kaptan seçimini ve her oyuncunun Maçın Yıldızı bilgisini hesaba
-// katarak puanları döndürür — calculate_gameweek_points SQL fonksiyonuyla
-// AYNI çarpan mantığı: Maçın Yıldızı ×motm_multiplier (kaptan olsun olmasın,
-// herkese uygulanır), kaptan (oynadıysa) ayrıca ×captain_multiplier — ikisi
-// birden olduğunda çarpımsal. Böylece kadrodaki rozetlerin toplamı, o
-// kullanıcının gerçek haftalık toplamıyla birebir eşleşir.
+// gerçek kaptan seçimini hesaba katarak puanları döndürür. Maçın Yıldızı
+// çarpanı artık calculate_gameweek_points SQL fonksiyonunda player_stats.points
+// hesaplanırken UYGULANMIŞ durumda (evrensel bir gerçek — kimin kadrosunda
+// olduğuna bakmaz), bu yüzden burada TEKRAR çarpılmaz. Burada sadece kaptan
+// çarpanı (kişiye özel) eklenir — SQL'in adım (b)'siyle birebir aynı mantık.
 export async function fetchUserLastWeekPlayerPoints(userId: string): Promise<{
   gameweekId: number | null;
   gameweekName: string | null;
@@ -119,31 +118,24 @@ export async function fetchUserLastWeekPlayerPoints(userId: string): Promise<{
 
   const { data: stats } = await supabase
     .from("player_stats")
-    .select("player_id, points, is_motm, minutes")
+    .select("player_id, points, minutes")
     .eq("gameweek_id", base.gameweekId)
     .in("player_id", playerIds);
 
   const { data: settings } = await supabase
     .from("game_settings")
     .select("key, value")
-    .in("key", ["captain_multiplier", "motm_multiplier"]);
+    .eq("key", "captain_multiplier");
 
-  function setting(key: string, fallback: number): number {
-    return (settings ?? []).find((s) => s.key === key)?.value ?? fallback;
-  }
-  const capMult = setting("captain_multiplier", 2);
-  const motmMult = setting("motm_multiplier", 2);
+  const capMult = (settings ?? []).find((s) => s.key === "captain_multiplier")?.value ?? 2;
 
   const map: Record<string, number> = { ...base.map };
   for (const s of stats ?? []) {
     const pid = s.player_id as string;
-    const basePoints = (s.points as number) ?? 0;
-    const isMotm = s.is_motm as boolean;
+    const basePoints = (s.points as number) ?? 0; // MOTM zaten dahil (SQL'den)
     const minutes = s.minutes as number;
     const isCaptain = pid === captainId && minutes > 0;
-    map[pid] = Math.round(
-      basePoints * (isMotm ? motmMult : 1) * (isCaptain ? capMult : 1)
-    );
+    map[pid] = Math.round(basePoints * (isCaptain ? capMult : 1));
   }
 
   return { gameweekId: base.gameweekId, gameweekName: base.gameweekName, map };
