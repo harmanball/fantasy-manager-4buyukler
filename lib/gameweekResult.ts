@@ -64,7 +64,6 @@ export async function fetchGameweekResult(
     (settings ?? []).map((s) => [s.key as string, s.value as number])
   );
   const captainMult = settingsMap["captain_multiplier"] ?? 2;
-  const motmMult = settingsMap["motm_multiplier"] ?? 2;
 
   const { data: picks, error: picksErr } = await supabase
     .from("user_picks")
@@ -88,6 +87,11 @@ export async function fetchGameweekResult(
 
   const rows: GameweekResultRow[] = (picks ?? []).map((p) => {
     const stat = statsMap.get(p.player_id as string);
+    // basePoints artık calculate_gameweek_points'te Maçın Yıldızı çarpanı
+    // ZATEN uygulanmış olarak geliyor (evrensel bir gerçek — kimin
+    // kadrosunda olduğuna bakmaz). Burada isMotm sadece rozet/etiket
+    // göstermek için tutuluyor, tekrar çarpım yapmak için DEĞİL —
+    // yoksa MOTM çarpanı iki kere uygulanmış olur.
     const basePoints = (stat?.points as number) ?? 0;
     const isMotm = (stat?.is_motm as boolean) ?? false;
     const played = ((stat?.minutes as number) ?? 0) > 0;
@@ -99,8 +103,8 @@ export async function fetchGameweekResult(
     const teamRel = player?.teams;
     const teamCode = Array.isArray(teamRel) ? teamRel[0]?.short_code : teamRel?.short_code;
 
-    const multiplier =
-      (p.is_captain && played ? captainMult : 1) * (isMotm ? motmMult : 1);
+    // SADECE kaptan çarpanı — kişiye özel. MOTM zaten basePoints içinde.
+    const multiplier = p.is_captain && played ? captainMult : 1;
 
     return {
       playerId: p.player_id as string,
