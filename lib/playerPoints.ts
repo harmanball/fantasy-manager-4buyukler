@@ -34,6 +34,14 @@ export async function fetchPlayerPointsBreakdown(): Promise<PlayerPointsBreakdow
 // Kadro kurma ekranında "geçen hafta bu oyuncu kaç puan kazandırdı" bilgisi için.
 // "Bitmiş hafta" artık gameweeks.status alanına değil, o haftaya gerçekten
 // istatistik (player_stats) girilip girilmediğine bakarak belirleniyor.
+//
+// ÖNEMLİ: Bu, oyuncunun TABAN puanıdır (kaptan/Maçın Yıldızı çarpanı
+// UYGULANMAMIŞ) — herkes için aynıdır, kimin kadrosunda olduğuna bakmaz.
+// Kadrodaki dolu slotların rozetleri için bunun yerine
+// fetchUserLastWeekPlayerPoints kullanılmalı; bu fonksiyon sadece "henüz
+// kimsenin kadrosunda olmayan oyuncuları gezinme" gibi genel, kişiden
+// bağımsız senaryolar için uygundur (örn. PlayerSheet'teki genel toplam,
+// oradaki pointsMap zaten ayrı bir kaynaktan geliyor).
 export async function fetchLastFinishedGameweekPoints(): Promise<{
   gameweekId: number | null;
   gameweekName: string | null;
@@ -81,6 +89,64 @@ export async function fetchLastFinishedGameweekPoints(): Promise<{
     map[row.player_id as string] = row.points as number;
   }
   return { gameweekId: gw.id, gameweekName: gw.name, map };
+}
+
+// Kadro sahasındaki (Pitch) rozetler için: son bitmiş haftada, O KULLANICININ
+// gerçek kaptan seçimini ve her oyuncunun Maçın Yıldızı bilgisini hesaba
+// katarak puanları döndürür — calculate_gameweek_points SQL fonksiyonuyla
+// AYNI çarpan mantığı: Maçın Yıldızı ×motm_multiplier (kaptan olsun olmasın,
+// herkese uygulanır), kaptan (oynadıysa) ayrıca ×captain_multiplier — ikisi
+// birden olduğunda çarpımsal. Böylece kadrodaki rozetlerin toplamı, o
+// kullanıcının gerçek haftalık toplamıyla birebir eşleşir.
+export async function fetchUserLastWeekPlayerPoints(userId: string): Promise<{
+  gameweekId: number | null;
+  gameweekName: string | null;
+  map: Record<string, number>;
+}> {
+  const base = await fetchLastFinishedGameweekPoints();
+  if (!base.gameweekId) return base;
+
+  const { data: picks } = await supabase
+    .from("user_picks")
+    .select("player_id, is_captain")
+    .eq("user_id", userId)
+    .eq("gameweek_id", base.gameweekId);
+
+  if (!picks || picks.length === 0) return base;
+
+  const playerIds = picks.map((p) => p.player_id as string);
+  const captainId = picks.find((p) => p.is_captain)?.player_id as string | undefined;
+
+  const { data: stats } = await supabase
+    .from("player_stats")
+    .select("player_id, points, is_motm, minutes")
+    .eq("gameweek_id", base.gameweekId)
+    .in("player_id", playerIds);
+
+  const { data: settings } = await supabase
+    .from("game_settings")
+    .select("key, value")
+    .in("key", ["captain_multiplier", "motm_multiplier"]);
+
+  function setting(key: string, fallback: number): number {
+    return (settings ?? []).find((s) => s.key === key)?.value ?? fallback;
+  }
+  const capMult = setting("captain_multiplier", 2);
+  const motmMult = setting("motm_multiplier", 2);
+
+  const map: Record<string, number> = { ...base.map };
+  for (const s of stats ?? []) {
+    const pid = s.player_id as string;
+    const basePoints = (s.points as number) ?? 0;
+    const isMotm = s.is_motm as boolean;
+    const minutes = s.minutes as number;
+    const isCaptain = pid === captainId && minutes > 0;
+    map[pid] = Math.round(
+      basePoints * (isMotm ? motmMult : 1) * (isCaptain ? capMult : 1)
+    );
+  }
+
+  return { gameweekId: base.gameweekId, gameweekName: base.gameweekName, map };
 }
 
 export async function fetchPlayerPointsMap(): Promise<Record<string, number>> {
