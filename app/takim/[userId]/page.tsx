@@ -6,9 +6,15 @@ import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 import { Formation, SQUAD_SIZE } from "@/lib/teams";
 import { fetchPlayers, Player } from "@/lib/players";
-import { fetchOpenGameweek, fetchUserSquad, buildSquadFromPicks } from "@/lib/squad";
+import {
+  fetchOpenGameweek,
+  fetchUserSquad,
+  fetchPreviousWeekSquad,
+  buildSquadFromPicks,
+} from "@/lib/squad";
 import { fetchFinishedGameweeks } from "@/lib/gameweekResult";
 import { fetchLastFinishedGameweekPoints } from "@/lib/playerPoints";
+import { fetchIsTransferWindowOpen } from "@/lib/transferWindow";
 import { AppHeader } from "@/components/AppHeader";
 import { FormationPicker } from "@/components/FormationPicker";
 import { Pitch, SquadSlot, buildSlots } from "@/components/Pitch";
@@ -25,6 +31,10 @@ export default function TakimPage() {
   const [lastWeekPoints, setLastWeekPoints] = useState<Record<string, number>>({});
   const [lastWeekGameweekId, setLastWeekGameweekId] = useState<number | null>(null);
   const [lastWeekName, setLastWeekName] = useState<string | null>(null);
+
+  // Gösterilen kadronun "bu haftanın canlı seçimi" değil, kilitli bir
+  // önceki hafta olduğunu belirtmek için — sadece bilgi notu amaçlı.
+  const [showingLockedPrevWeek, setShowingLockedPrevWeek] = useState(false);
 
   const [formation, setFormation] = useState<Formation>("4-3-3");
   const [slots, setSlots] = useState<SquadSlot[]>(() => buildSlots("4-3-3"));
@@ -53,13 +63,33 @@ export default function TakimPage() {
       const allPlayers = await fetchPlayers();
       if (cancelled) return;
 
-      // Önce açık/yaklaşan haftanın kadrosunu dene, yoksa son bitmiş haftaya düş
       const openGw = await fetchOpenGameweek();
-      let saved = openGw ? await fetchUserSquad(targetUserId, openGw.id) : [];
+      const windowOpen = await fetchIsTransferWindowOpen();
+      if (cancelled) return;
+
+      let saved: Awaited<ReturnType<typeof fetchUserSquad>> = [];
+      let fromPrevWeek = false;
+
+      if (openGw) {
+        if (windowOpen) {
+          // Transfer penceresi açık — bu haftanın seçimleri henüz
+          // kesinleşmemiş sayılır (herkes değiştirebilir), bu yüzden
+          // başkalarına gösterilmez. Bunun yerine bir önceki, artık
+          // kilitli haftanın kadrosu gösterilir.
+          saved = await fetchPreviousWeekSquad(targetUserId, openGw.week_number);
+          fromPrevWeek = saved.length > 0;
+        } else {
+          // Pencere kapalı — bu haftanın kadrosu artık kilitli, güvenle
+          // gösterilebilir.
+          saved = await fetchUserSquad(targetUserId, openGw.id);
+        }
+      }
+
       if (saved.length === 0) {
         const finished = await fetchFinishedGameweeks();
         if (finished.length > 0) {
           saved = await fetchUserSquad(targetUserId, finished[0].id);
+          fromPrevWeek = false;
         }
       }
       if (cancelled) return;
@@ -69,6 +99,7 @@ export default function TakimPage() {
         setFormation(result.formation);
         setSlots(result.slots);
         setCaptainId(result.captainId);
+        setShowingLockedPrevWeek(fromPrevWeek);
       } else {
         setNotFound(true);
       }
@@ -117,6 +148,14 @@ export default function TakimPage() {
         </p>
       ) : (
         <>
+          {showingLockedPrevWeek && (
+            <p className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-charcoal">
+              Transfer penceresi açık olduğu için bu haftaki kadrosu henüz
+              gösterilmiyor — gördüğün, bir önceki (kilitli) haftanın
+              kadrosu.
+            </p>
+          )}
+
           <FormationPicker value={formation} onChange={() => {}} />
 
           {lastWeekName && (
