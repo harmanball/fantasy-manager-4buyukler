@@ -13,7 +13,7 @@ import {
   buildSquadFromPicks,
 } from "@/lib/squad";
 import { fetchFinishedGameweeks } from "@/lib/gameweekResult";
-import { fetchLastFinishedGameweekPoints } from "@/lib/playerPoints";
+import { fetchUserLastWeekPlayerPoints } from "@/lib/playerPoints";
 import { fetchIsTransferWindowOpen } from "@/lib/transferWindow";
 import { AppHeader } from "@/components/AppHeader";
 import { FormationPicker } from "@/components/FormationPicker";
@@ -104,7 +104,9 @@ export default function TakimPage() {
         setNotFound(true);
       }
 
-      const lastWeek = await fetchLastFinishedGameweekPoints();
+      // Rozetler bu kadronun SAHİBİNİN kaptan/Maçın Yıldızı çarpanlarını
+      // yansıtır — başka bir kullanıcıya bakarken de doğru toplam.
+      const lastWeek = await fetchUserLastWeekPlayerPoints(targetUserId);
       if (cancelled) return;
       setLastWeekGameweekId(lastWeek.gameweekId);
       setLastWeekName(lastWeek.gameweekName);
