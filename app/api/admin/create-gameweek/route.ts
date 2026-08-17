@@ -1,7 +1,10 @@
 import { createAdminClient, requireAdmin } from "@/lib/supabaseAdmin";
 
-// Bkz. create-gameweek/route.ts — aynı varsayılan mantık, hafta
-// kapanınca otomatik açılan bir sonraki hafta için de kullanılıyor.
+// Deadline artık admin panelinden istenmiyor — kadro sayfasındaki
+// Salı/Çarşamba/Perşembe kuralıyla zaten hiçbir bağlantısı yok, sadece
+// veritabanı sütununu doldurmak için makul bir varsayılan üretiyoruz:
+// oluşturma anından sonraki ilk Cuma 00:00 (kadro sayfasındaki
+// getWindowCloseTime ile aynı mantık).
 function defaultDeadline(): string {
   const now = new Date();
   let daysUntilFriday = (5 - now.getDay() + 7) % 7;
@@ -18,66 +21,23 @@ export async function POST(request: Request) {
     return Response.json({ error: auth.message }, { status: auth.status });
   }
   const body = await request.json();
-  const { gameweekId } = body as { gameweekId: number };
-  if (!gameweekId) {
-    return Response.json({ error: "Hafta ID'si zorunlu." }, { status: 400 });
+  const { weekNumber, name, deadline } = body as {
+    weekNumber: number;
+    name?: string;
+    deadline?: string;
+  };
+  if (!weekNumber) {
+    return Response.json({ error: "Hafta numarası zorunlu." }, { status: 400 });
   }
-
   const admin = createAdminClient();
-
-  const { data: current, error: fetchError } = await admin
-    .from("gameweeks")
-    .select("id, week_number")
-    .eq("id", gameweekId)
-    .maybeSingle();
-
-  if (fetchError || !current) {
-    return Response.json(
-      { error: fetchError?.message ?? "Hafta bulunamadı." },
-      { status: 404 }
-    );
-  }
-
-  const { error: closeError } = await admin
-    .from("gameweeks")
-    .update({ status: "finished" })
-    .eq("id", gameweekId);
-
-  if (closeError) {
-    return Response.json({ error: closeError.message }, { status: 500 });
-  }
-
-  // Kapanan haftanın hemen ardından gelen hafta zaten var mı diye bak —
-  // yoksa otomatik olarak oluşturup açıyoruz, admin ayrıca "Yeni Hafta
-  // Oluştur"a basmak zorunda kalmasın diye.
-  const nextWeekNumber = current.week_number + 1;
-  const { data: existingNext } = await admin
-    .from("gameweeks")
-    .select("id")
-    .eq("week_number", nextWeekNumber)
-    .maybeSingle();
-
-  if (existingNext) {
-    return Response.json({ ok: true, nextWeekCreated: false, nextWeekNumber });
-  }
-
-  const { error: createError } = await admin.from("gameweeks").insert({
-    week_number: nextWeekNumber,
-    name: `${nextWeekNumber}. Hafta`,
-    deadline: defaultDeadline(),
+  const { error } = await admin.from("gameweeks").insert({
+    week_number: weekNumber,
+    name: name || `${weekNumber}. Hafta`,
+    deadline: deadline || defaultDeadline(),
     status: "open",
   });
-
-  if (createError) {
-    // Hafta yine de kapandı — sadece sonraki hafta otomatik açılamadı,
-    // admin "Yeni Hafta Oluştur" formuyla elle devam edebilir.
-    return Response.json({
-      ok: true,
-      nextWeekCreated: false,
-      nextWeekNumber,
-      nextWeekError: createError.message,
-    });
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 });
   }
-
-  return Response.json({ ok: true, nextWeekCreated: true, nextWeekNumber });
+  return Response.json({ ok: true });
 }
