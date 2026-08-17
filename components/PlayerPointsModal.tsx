@@ -18,6 +18,7 @@ const ROWS: { key: keyof PlayerGameweekBreakdown; label: string }[] = [
   { key: "kkGolPuani", label: "Kendi kalesine gol" },
   { key: "penKacanPuani", label: "Penaltı kaçırma" },
   { key: "macPuaniBonusu", label: "Maç reytingi bonusu" },
+  { key: "motmBonusu", label: "Maçın Yıldızı bonusu" },
 ];
 
 export interface ModalPlayerInfo {
