@@ -38,7 +38,6 @@ export default function AdminPage() {
 
   const [newWeekNumber, setNewWeekNumber] = useState("");
   const [newWeekName, setNewWeekName] = useState("");
-  const [newWeekDeadline, setNewWeekDeadline] = useState("");
   const [creatingWeek, setCreatingWeek] = useState(false);
   const [createMsg, setCreateMsg] = useState<string | null>(null);
 
@@ -132,7 +131,7 @@ export default function AdminPage() {
   async function handleCloseWeek() {
     if (!selectedGw) return;
     const confirmed = window.confirm(
-      "Bu haftayı kapatmak istediğine emin misin? Tüm maçların istatistiklerini girdiğinden emin ol — kapattıktan sonra da tekrar açabilirsin ama normalde bunun gerekmemesi lazım."
+      "Bu haftayı kapatmak istediğine emin misin? Tüm maçların istatistiklerini girdiğinden emin ol. Hafta kapanınca bir sonraki hafta otomatik olarak oluşturulup açılacak."
     );
     if (!confirmed) return;
 
@@ -154,7 +153,15 @@ export default function AdminPage() {
       setCloseMsg(`Hata: ${json.error}`);
       return;
     }
-    setCloseMsg("Hafta kapatıldı ✓");
+    if (json.nextWeekCreated) {
+      setCloseMsg(`Hafta kapatıldı ✓ — ${json.nextWeekNumber}. Hafta otomatik açıldı ✓`);
+    } else if (json.nextWeekError) {
+      setCloseMsg(
+        `Hafta kapatıldı ✓ — ama ${json.nextWeekNumber}. Hafta otomatik açılamadı (${json.nextWeekError}). "Yeni Hafta Oluştur"dan elle ekleyebilirsin.`
+      );
+    } else {
+      setCloseMsg(`Hafta kapatıldı ✓ — ${json.nextWeekNumber}. Hafta zaten mevcuttu.`);
+    }
     refreshGameweeks();
   }
 
@@ -173,7 +180,6 @@ export default function AdminPage() {
       body: JSON.stringify({
         weekNumber: Number(newWeekNumber),
         name: newWeekName,
-        deadline: newWeekDeadline,
       }),
     });
     const json = await res.json();
@@ -185,7 +191,6 @@ export default function AdminPage() {
     setCreateMsg("Hafta oluşturuldu ✓");
     setNewWeekNumber("");
     setNewWeekName("");
-    setNewWeekDeadline("");
     refreshGameweeks();
   }
 
@@ -262,6 +267,11 @@ export default function AdminPage() {
 
       <section className="rounded-lg border border-charcoal/10 bg-white p-4">
         <h2 className="mb-3 text-sm font-semibold">Yeni Hafta Oluştur</h2>
+        <p className="mb-3 text-xs text-foreground/50">
+          Normalde buna gerek kalmaz — "Haftayı Kapat" bir sonraki haftayı
+          otomatik açar. Bu form sadece elle ekleme gerektiren istisnai
+          durumlar için.
+        </p>
         <form onSubmit={handleCreateWeek} className="flex flex-col gap-2">
           <input
             type="number"
@@ -276,13 +286,6 @@ export default function AdminPage() {
             placeholder="Ad (opsiyonel, örn. 2. Hafta)"
             value={newWeekName}
             onChange={(e) => setNewWeekName(e.target.value)}
-            className="h-10 rounded-lg border border-charcoal/15 px-3 text-sm outline-none focus:border-pitch"
-          />
-          <input
-            type="datetime-local"
-            required
-            value={newWeekDeadline}
-            onChange={(e) => setNewWeekDeadline(e.target.value)}
             className="h-10 rounded-lg border border-charcoal/15 px-3 text-sm outline-none focus:border-pitch"
           />
           <button
