@@ -7,6 +7,7 @@ import { fetchPlayers, Player, Position } from "@/lib/players";
 import {
   fetchOpenGameweek,
   fetchUserSquad,
+  fetchPreviousWeekSquad,
   saveSquad,
   buildSquadFromPicks,
   OpenGameweek,
@@ -80,6 +81,12 @@ export default function KadroPage() {
   const [windowOpen, setWindowOpen] = useState<boolean | null>(null);
   const showEditor = windowOpen === true;
 
+  // Bu hafta için hiç kayıtlı seçim yoksa (yeni açılan hafta) ve önceki
+  // haftanın kadrosu başlangıç noktası olarak gösterildiyse true olur —
+  // sadece ekranda bir bilgi notu göstermek için, kaydetme davranışını
+  // etkilemez (KAYDET her zaman mevcut haftaya yazar).
+  const [carriedOverFromPrevWeek, setCarriedOverFromPrevWeek] = useState(false);
+
   useEffect(() => {
     fetchIsTransferWindowOpen().then(setWindowOpen);
   }, []);
@@ -152,7 +159,12 @@ export default function KadroPage() {
     });
   }, [session, lastWeekGameweekId]);
 
-  // Kaydedilmiş kadroyu bir kez geri yükle (oyuncular ve hafta bilgisi hazır olunca)
+  // Kaydedilmiş kadroyu bir kez geri yükle (oyuncular ve hafta bilgisi
+  // hazır olunca). Bu hafta için hiç kayıtlı seçim yoksa — yani hafta
+  // yeni açılmış ve kullanıcı henüz hiç kaydetmemişse — önceki haftanın
+  // kadrosunu başlangıç noktası olarak gösteriyoruz. Bu SADECE ekranı
+  // doldurur; "KADROMU KAYDET"e basılmadan veritabanına hiçbir şey
+  // yazılmaz, yani kullanıcı dilediği gibi değiştirip öyle kaydedebilir.
   useEffect(() => {
     if (playersLoading || gameweekLoading || squadLoaded || !session) return;
 
@@ -162,12 +174,24 @@ export default function KadroPage() {
         return;
       }
       const saved = await fetchUserSquad(session!.user.id, gameweek.id);
-      const result = buildSquadFromPicks(saved, players);
+      let result = buildSquadFromPicks(saved, players);
+      let fromPrevWeek = false;
+
+      if (!result) {
+        const prevPicks = await fetchPreviousWeekSquad(
+          session!.user.id,
+          gameweek.week_number
+        );
+        result = buildSquadFromPicks(prevPicks, players);
+        fromPrevWeek = result !== null;
+      }
+
       if (result) {
         setFormation(result.formation);
         setSlots(result.slots);
         setCaptainId(result.captainId);
       }
+      setCarriedOverFromPrevWeek(fromPrevWeek);
       setSquadLoaded(true);
     }
 
@@ -188,6 +212,7 @@ export default function KadroPage() {
     }
     setSlots(buildSlots(formation));
     setCaptainId(null);
+    setCarriedOverFromPrevWeek(false);
     setSaveMessage("Kadron sıfırlandı ✓");
   }
 
@@ -286,6 +311,7 @@ export default function KadroPage() {
       picks,
     });
     setSaving(false);
+    if (!error) setCarriedOverFromPrevWeek(false);
     setSaveMessage(error ? `Hata: ${error}` : "Kadron kaydedildi ✓");
   }
 
@@ -359,6 +385,13 @@ export default function KadroPage() {
       {!gameweek && !playersLoading && (
         <p className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-charcoal">
           Henüz açık bir hafta yok — kadro kaydı yakında açılacak.
+        </p>
+      )}
+
+      {squadLoaded && carriedOverFromPrevWeek && filledCount > 0 && (
+        <p className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-charcoal">
+          Bu, önceki haftaki kadron — henüz bu hafta için kaydetmedin.
+          Dilersen değiştir, dilersen aynen bırakıp kaydet.
         </p>
       )}
 
