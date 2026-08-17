@@ -61,8 +61,17 @@ export default function SiralamaPage() {
         ? "genel toplamda"
         : weeks.find((w) => w.id === selectedFilter)?.name ||
           `${weeks.find((w) => w.id === selectedFilter)?.week_number ?? ""}. haftada`;
+
+    // Metindeki link artık ana sayfa değil, sonucu görsel bir önizlemeyle
+    // (WhatsApp/OG kartı) gösteren ayrı bir paylaşım sayfası.
+    const shareUrl = `${getSiteUrl()}/paylas/siralama?rank=${myRank}&points=${
+      myRow.total_points
+    }&name=${encodeURIComponent(myRow.squad_name || myRow.username)}&scope=${encodeURIComponent(
+      scopeText
+    )}`;
+
     shareText(
-      `Fantasy Manager: 4 Büyükler lig sıralamasında ${scopeText} #${myRank}. sıradayım, ${myRow.total_points} puanla! ${getSiteUrl()}`
+      `Fantasy Manager: 4 Büyükler lig sıralamasında ${scopeText} #${myRank}. sıradayım, ${myRow.total_points} puanla! ${shareUrl}`
     );
   }
 
