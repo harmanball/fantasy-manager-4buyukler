@@ -15,6 +15,7 @@ export interface PlayerGameweekBreakdown {
   kkGolPuani: number;
   penKacanPuani: number;
   macPuaniBonusu: number;
+  motmBonusu: number;
   toplamPuan: number;
 }
 
@@ -30,24 +31,19 @@ export async function fetchPlayerGameweekBreakdown(
     .eq("player_id", playerId)
     .eq("gameweek_id", gameweekId)
     .maybeSingle();
-
   if (statErr || !stat) return null;
-
   const { data: player } = await supabase
     .from("players")
     .select("name, position, teams(short_code)")
     .eq("id", playerId)
     .single();
-
   const teamRel = player?.teams as unknown as
     | { short_code: string }
     | { short_code: string }[];
   const teamCode = Array.isArray(teamRel) ? teamRel[0]?.short_code : teamRel?.short_code;
   const position = (player?.position as string) ?? "?";
-
   const { data: rules } = await supabase.from("scoring_rules").select("stat_key, position, points");
   const { data: settings } = await supabase.from("game_settings").select("key, value");
-
   function rule(key: string, pos: string): number {
     return (
       (rules ?? []).find((r) => r.stat_key === key && r.position === pos)?.points ?? 0
@@ -56,7 +52,6 @@ export async function fetchPlayerGameweekBreakdown(
   function setting(key: string): number {
     return (settings ?? []).find((s) => s.key === key)?.value ?? 0;
   }
-
   const minutes = stat.minutes as number;
   const oynamaPuani =
     minutes > 0 ? rule(minutes >= 60 ? "played_60_plus" : "played_under_60", "ALL") : 0;
@@ -73,6 +68,25 @@ export async function fetchPlayerGameweekBreakdown(
   const bonusPoints = setting("rating_bonus_points");
   const macPuaniBonusu =
     stat.match_rating !== null && (stat.match_rating as number) >= threshold ? bonusPoints : 0;
+  const isMotm = stat.is_motm as boolean;
+  const toplamPuan = stat.points as number;
+
+  // Yukarıdaki satırlar (gol, asist, oynama vb.) HAM olay puanlarıdır.
+  // toplamPuan ise artık calculate_gameweek_points'te Maçın Yıldızı
+  // çarpanı uygulanmış hâliyle veritabanından geliyor (evrensel bir
+  // çarpan — kimin kadrosunda olduğuna bakmaz). Bu farkı ayrı bir
+  // "Maçın Yıldızı bonusu" satırı olarak gösteriyoruz ki satırların
+  // toplamı, üstte gösterilen gerçek toplam puanla birebir tutsun.
+  const rawSum =
+    oynamaPuani +
+    golPuani +
+    asistPuani +
+    temizKalePuani +
+    kartPuani +
+    kkGolPuani +
+    penKacanPuani +
+    macPuaniBonusu;
+  const motmBonusu = isMotm ? toplamPuan - rawSum : 0;
 
   return {
     name: (player?.name as string) ?? "?",
@@ -80,7 +94,7 @@ export async function fetchPlayerGameweekBreakdown(
     position,
     minutes,
     matchRating: stat.match_rating as number | null,
-    isMotm: stat.is_motm as boolean,
+    isMotm,
     oynamaPuani,
     golPuani,
     asistPuani,
@@ -89,6 +103,7 @@ export async function fetchPlayerGameweekBreakdown(
     kkGolPuani,
     penKacanPuani,
     macPuaniBonusu,
-    toplamPuan: stat.points as number,
+    motmBonusu,
+    toplamPuan,
   };
 }
