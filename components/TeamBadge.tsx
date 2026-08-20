@@ -3,7 +3,7 @@ import { TEAMS, TeamCode } from "@/lib/teams";
 // Kaptan rozetine özel mor ton — paylaşılan "gold" rengi uygulamanın başka
 // yerlerinde de (Uyg. Yükle butonu, çeşitli vurgu panelleri) kullanıldığı
 // için ona dokunmadık, sadece kaptan rozetinin kendi rengini değiştirdik.
-const CAPTAIN_COLOR = "#7F77DD";
+const CAPTAIN_COLOR = "#A927F5";
 
 export function TeamBadge({
   team,
