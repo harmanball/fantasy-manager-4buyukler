@@ -8,6 +8,7 @@ interface TSDBEvent {
   strTime: string | null;
   strTimeLocal: string | null;
   strVenue: string | null;
+  idLeague: string | null;
 }
 
 export type TrackedTeamCode = "GS" | "FB" | "BJK" | "TS";
@@ -21,16 +22,28 @@ export interface TrackedFixture {
   venue: string | null;
 }
 
-// TheSportsDB'deki futbol takımı id'leri (thesportsdb.com/team/<id> sayfa
-// linklerinden doğrulandı). NOT: eventsnextleague.php (lig bazlı, toplu
-// sorgu) ücretsiz anahtarla sadece TEK bir sonuç döndürüyor — bu yüzden
-// her takım için ayrı ayrı eventsnext.php (takım bazlı, "sıradaki 5 maç")
-// kullanıyoruz. Bu, tek bir toplu çağrının kısıtına takılmıyor.
-const TRACKED: { code: TrackedTeamCode; teamId: string }[] = [
-  { code: "GS", teamId: "133804" }, // Galatasaray
-  { code: "FB", teamId: "133807" }, // Fenerbahçe
-  { code: "BJK", teamId: "133794" }, // Beşiktaş
-  { code: "TS", teamId: "133796" }, // Trabzonspor
+// TheSportsDB'deki Türkiye Süper Lig ligi id'si.
+//
+// NOT: Önceden eventsnext.php (takım bazlı "sıradaki maç") kullanılıyordu,
+// ama TheSportsDB'nin dokümantasyonu şunu açıkça belirtiyor: "free key
+// only shows home event" — yani ücretsiz anahtarla bu uç nokta SADECE
+// takımın bir sonraki İÇ SAHA maçını döndürüyor, kronolojik olarak
+// gerçekten sıradaki maçı değil. Bir takımın sıradaki maçı deplasmansa
+// (örn. bu hafta BJK/TS için), o veri API'den hiç gelmiyor — doğrudan
+// takımın bir sonraki iç saha maçına (genelde Avrupa kupası) atlıyor.
+//
+// Bunun yerine artık GÜNE göre sorguluyoruz (eventsday.php + lig
+// filtresi) — bu uç nokta takım bazlı değil, o gün oynanan TÜM Süper Lig
+// maçlarını (hem iç saha hem deplasman) döndürüyor. Önümüzdeki birkaç
+// günü tek tek tarayıp 4 kulübü arıyoruz.
+const SUPER_LIG_ID = "4339";
+const DAYS_TO_SCAN = 10;
+
+const TRACKED: { code: TrackedTeamCode; keyword: string }[] = [
+  { code: "GS", keyword: "galatasaray" },
+  { code: "FB", keyword: "fenerbahce" },
+  { code: "BJK", keyword: "besiktas" },
+  { code: "TS", keyword: "trabzonspor" },
 ];
 
 function normalize(s: string): string {
@@ -44,59 +57,67 @@ function normalize(s: string): string {
     .replace(/ü/g, "u");
 }
 
-async function fetchNextForTeam(
-  code: TrackedTeamCode,
-  teamId: string
-): Promise<TrackedFixture | null> {
+function formatDateParam(d: Date): string {
+  return d.toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+async function fetchEventsForDay(dateStr: string): Promise<TSDBEvent[]> {
   try {
     const res = await fetch(
-      `https://www.thesportsdb.com/api/v1/json/123/eventsnext.php?id=${teamId}`,
+      `https://www.thesportsdb.com/api/v1/json/123/eventsday.php?d=${dateStr}&l=${SUPER_LIG_ID}`,
       { next: { revalidate: 3600 } }
     );
-    if (!res.ok) return null;
-
+    if (!res.ok) return [];
     const data = await res.json();
-    const events: TSDBEvent[] = data?.events ?? [];
-    if (events.length === 0) return null;
-
-    // Süper Lig dışı (kupa, hazırlık maçı vb.) karışmasın diye takımın
-    // adı hem ev sahibi hem deplasmanda geçen ilk kaydı alıyoruz —
-    // eventsnext zaten o takımın TÜM branşlar/turnuvalar için sıradaki
-    // maçlarını döndürdüğünden, ilk sonuç normalde ligdeki bir sonraki
-    // maçtır.
-    const match = events[0];
-    const keyword = normalize(code === "GS" ? "galatasaray" : code === "FB" ? "fenerbahce" : code === "BJK" ? "besiktas" : "trabzonspor");
-    const isHome = normalize(match.strHomeTeam ?? "").includes(keyword);
-
-    return {
-      team: code,
-      opponent: isHome ? match.strAwayTeam : match.strHomeTeam,
-      isHome,
-      // UTC gece yarısına yakın maçlarda tarih bir gün kayabileceği için
-      // (Türkiye +3 saat ileride), varsa dateEventLocal'ı tercih ediyoruz.
-      date: match.dateEventLocal || match.dateEvent,
-      // strTime UTC'dir — strTimeLocal, maçın oynandığı yerin (Türkiye'nin)
-      // yerel saatidir. Türkiye saatini göstermek için bunu kullanıyoruz,
-      // strTime'ı DEĞİL (aksi halde saat 3 saat geride görünür).
-      time: match.strTimeLocal
-        ? match.strTimeLocal.slice(0, 5)
-        : match.strTime
-        ? match.strTime.slice(0, 5)
-        : "",
-      venue: match.strVenue ?? null,
-    };
+    return (data?.events as TSDBEvent[]) ?? [];
   } catch (err) {
-    console.error(`${code} için fikstür çekilemedi:`, err);
-    return null;
+    console.error(`${dateStr} için maçlar çekilemedi:`, err);
+    return [];
   }
 }
 
 export async function GET() {
   try {
-    const results = await Promise.all(
-      TRACKED.map((t) => fetchNextForTeam(t.code, t.teamId))
-    );
-    const fixtures = results.filter((f): f is TrackedFixture => f !== null);
+    const today = new Date();
+    const dayStrings = Array.from({ length: DAYS_TO_SCAN }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      return formatDateParam(d);
+    });
+
+    const dayResults = await Promise.all(dayStrings.map(fetchEventsForDay));
+    const allEvents = dayResults.flat();
+
+    // Tarihe göre sırala (eventsday zaten günlük geldiği için bu esasen
+    // günler arası sırayı garantiliyor).
+    allEvents.sort((a, b) => (a.dateEvent < b.dateEvent ? -1 : 1));
+
+    const fixtures: TrackedFixture[] = [];
+    for (const t of TRACKED) {
+      const match = allEvents.find((e) => {
+        const home = normalize(e.strHomeTeam ?? "");
+        const away = normalize(e.strAwayTeam ?? "");
+        return home.includes(t.keyword) || away.includes(t.keyword);
+      });
+      if (!match) continue;
+
+      const isHome = normalize(match.strHomeTeam ?? "").includes(t.keyword);
+      fixtures.push({
+        team: t.code,
+        opponent: isHome ? match.strAwayTeam : match.strHomeTeam,
+        isHome,
+        date: match.dateEventLocal || match.dateEvent,
+        // strTime UTC'dir — strTimeLocal, maçın oynandığı yerin (Türkiye'nin)
+        // yerel saatidir.
+        time: match.strTimeLocal
+          ? match.strTimeLocal.slice(0, 5)
+          : match.strTime
+          ? match.strTime.slice(0, 5)
+          : "",
+        venue: match.strVenue ?? null,
+      });
+    }
+
     return Response.json({ fixtures });
   } catch (err) {
     console.error("Fikstür çekilemedi:", err);
