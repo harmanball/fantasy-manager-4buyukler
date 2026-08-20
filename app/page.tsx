@@ -62,7 +62,7 @@ export default function Home() {
               href="https://www.harmanball.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-md border border-muted-green px-5 py-2.5 text-sm font-medium text-ivory"
+              className="flex items-center gap-1.5 rounded-md bg-gold px-5 py-2.5 text-sm font-medium text-charcoal"
             >
               Harmanball&apos;a dön
               <svg
@@ -71,7 +71,7 @@ export default function Home() {
                 viewBox="0 0 24 24"
                 fill="none"
                 aria-hidden="true"
-                className="text-ivory/50"
+                className="text-charcoal/50"
               >
                 <path
                   d="M7 17L17 7M17 7H9M17 7V15"
