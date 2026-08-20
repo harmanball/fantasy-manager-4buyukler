@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/Skeleton";
 import { shareText, getSiteUrl } from "@/lib/share";
 import { fetchIsTransferWindowOpen } from "@/lib/transferWindow";
 import { WeeklyFixtures } from "@/components/WeeklyFixtures";
+import { UpdateNotesModal } from "@/components/UpdateNotesModal";
 
 // Transfer penceresi her zaman bir sonraki Cuma 00:00'da kapanır
 // (Salı/Çarşamba/Perşembe açık kuralına göre).
@@ -342,6 +343,7 @@ export default function KadroPage() {
   return (
     <>
       <AppHeader />
+      <UpdateNotesModal />
       <main className="mx-auto max-w-3xl px-3 py-4 sm:px-6 sm:py-6">
       <div className="flex flex-col gap-4 rounded-xl bg-background p-4 sm:p-6">
 
