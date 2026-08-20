@@ -4,7 +4,9 @@ interface TSDBEvent {
   strHomeTeam: string;
   strAwayTeam: string;
   dateEvent: string;
+  dateEventLocal: string | null;
   strTime: string | null;
+  strTimeLocal: string | null;
   strVenue: string | null;
 }
 
@@ -19,17 +21,16 @@ export interface TrackedFixture {
   venue: string | null;
 }
 
-// TheSportsDB'deki Türkiye Süper Lig ligi id'si.
-const LEAGUE_ID = "4339";
-
-// TheSportsDB takım adlarını Türkçe karaktersiz (Fenerbahce, Besiktas gibi)
-// yazabiliyor — bu yüzden karşılaştırmayı Türkçe karakterleri sadeleştirip
-// küçük harfe çevirerek, "içeriyor mu" mantığıyla yapıyoruz.
-const TRACKED: { code: TrackedTeamCode; keyword: string }[] = [
-  { code: "GS", keyword: "galatasaray" },
-  { code: "FB", keyword: "fenerbahce" },
-  { code: "BJK", keyword: "besiktas" },
-  { code: "TS", keyword: "trabzonspor" },
+// TheSportsDB'deki futbol takımı id'leri (thesportsdb.com/team/<id> sayfa
+// linklerinden doğrulandı). NOT: eventsnextleague.php (lig bazlı, toplu
+// sorgu) ücretsiz anahtarla sadece TEK bir sonuç döndürüyor — bu yüzden
+// her takım için ayrı ayrı eventsnext.php (takım bazlı, "sıradaki 5 maç")
+// kullanıyoruz. Bu, tek bir toplu çağrının kısıtına takılmıyor.
+const TRACKED: { code: TrackedTeamCode; teamId: string }[] = [
+  { code: "GS", teamId: "133804" }, // Galatasaray
+  { code: "FB", teamId: "133807" }, // Fenerbahçe
+  { code: "BJK", teamId: "133794" }, // Beşiktaş
+  { code: "TS", teamId: "133796" }, // Trabzonspor
 ];
 
 function normalize(s: string): string {
@@ -43,44 +44,59 @@ function normalize(s: string): string {
     .replace(/ü/g, "u");
 }
 
-export async function GET() {
+async function fetchNextForTeam(
+  code: TrackedTeamCode,
+  teamId: string
+): Promise<TrackedFixture | null> {
   try {
     const res = await fetch(
-      `https://www.thesportsdb.com/api/v1/json/123/eventsnextleague.php?id=${LEAGUE_ID}`,
+      `https://www.thesportsdb.com/api/v1/json/123/eventsnext.php?id=${teamId}`,
       { next: { revalidate: 3600 } }
     );
-
-    if (!res.ok) {
-      return Response.json(
-        { fixtures: [], error: "Fikstür kaynağına ulaşılamadı" },
-        { status: 502 }
-      );
-    }
+    if (!res.ok) return null;
 
     const data = await res.json();
     const events: TSDBEvent[] = data?.events ?? [];
+    if (events.length === 0) return null;
 
-    const fixtures: TrackedFixture[] = [];
-    for (const t of TRACKED) {
-      // Her takım için sıradaki İLK maçı buluyoruz (liste zaten tarihe göre sıralı).
-      const match = events.find((e) => {
-        const home = normalize(e.strHomeTeam ?? "");
-        const away = normalize(e.strAwayTeam ?? "");
-        return home.includes(t.keyword) || away.includes(t.keyword);
-      });
-      if (!match) continue;
+    // Süper Lig dışı (kupa, hazırlık maçı vb.) karışmasın diye takımın
+    // adı hem ev sahibi hem deplasmanda geçen ilk kaydı alıyoruz —
+    // eventsnext zaten o takımın TÜM branşlar/turnuvalar için sıradaki
+    // maçlarını döndürdüğünden, ilk sonuç normalde ligdeki bir sonraki
+    // maçtır.
+    const match = events[0];
+    const keyword = normalize(code === "GS" ? "galatasaray" : code === "FB" ? "fenerbahce" : code === "BJK" ? "besiktas" : "trabzonspor");
+    const isHome = normalize(match.strHomeTeam ?? "").includes(keyword);
 
-      const isHome = normalize(match.strHomeTeam ?? "").includes(t.keyword);
-      fixtures.push({
-        team: t.code,
-        opponent: isHome ? match.strAwayTeam : match.strHomeTeam,
-        isHome,
-        date: match.dateEvent,
-        time: match.strTime ? match.strTime.slice(0, 5) : "",
-        venue: match.strVenue ?? null,
-      });
-    }
+    return {
+      team: code,
+      opponent: isHome ? match.strAwayTeam : match.strHomeTeam,
+      isHome,
+      // UTC gece yarısına yakın maçlarda tarih bir gün kayabileceği için
+      // (Türkiye +3 saat ileride), varsa dateEventLocal'ı tercih ediyoruz.
+      date: match.dateEventLocal || match.dateEvent,
+      // strTime UTC'dir — strTimeLocal, maçın oynandığı yerin (Türkiye'nin)
+      // yerel saatidir. Türkiye saatini göstermek için bunu kullanıyoruz,
+      // strTime'ı DEĞİL (aksi halde saat 3 saat geride görünür).
+      time: match.strTimeLocal
+        ? match.strTimeLocal.slice(0, 5)
+        : match.strTime
+        ? match.strTime.slice(0, 5)
+        : "",
+      venue: match.strVenue ?? null,
+    };
+  } catch (err) {
+    console.error(`${code} için fikstür çekilemedi:`, err);
+    return null;
+  }
+}
 
+export async function GET() {
+  try {
+    const results = await Promise.all(
+      TRACKED.map((t) => fetchNextForTeam(t.code, t.teamId))
+    );
+    const fixtures = results.filter((f): f is TrackedFixture => f !== null);
     return Response.json({ fixtures });
   } catch (err) {
     console.error("Fikstür çekilemedi:", err);
