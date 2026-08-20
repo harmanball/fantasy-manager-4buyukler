@@ -27,6 +27,7 @@ import { CaptainPickerSheet } from "@/components/CaptainPickerSheet";
 import { Skeleton } from "@/components/Skeleton";
 import { shareText, getSiteUrl } from "@/lib/share";
 import { fetchIsTransferWindowOpen } from "@/lib/transferWindow";
+import { WeeklyFixtures } from "@/components/WeeklyFixtures";
 
 // Transfer penceresi her zaman bir sonraki Cuma 00:00'da kapanır
 // (Salı/Çarşamba/Perşembe açık kuralına göre).
@@ -498,6 +499,8 @@ export default function KadroPage() {
           </div>
         </div>
       )}
+
+      <WeeklyFixtures />
 
       <FormationPicker value={formation} onChange={showEditor ? changeFormation : () => {}} />
 
