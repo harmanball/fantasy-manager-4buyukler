@@ -178,7 +178,7 @@ export function AppHeader() {
               title={squadName ? `${squadName} Kadro` : "Kadro"}
               className="min-w-0 max-w-[96px] truncate rounded-full bg-charcoal px-3 py-2 text-[11px] font-medium text-ivory sm:max-w-[220px] sm:px-4 sm:text-sm"
             >
-              {squadName ? `${squadName} Kadro` : "Kadro"}
+              Kadro
             </Link>
           ) : (
             <Link
