@@ -1,0 +1,36 @@
+export type UpdateNoteIcon = "bell" | "calendar" | "refresh";
+
+export interface UpdateNote {
+  icon: UpdateNoteIcon;
+  title: string;
+  description: string;
+}
+
+// Yeni bir güncelleme notu eklerken:
+// 1. UPDATE_NOTES dizisine yeni bir madde ekle (en üste ya da en alta, sırası
+//    ekranda göründüğü sıradır).
+// 2. UPDATE_NOTES_VERSION'ı değiştir (örn. bir sonraki tarihe/numaraya).
+// Sadece 2. adım, daha önce pop-up'ı kapatmış kullanıcılara TEKRAR
+// gösterilmesini sağlar — versiyon değişmezse pop-up bir daha çıkmaz.
+export const UPDATE_NOTES_VERSION = "2026-08-20-v1";
+
+export const UPDATE_NOTES: UpdateNote[] = [
+  {
+    icon: "bell",
+    title: "Bildirimler geldi",
+    description:
+      'Transfer penceresi açılmadan ve kapanmadan önce artık bildirim alabilirsin. Bildirimleri almak için uygulamayı yükle, sonra hamburger menüden "Bildirimleri Aç"a dokun.',
+  },
+  {
+    icon: "calendar",
+    title: "Bu hafta kimler oynuyor",
+    description:
+      "Kadro sayfasının altında artık 4 büyüklerin bu haftaki rakiplerini, tarih ve saatiyle otomatik görebilirsin.",
+  },
+  {
+    icon: "refresh",
+    title: "Transferler güncellendi",
+    description:
+      "4 büyüklerin son transferleri kadrolara işlendi — oyuncu seçerken en güncel liste karşına çıkıyor.",
+  },
+];
