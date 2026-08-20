@@ -19,24 +19,20 @@ export default function Home() {
           <rect x="10" y="140" width="70" height="120" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
           <rect x="320" y="140" width="70" height="120" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
         </svg>
-
         <div className="relative flex flex-col items-start">
           <span className="mb-5 rounded-full border border-gold bg-gold/15 px-3 py-1 text-xs font-medium text-gold">
             harmanball ailesinden — yeni mod
           </span>
-
           <h1 className="font-display text-3xl font-semibold leading-tight tracking-wide text-ivory sm:text-4xl">
             FANTASY MANAGER
           </h1>
           <p className="font-display mb-4 text-lg font-medium tracking-widest text-gold sm:text-xl">
             4 BÜYÜKLER
           </p>
-
           <p className="mb-6 max-w-md text-sm leading-relaxed text-ivory/70">
             Galatasaray, Fenerbahçe, Beşiktaş ve Trabzonspor&apos;dan 11
             kişilik kadronu kur, kaptanını seç, her hafta sahada yerini al.
           </p>
-
           <div className="mb-7 flex flex-wrap gap-2.5">
             <Link
               href="/kadro"
@@ -62,8 +58,31 @@ export default function Home() {
             >
               Futbolcu Puanları
             </Link>
+            <a
+              href="https://www.harmanball.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-md border border-muted-green px-5 py-2.5 text-sm font-medium text-ivory"
+            >
+              Harmanball&apos;a dön
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+                className="text-ivory/50"
+              >
+                <path
+                  d="M7 17L17 7M17 7H9M17 7V15"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </a>
           </div>
-
           <div className="flex h-1.5 w-full max-w-[280px] overflow-hidden rounded-full">
             {[
               "#FFFFFF", // beyaz
