@@ -418,16 +418,17 @@ export default function KadroPage() {
             <circle cx="150" cy="80" r="40" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
           </svg>
           <div className="relative">
-            <svg width="34" height="34" viewBox="0 0 24 24" className="mx-auto text-gold" aria-hidden="true">
-              <path
-                d="M8 3 L12 5 L16 3 L20 6 L18 9 L16 8 L16 20 L8 20 L8 8 L6 9 L4 6 Z"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <div className="mx-auto flex h-[34px] w-[34px] items-center justify-center rounded-full bg-red-500/25">
+              <svg width="20" height="20" viewBox="0 0 24 24" className="text-red-300" aria-hidden="true">
+                <path
+                  d="M6 6 L18 18 M18 6 L6 18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
             <p className="mt-2 font-display text-base font-semibold text-ivory sm:text-lg">
               Transfer penceresi kapalı
             </p>
@@ -480,17 +481,18 @@ export default function KadroPage() {
             <circle cx="150" cy="80" r="40" fill="none" stroke="#F5F1E8" strokeWidth="1.5" />
           </svg>
           <div className="relative">
-            <svg width="34" height="34" viewBox="0 0 24 24" className="mx-auto text-gold" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" />
-              <path
-                d="M12 7 V12 L15.5 14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <div className="mx-auto flex h-[34px] w-[34px] items-center justify-center rounded-full bg-green-500/25">
+              <svg width="20" height="20" viewBox="0 0 24 24" className="text-green-300" aria-hidden="true">
+                <path
+                  d="M5 13 L10 18 L19 7"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
             <p className="mt-2 font-display text-base font-semibold text-ivory sm:text-lg">
               Transfer penceresi açık
             </p>
