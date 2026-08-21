@@ -1,10 +1,14 @@
 import { supabase } from "./supabase";
 import { fetchFinishedGameweeks } from "./gameweekResult";
+import { EmblemId } from "./emblems";
 
 export interface LeaderboardRow {
   user_id: string;
   username: string;
   squad_name: string | null;
+  emblem: EmblemId;
+  team_color1: string;
+  team_color2: string;
   total_points: number;
 }
 
@@ -53,7 +57,7 @@ async function fetchTiebreakStats(): Promise<Map<string, TiebreakStats>> {
 export async function fetchLeaderboard(): Promise<LeaderboardRow[]> {
   const { data, error } = await supabase
     .from("leaderboard")
-    .select("user_id, username, squad_name, total_points");
+    .select("user_id, username, squad_name, emblem, team_color1, team_color2, total_points");
 
   if (error) {
     console.error("Sıralama çekilemedi:", error.message);
@@ -88,7 +92,7 @@ export async function fetchGameweekLeaderboard(
 ): Promise<LeaderboardRow[]> {
   const { data, error } = await supabase
     .from("user_gameweek_scores")
-    .select("user_id, points, profiles(username, squad_name)")
+    .select("user_id, points, profiles(username, squad_name, emblem, team_color1, team_color2)")
     .eq("gameweek_id", gameweekId)
     .order("points", { ascending: false });
 
@@ -99,13 +103,28 @@ export async function fetchGameweekLeaderboard(
 
   return (data ?? []).map((row) => {
     const profileRel = row.profiles as unknown as
-      | { username: string; squad_name: string | null }
-      | { username: string; squad_name: string | null }[];
+      | {
+          username: string;
+          squad_name: string | null;
+          emblem: EmblemId;
+          team_color1: string;
+          team_color2: string;
+        }
+      | {
+          username: string;
+          squad_name: string | null;
+          emblem: EmblemId;
+          team_color1: string;
+          team_color2: string;
+        }[];
     const profile = Array.isArray(profileRel) ? profileRel[0] : profileRel;
     return {
       user_id: row.user_id as string,
       username: profile?.username ?? "?",
       squad_name: profile?.squad_name ?? null,
+      emblem: profile?.emblem ?? "shield",
+      team_color1: profile?.team_color1 ?? "#123524",
+      team_color2: profile?.team_color2 ?? "#E8C766",
       total_points: row.points as number,
     };
   });
