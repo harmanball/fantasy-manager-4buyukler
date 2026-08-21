@@ -152,14 +152,18 @@ export default function TakimPage() {
       <AppHeader />
       <main className="mx-auto max-w-3xl px-3 py-4 sm:px-6 sm:py-6">
       <div className="flex flex-col gap-4 rounded-xl bg-background p-4 sm:p-6">
-        <h1 className="font-display text-lg font-semibold sm:text-xl">{ownerName}</h1>
 
-      <div className="flex flex-col items-center gap-1.5">
-        <TeamEmblem emblem={ownerEmblem} color1={ownerColor1} color2={ownerColor2} size={48} />
-        {ownerSlogan && (
-          <p className="text-center text-xs italic text-foreground/60">{ownerSlogan}</p>
-        )}
-      </div>
+      {ownerName && (
+        <div className="flex flex-col items-center gap-1.5">
+          <TeamEmblem emblem={ownerEmblem} color1={ownerColor1} color2={ownerColor2} size={56} />
+          <h1 className="text-center font-display text-2xl font-bold text-charcoal sm:text-3xl">
+            {ownerName} Takım Kadro
+          </h1>
+          {ownerSlogan && (
+            <p className="text-center text-xs italic text-foreground/60">{ownerSlogan}</p>
+          )}
+        </div>
+      )}
 
       {notFound ? (
         <p className="rounded-lg border border-charcoal/10 bg-white px-4 py-6 text-center text-sm text-foreground/60">
