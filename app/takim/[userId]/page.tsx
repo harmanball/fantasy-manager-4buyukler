@@ -20,6 +20,8 @@ import { FormationPicker } from "@/components/FormationPicker";
 import { Pitch, SquadSlot, buildSlots } from "@/components/Pitch";
 import { StatCards } from "@/components/StatCards";
 import { PlayerPointsModal } from "@/components/PlayerPointsModal";
+import { TeamEmblem } from "@/components/TeamEmblem";
+import { EmblemId, DEFAULT_EMBLEM, DEFAULT_COLOR1, DEFAULT_COLOR2 } from "@/lib/emblems";
 
 export default function TakimPage() {
   const { session, loading: sessionLoading } = useSession();
@@ -28,6 +30,10 @@ export default function TakimPage() {
   const targetUserId = params.userId;
 
   const [ownerName, setOwnerName] = useState<string | null>(null);
+  const [ownerEmblem, setOwnerEmblem] = useState<EmblemId>(DEFAULT_EMBLEM);
+  const [ownerSlogan, setOwnerSlogan] = useState<string | null>(null);
+  const [ownerColor1, setOwnerColor1] = useState(DEFAULT_COLOR1);
+  const [ownerColor2, setOwnerColor2] = useState(DEFAULT_COLOR2);
   const [lastWeekPoints, setLastWeekPoints] = useState<Record<string, number>>({});
   const [lastWeekGameweekId, setLastWeekGameweekId] = useState<number | null>(null);
   const [lastWeekName, setLastWeekName] = useState<string | null>(null);
@@ -54,11 +60,15 @@ export default function TakimPage() {
     async function load() {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("username, squad_name")
+        .select("username, squad_name, emblem, slogan, team_color1, team_color2")
         .eq("id", targetUserId)
         .maybeSingle();
       if (cancelled) return;
       setOwnerName(profile?.squad_name || profile?.username || "Bilinmeyen kullanıcı");
+      setOwnerEmblem((profile?.emblem as EmblemId) || DEFAULT_EMBLEM);
+      setOwnerSlogan(profile?.slogan || null);
+      setOwnerColor1(profile?.team_color1 || DEFAULT_COLOR1);
+      setOwnerColor2(profile?.team_color2 || DEFAULT_COLOR2);
 
       const allPlayers = await fetchPlayers();
       if (cancelled) return;
@@ -143,6 +153,13 @@ export default function TakimPage() {
       <main className="mx-auto max-w-3xl px-3 py-4 sm:px-6 sm:py-6">
       <div className="flex flex-col gap-4 rounded-xl bg-background p-4 sm:p-6">
         <h1 className="font-display text-lg font-semibold sm:text-xl">{ownerName}</h1>
+
+      <div className="flex flex-col items-center gap-1.5">
+        <TeamEmblem emblem={ownerEmblem} color1={ownerColor1} color2={ownerColor2} size={48} />
+        {ownerSlogan && (
+          <p className="text-center text-xs italic text-foreground/60">{ownerSlogan}</p>
+        )}
+      </div>
 
       {notFound ? (
         <p className="rounded-lg border border-charcoal/10 bg-white px-4 py-6 text-center text-sm text-foreground/60">
