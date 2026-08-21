@@ -140,7 +140,7 @@ export function AppHeader() {
             onClick={() => setMenuOpen((o) => !o)}
             aria-label="Menü"
             aria-expanded={menuOpen}
-            className="flex h-11 w-11 items-center justify-center rounded-md text-charcoal hover:bg-charcoal/5"
+            className="relative flex h-11 w-11 items-center justify-center rounded-md text-charcoal hover:bg-charcoal/5"
           >
             <svg width="26" height="26" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path
@@ -150,6 +150,12 @@ export function AppHeader() {
                 strokeLinecap="round"
               />
             </svg>
+            {/* Her zaman görünen bildirim noktası — menüyü keşfettirmek için,
+                okunmamış bir şeye bağlı değil, kalıcı bir görsel ipucu. */}
+            <span
+              className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-red-500"
+              aria-hidden="true"
+            />
           </button>
           <Link href="/" className="flex items-center gap-2">
             <PitchLogo />
