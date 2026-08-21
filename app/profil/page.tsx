@@ -6,6 +6,14 @@ import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
 import { AppHeader } from "@/components/AppHeader";
 import { PageHeader } from "@/components/PageHeader";
+import { TeamEmblem } from "@/components/TeamEmblem";
+import {
+  EMBLEMS,
+  EmblemId,
+  DEFAULT_EMBLEM,
+  DEFAULT_COLOR1,
+  DEFAULT_COLOR2,
+} from "@/lib/emblems";
 
 export default function ProfilPage() {
   const { session, loading: sessionLoading } = useSession();
@@ -24,6 +32,13 @@ export default function ProfilPage() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState<string | null>(null);
 
+  const [color1, setColor1] = useState(DEFAULT_COLOR1);
+  const [color2, setColor2] = useState(DEFAULT_COLOR2);
+  const [slogan, setSlogan] = useState("");
+  const [emblem, setEmblem] = useState<EmblemId>(DEFAULT_EMBLEM);
+  const [customizationSaving, setCustomizationSaving] = useState(false);
+  const [customizationMsg, setCustomizationMsg] = useState<string | null>(null);
+
   useEffect(() => {
     if (!sessionLoading && !session) router.push("/giris");
   }, [sessionLoading, session, router]);
@@ -35,11 +50,17 @@ export default function ProfilPage() {
       setEmail(session!.user.email ?? "");
       const { data } = await supabase
         .from("profiles")
-        .select("squad_name, username")
+        .select("squad_name, username, team_color1, team_color2, slogan, emblem")
         .eq("id", session!.user.id)
         .maybeSingle();
       if (cancelled) return;
-      if (data) setSquadName(data.squad_name || data.username || "");
+      if (data) {
+        setSquadName(data.squad_name || data.username || "");
+        setColor1(data.team_color1 || DEFAULT_COLOR1);
+        setColor2(data.team_color2 || DEFAULT_COLOR2);
+        setSlogan(data.slogan || "");
+        setEmblem((data.emblem as EmblemId) || DEFAULT_EMBLEM);
+      }
     }
     load();
     return () => {
@@ -90,6 +111,24 @@ export default function ProfilPage() {
     }
   }
 
+  async function handleCustomizationSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!session) return;
+    setCustomizationSaving(true);
+    setCustomizationMsg(null);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        team_color1: color1,
+        team_color2: color2,
+        slogan: slogan.trim() || null,
+        emblem,
+      })
+      .eq("id", session.user.id);
+    setCustomizationSaving(false);
+    setCustomizationMsg(error ? `Hata: ${error.message}` : "Kişiselleştirme kaydedildi ✓");
+  }
+
   if (sessionLoading || !session) {
     return (
       <>
@@ -130,6 +169,91 @@ export default function ProfilPage() {
             {squadSaving ? "…" : "Kaydet"}
           </button>
           {squadMsg && <p className="text-xs text-foreground/70">{squadMsg}</p>}
+        </form>
+
+        <form
+          onSubmit={handleCustomizationSave}
+          className="flex flex-col gap-3 rounded-lg border border-charcoal/10 bg-white p-4"
+        >
+          <h2 className="text-sm font-semibold">Kişiselleştirme</h2>
+
+          <div className="flex flex-col items-center gap-2 rounded-lg bg-background px-3 py-4">
+            <TeamEmblem emblem={emblem} color1={color1} color2={color2} size={72} />
+            <p className="text-sm font-medium text-charcoal">
+              {squadName || "Kadromun Adı"}
+            </p>
+            {slogan && (
+              <p className="text-center text-xs italic text-foreground/60">{slogan}</p>
+            )}
+          </div>
+
+          <div>
+            <p className="mb-1.5 text-xs text-foreground/60">Takım renkleri</p>
+            <div className="flex gap-3">
+              <label className="flex flex-1 items-center gap-2 text-xs">
+                Ana
+                <input
+                  type="color"
+                  value={color1}
+                  onChange={(e) => setColor1(e.target.value)}
+                  className="h-8 w-9 rounded border border-charcoal/15 p-0.5"
+                />
+              </label>
+              <label className="flex flex-1 items-center gap-2 text-xs">
+                Vurgu
+                <input
+                  type="color"
+                  value={color2}
+                  onChange={(e) => setColor2(e.target.value)}
+                  className="h-8 w-9 rounded border border-charcoal/15 p-0.5"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1.5 text-xs text-foreground/60">Slogan</p>
+            <input
+              type="text"
+              value={slogan}
+              onChange={(e) => setSlogan(e.target.value)}
+              maxLength={40}
+              placeholder="Kısa bir slogan yaz"
+              className="h-10 w-full rounded-lg border border-charcoal/15 px-3 text-sm outline-none focus:border-pitch"
+            />
+          </div>
+
+          <div>
+            <p className="mb-1.5 text-xs text-foreground/60">Amblem</p>
+            <div className="grid grid-cols-4 gap-2">
+              {EMBLEMS.map((e) => (
+                <button
+                  key={e.id}
+                  type="button"
+                  onClick={() => setEmblem(e.id)}
+                  className={`flex flex-col items-center gap-1 rounded-lg border px-1 py-2 ${
+                    emblem === e.id
+                      ? "border-pitch bg-pitch/5"
+                      : "border-charcoal/15"
+                  }`}
+                >
+                  <TeamEmblem emblem={e.id} color1={color1} color2={color2} size={26} />
+                  <span className="text-[10px] text-foreground/70">{e.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={customizationSaving}
+            className="h-10 rounded-lg bg-pitch text-sm font-medium text-ivory disabled:opacity-50"
+          >
+            {customizationSaving ? "…" : "Kaydet"}
+          </button>
+          {customizationMsg && (
+            <p className="text-xs text-foreground/70">{customizationMsg}</p>
+          )}
         </form>
 
         <form
