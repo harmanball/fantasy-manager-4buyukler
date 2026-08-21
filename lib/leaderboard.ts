@@ -9,6 +9,7 @@ export interface LeaderboardRow {
   emblem: EmblemId;
   team_color1: string;
   team_color2: string;
+  slogan: string | null;
   total_points: number;
 }
 
@@ -57,7 +58,7 @@ async function fetchTiebreakStats(): Promise<Map<string, TiebreakStats>> {
 export async function fetchLeaderboard(): Promise<LeaderboardRow[]> {
   const { data, error } = await supabase
     .from("leaderboard")
-    .select("user_id, username, squad_name, emblem, team_color1, team_color2, total_points");
+    .select("user_id, username, squad_name, emblem, team_color1, team_color2, slogan, total_points");
 
   if (error) {
     console.error("Sıralama çekilemedi:", error.message);
@@ -92,7 +93,7 @@ export async function fetchGameweekLeaderboard(
 ): Promise<LeaderboardRow[]> {
   const { data, error } = await supabase
     .from("user_gameweek_scores")
-    .select("user_id, points, profiles(username, squad_name, emblem, team_color1, team_color2)")
+    .select("user_id, points, profiles(username, squad_name, emblem, team_color1, team_color2, slogan)")
     .eq("gameweek_id", gameweekId)
     .order("points", { ascending: false });
 
@@ -109,6 +110,7 @@ export async function fetchGameweekLeaderboard(
           emblem: EmblemId;
           team_color1: string;
           team_color2: string;
+          slogan: string | null;
         }
       | {
           username: string;
@@ -116,6 +118,7 @@ export async function fetchGameweekLeaderboard(
           emblem: EmblemId;
           team_color1: string;
           team_color2: string;
+          slogan: string | null;
         }[];
     const profile = Array.isArray(profileRel) ? profileRel[0] : profileRel;
     return {
@@ -125,6 +128,7 @@ export async function fetchGameweekLeaderboard(
       emblem: profile?.emblem ?? "shield",
       team_color1: profile?.team_color1 ?? "#123524",
       team_color2: profile?.team_color2 ?? "#E8C766",
+      slogan: profile?.slogan ?? null,
       total_points: row.points as number,
     };
   });
