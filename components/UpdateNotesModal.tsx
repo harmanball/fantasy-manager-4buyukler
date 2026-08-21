@@ -42,10 +42,28 @@ function RefreshIcon() {
   );
 }
 
+function PaletteIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3a9 9 0 100 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.2 0-1.1.9-2 2-2h2.3c1.5 0 2.7-1.2 2.7-2.7C20 6.9 16.4 3 12 3z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="8" cy="10" r="1.2" fill="currentColor" />
+      <circle cx="12" cy="7.5" r="1.2" fill="currentColor" />
+      <circle cx="16" cy="10" r="1.2" fill="currentColor" />
+    </svg>
+  );
+}
+
 const ICONS: Record<UpdateNoteIcon, () => React.JSX.Element> = {
   bell: BellIcon,
   calendar: CalendarIcon,
   refresh: RefreshIcon,
+  palette: PaletteIcon,
 };
 
 // Kadro sayfasına girildiğinde bir kez gösterilir. "Anladım"a basınca (ya da
