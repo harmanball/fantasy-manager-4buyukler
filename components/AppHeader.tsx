@@ -14,6 +14,7 @@ import { Icon, IconName } from "./Icon";
 // Puanlarım ve Lig Sıralaması hem üst barda hem hamburger menüsünde yer alır.
 const NAV_ITEMS: { href: string; label: string; icon: IconName }[] = [
   { href: "/", label: "Ana sayfa", icon: "home" },
+  { href: "/guncellemeler", label: "Güncellemeler", icon: "info" },
   { href: "/nasil-oynanir", label: "Nasıl Oynanır?", icon: "info" },
   { href: "/kadro", label: "Kadro", icon: "shirt" },
   { href: "/puanlarim", label: "Puanlarım", icon: "chart" },
@@ -234,6 +235,12 @@ export function AppHeader() {
               >
                 <Icon name={item.icon} size={16} className="shrink-0 text-pitch" />
                 {item.label}
+                {item.href === "/guncellemeler" && (
+                  <span
+                    className="ml-auto h-2 w-2 shrink-0 rounded-full bg-red-500"
+                    aria-hidden="true"
+                  />
+                )}
               </Link>
             ))}
             {isAdmin && (
