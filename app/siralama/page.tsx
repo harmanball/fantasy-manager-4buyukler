@@ -168,6 +168,11 @@ export default function SiralamaPage() {
                             </span>
                           )}
                         </p>
+                        {row.slogan && (
+                          <p className="text-[10px] italic leading-tight text-foreground/45">
+                            {row.slogan}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <span className="shrink-0 font-display text-base font-semibold">
