@@ -29,6 +29,8 @@ import { shareText, getSiteUrl } from "@/lib/share";
 import { fetchIsTransferWindowOpen } from "@/lib/transferWindow";
 import { WeeklyFixtures } from "@/components/WeeklyFixtures";
 import { UpdateNotesModal } from "@/components/UpdateNotesModal";
+import { TeamEmblem } from "@/components/TeamEmblem";
+import { EmblemId, DEFAULT_EMBLEM, DEFAULT_COLOR1, DEFAULT_COLOR2 } from "@/lib/emblems";
 
 // Transfer penceresi her zaman bir sonraki Cuma 00:00'da kapanır
 // (Salı/Çarşamba/Perşembe açık kuralına göre).
@@ -68,6 +70,10 @@ export default function KadroPage() {
   const [lastWeekTotal, setLastWeekTotal] = useState<number | null>(null);
   const [overallRank, setOverallRank] = useState<number | null>(null);
   const [squadName, setSquadName] = useState<string | null>(null);
+  const [emblem, setEmblem] = useState<EmblemId>(DEFAULT_EMBLEM);
+  const [slogan, setSlogan] = useState<string | null>(null);
+  const [teamColor1, setTeamColor1] = useState(DEFAULT_COLOR1);
+  const [teamColor2, setTeamColor2] = useState(DEFAULT_COLOR2);
   const [overallTotal, setOverallTotal] = useState<number | null>(null);
   const [weeklyRank, setWeeklyRank] = useState<number | null>(null);
   const [gameweek, setGameweek] = useState<OpenGameweek | null>(null);
@@ -150,16 +156,22 @@ export default function KadroPage() {
     });
   }, [session]);
 
-  // Takım adı (profil)
+  // Takım adı, amblemi, sloganı ve renkleri (profil)
   useEffect(() => {
     if (!session) return;
     supabase
       .from("profiles")
-      .select("squad_name, username")
+      .select("squad_name, username, emblem, slogan, team_color1, team_color2")
       .eq("id", session.user.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (data) setSquadName(data.squad_name || data.username);
+        if (data) {
+          setSquadName(data.squad_name || data.username);
+          setEmblem((data.emblem as EmblemId) || DEFAULT_EMBLEM);
+          setSlogan(data.slogan || null);
+          setTeamColor1(data.team_color1 || DEFAULT_COLOR1);
+          setTeamColor2(data.team_color2 || DEFAULT_COLOR2);
+        }
       });
   }, [session]);
 
@@ -348,9 +360,15 @@ export default function KadroPage() {
       <div className="flex flex-col gap-4 rounded-xl bg-background p-4 sm:p-6">
 
       {squadName && (
-        <h2 className="text-center font-display text-2xl font-bold text-charcoal sm:text-3xl">
-          {squadName} Takım Kadro
-        </h2>
+        <div className="flex flex-col items-center gap-1.5">
+          <TeamEmblem emblem={emblem} color1={teamColor1} color2={teamColor2} size={56} />
+          <h2 className="text-center font-display text-2xl font-bold text-charcoal sm:text-3xl">
+            {squadName} Takım Kadro
+          </h2>
+          {slogan && (
+            <p className="text-center text-xs italic text-foreground/60">{slogan}</p>
+          )}
+        </div>
       )}
 
       {(overallRank !== null || lastWeekTotal !== null) && (
