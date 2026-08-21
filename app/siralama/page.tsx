@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { SkeletonRow } from "@/components/Skeleton";
 import { Podium } from "@/components/Podium";
 import { shareText, getSiteUrl } from "@/lib/share";
+import { TeamEmblem } from "@/components/TeamEmblem";
 
 export default function SiralamaPage() {
   const { session } = useSession();
@@ -156,6 +157,12 @@ export default function SiralamaPage() {
                           <span className="text-foreground/25" aria-label="değişiklik yok">–</span>
                         )}
                       </span>
+                      <TeamEmblem
+                        emblem={row.emblem}
+                        color1={row.team_color1}
+                        color2={row.team_color2}
+                        size={24}
+                      />
                       <div>
                         <p className="text-sm font-medium leading-tight">
                           {row.squad_name || row.username}
