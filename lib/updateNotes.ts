@@ -1,4 +1,4 @@
-export type UpdateNoteIcon = "bell" | "calendar" | "refresh";
+export type UpdateNoteIcon = "bell" | "calendar" | "refresh" | "palette";
 
 export interface UpdateNote {
   icon: UpdateNoteIcon;
@@ -12,9 +12,15 @@ export interface UpdateNote {
 // 2. UPDATE_NOTES_VERSION'ı değiştir (örn. bir sonraki tarihe/numaraya).
 // Sadece 2. adım, daha önce pop-up'ı kapatmış kullanıcılara TEKRAR
 // gösterilmesini sağlar — versiyon değişmezse pop-up bir daha çıkmaz.
-export const UPDATE_NOTES_VERSION = "2026-08-20-v1";
+export const UPDATE_NOTES_VERSION = "2026-08-21-v1";
 
 export const UPDATE_NOTES: UpdateNote[] = [
+  {
+    icon: "palette",
+    title: "Takımını kişiselleştir",
+    description:
+      "Profil sayfasından takım renklerini, amblemini ve sloganını seçebilirsin — kadron ve lig sıralaması artık sana özel görünüyor.",
+  },
   {
     icon: "bell",
     title: "Bildirimler geldi",
