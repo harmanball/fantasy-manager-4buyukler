@@ -35,7 +35,7 @@ export function WeeklyFixtures() {
   return (
     <div className="rounded-xl bg-pitch px-4 py-[1.1rem]">
       <h3 className="mb-3.5 text-center text-[13px] font-medium uppercase tracking-wide text-gold">
-        4 Büyükler Bu Hafta Kimlerle Oynuyor
+        4 Büyükler Kimlerle Oynuyor
       </h3>
       <div className="flex flex-col gap-2">
         {fixtures.map((f) => (
