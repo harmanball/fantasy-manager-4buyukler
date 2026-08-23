@@ -17,45 +17,33 @@ import { TeamEmblem } from "@/components/TeamEmblem";
 
 function TrophyIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-gold" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" className="text-gold" aria-hidden="true">
       <path
-        d="M8 4h8v4a4 4 0 01-8 0V4zM5 6h3v2a2 2 0 01-3.5 1.3M19 6h-3v2a2 2 0 003.5 1.3M12 12v3M9 19h6M10 15h4v4h-4v-4z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        fill="currentColor"
+        d="M7 3h10v2h3a1 1 0 011 1v1a4 4 0 01-4 4h-.26A6 6 0 0113 15.9V18h3a1 1 0 011 1v1H7v-1a1 1 0 011-1h3v-2.1A6 6 0 016.26 11H6a4 4 0 01-4-4V6a1 1 0 011-1h3V3zM5 7a2 2 0 002 2V7H5zm14 0v2a2 2 0 002-2h-2z"
       />
     </svg>
   );
 }
 
 function MedalIcon({ tone }: { tone: "silver" | "bronze" }) {
+  const colorClass = tone === "silver" ? "text-zinc-400" : "text-amber-700";
   return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      className={tone === "silver" ? "text-zinc-400" : "text-amber-700"}
-      aria-hidden="true"
-    >
-      <path d="M8 3l3 6M16 3l-3 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx="12" cy="15" r="6" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="12" cy="15" r="2.5" fill="currentColor" />
+    <svg width="18" height="18" viewBox="0 0 24 24" className={colorClass} aria-hidden="true">
+      <path fill="currentColor" d="M8 2l2 6H8.5L6.5 2H8zm8 0h-1.5l-2 6H14l2-6z" />
+      <circle cx="12" cy="14.5" r="6.5" fill="currentColor" />
+      <path
+        fill="#fff"
+        d="M12 10.8l1.1 2.3 2.5.4-1.8 1.7.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.7 2.5-.4z"
+      />
     </svg>
   );
 }
 
 function RelegationArrowIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-red-600" aria-hidden="true">
-      <path
-        d="M12 4v14M6 12l6 6 6-6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg width="18" height="18" viewBox="0 0 24 24" className="text-red-600" aria-hidden="true">
+      <path fill="currentColor" d="M11 3h2v9h4l-5 6-5-6h4V3z" />
     </svg>
   );
 }
