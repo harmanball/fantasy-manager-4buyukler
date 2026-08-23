@@ -15,6 +15,62 @@ import { SkeletonRow } from "@/components/Skeleton";
 import { shareText, getSiteUrl } from "@/lib/share";
 import { TeamEmblem } from "@/components/TeamEmblem";
 
+function TrophyIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-gold" aria-hidden="true">
+      <path
+        d="M8 4h8v4a4 4 0 01-8 0V4zM5 6h3v2a2 2 0 01-3.5 1.3M19 6h-3v2a2 2 0 003.5 1.3M12 12v3M9 19h6M10 15h4v4h-4v-4z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function MedalIcon({ tone }: { tone: "silver" | "bronze" }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      className={tone === "silver" ? "text-zinc-400" : "text-amber-700"}
+      aria-hidden="true"
+    >
+      <path d="M8 3l3 6M16 3l-3 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="12" cy="15" r="6" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="12" cy="15" r="2.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+function RelegationArrowIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-red-600" aria-hidden="true">
+      <path
+        d="M12 4v14M6 12l6 6 6-6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// Sıralamadaki her satırın solunda gösterilecek rozet: ilk 3 için
+// kupa/madalya, listenin en alt 3 satırı için küme düşme oku. Diğer
+// satırlarda hizalamayı bozmasın diye aynı genişlikte boş bir alan bırakılır.
+function RankBadge({ rank, totalRows }: { rank: number; totalRows: number }) {
+  if (rank === 1) return <TrophyIcon />;
+  if (rank === 2) return <MedalIcon tone="silver" />;
+  if (rank === 3) return <MedalIcon tone="bronze" />;
+  if (totalRows > 3 && rank > totalRows - 3) return <RelegationArrowIcon />;
+  return <span className="w-[18px] shrink-0" aria-hidden="true" />;
+}
+
 export default function SiralamaPage() {
   const { session } = useSession();
   const [rows, setRows] = useState<LeaderboardRowWithTrend[]>([]);
@@ -141,6 +197,7 @@ export default function SiralamaPage() {
                     }`}
                   >
                     <div className="flex items-center gap-3">
+                      <RankBadge rank={i + 1} totalRows={rows.length} />
                       <span className="flex w-9 shrink-0 items-center justify-end gap-1 text-right text-sm font-medium text-foreground/50">
                         {i + 1}
                         {row.rankChange === "up" && (
