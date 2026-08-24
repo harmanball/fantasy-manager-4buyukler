@@ -21,6 +21,7 @@ export default function HaftaninTakimiPage() {
   const [formation, setFormation] = useState<Formation>("4-3-3");
   const [slots, setSlots] = useState<SquadSlot[]>(() => buildSlots("4-3-3"));
   const [pointsMap, setPointsMap] = useState<Record<string, number>>({});
+  const [totalPoints, setTotalPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [modalPlayer, setModalPlayer] = useState<Player | null>(null);
 
@@ -61,10 +62,12 @@ export default function HaftaninTakimiPage() {
 
       const map: Record<string, number> = {};
       result.players.forEach((p) => (map[p.id] = p.points));
+      const total = result.players.reduce((sum, p) => sum + p.points, 0);
 
       setFormation(result.formation);
       setSlots(newSlots);
       setPointsMap(map);
+      setTotalPoints(total);
       setLoading(false);
     }
     load();
@@ -102,6 +105,19 @@ export default function HaftaninTakimiPage() {
                 </option>
               ))}
             </select>
+
+            {!loading && (
+              <div className="rounded-lg border border-gold/40 bg-gold/10 px-4 py-3 text-center">
+                <p className="text-xs text-foreground/60">
+                  {selectedFilter === "total"
+                    ? "Bu 11'in genel toplam puanı"
+                    : "Bu 11'in o hafta aldığı toplam puan"}
+                </p>
+                <p className="font-display text-2xl font-semibold text-charcoal">
+                  {totalPoints}
+                </p>
+              </div>
+            )}
 
             {loading ? (
               <Skeleton className="mx-auto aspect-[3/4] w-full max-w-[360px] sm:max-w-[440px]" />
