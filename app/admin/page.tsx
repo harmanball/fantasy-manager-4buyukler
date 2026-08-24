@@ -363,8 +363,8 @@ export default function AdminPage() {
           </button>
 
           {parsed && (
-            <div className="mb-3 max-h-64 overflow-y-auto rounded-lg border border-charcoal/10">
-              <table className="w-full text-xs">
+            <div className="mb-3 max-h-64 overflow-x-auto overflow-y-auto rounded-lg border border-charcoal/10">
+              <table className="w-full min-w-[720px] text-xs">
                 <thead className="bg-background sticky top-0">
                   <tr>
                     <th className="p-2 text-left">Takım</th>
@@ -372,7 +372,13 @@ export default function AdminPage() {
                     <th className="p-2 text-right">Dk</th>
                     <th className="p-2 text-right">Gol</th>
                     <th className="p-2 text-right">Ast</th>
+                    <th className="p-2 text-center">T.Kale</th>
+                    <th className="p-2 text-right">Sarı</th>
+                    <th className="p-2 text-right">Kırmızı</th>
+                    <th className="p-2 text-right">KK Gol</th>
+                    <th className="p-2 text-right">Pen.Kaçan</th>
                     <th className="p-2 text-right">Puan</th>
+                    <th className="p-2 text-center">MOTM</th>
                     <th className="p-2 text-center">Durum</th>
                   </tr>
                 </thead>
@@ -396,7 +402,25 @@ export default function AdminPage() {
                         <td className="p-2 text-right">{row.minutes}</td>
                         <td className="p-2 text-right">{row.goals}</td>
                         <td className="p-2 text-right">{row.assists}</td>
+                        <td className="p-2 text-center">{row.cleanSheet ? "✓" : "—"}</td>
+                        <td
+                          className={`p-2 text-right ${
+                            row.yellow > 0 ? "bg-yellow-100 font-semibold text-yellow-800" : ""
+                          }`}
+                        >
+                          {row.yellow}
+                        </td>
+                        <td
+                          className={`p-2 text-right ${
+                            row.red > 0 ? "bg-red-200 font-semibold text-red-800" : ""
+                          }`}
+                        >
+                          {row.red}
+                        </td>
+                        <td className="p-2 text-right">{row.ownGoal}</td>
+                        <td className="p-2 text-right">{row.penMissed}</td>
                         <td className="p-2 text-right">{row.rating ?? "—"}</td>
+                        <td className="p-2 text-center">{row.motm ? "★" : "—"}</td>
                         <td className="p-2 text-center">
                           {!row.fieldCountOk
                             ? "Eksik alan"
