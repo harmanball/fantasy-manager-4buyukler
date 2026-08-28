@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { Formation, FORMATIONS, FORMATION_LAYOUT, TeamCode } from "./teams";
+import { Formation, FORMATIONS, FORMATION_LAYOUT, TeamCode, TEAM_LIMIT } from "./teams";
 import { Position } from "./players";
 
 export interface TeamOfWeekPlayer {
@@ -18,19 +18,50 @@ export interface TeamOfWeekResult {
 
 const EMPTY_RESULT: TeamOfWeekResult = { formation: "4-3-3", players: [] };
 
+// Mevkiye göre puana-azalan-sıralı bir havuzdan, TAKIM LİMİTİNİ (bir
+// takımdan en fazla TEAM_LIMIT kişi — kadro kurma ekranındaki AYNI kural)
+// aşmadan, en yüksek puanlı `count` kişiyi seçer. Bir takım limite
+// ulaşınca o takımdan sıradaki oyuncu atlanır, havuzdaki bir sonrakine
+// geçilir. teamCounts parametresi çağrılar arası PAYLAŞILIR — böylece
+// örneğin DEF'te 3 kişi alınan bir takım, MID/FWD seçiminde de artık
+// hiç alınmaz (limit tüm 11'e göre, tek pozisyona göre değil).
+function pickPositionGreedy(
+  pool: TeamOfWeekPlayer[],
+  count: number,
+  teamCounts: Record<string, number>
+): TeamOfWeekPlayer[] | null {
+  const picked: TeamOfWeekPlayer[] = [];
+  for (const p of pool) {
+    if (picked.length >= count) break;
+    const current = teamCounts[p.team] ?? 0;
+    if (current >= TEAM_LIMIT) continue;
+    picked.push(p);
+    teamCounts[p.team] = current + 1;
+  }
+  return picked.length === count ? picked : null;
+}
+
 // Mevkiye göre puana-azalan-sıralı oyuncu listelerinden en iyi 11'i kurar.
 // Sabit bir dizilişe (örn. hep 4-3-3) ZORLAMAZ — geçerli dizilişler
 // arasından, elindeki puanlarla en yüksek toplamı veren kombinasyonu
 // seçer. Kaleci her zaman zorunlu (1 kişi); DEF/MID/FWD sayıları ise
 // seçilen dizilişe göre değişir. Hem tek hafta hem genel toplam view'i
 // bu ortak mantığı kullanır.
+//
+// Oyun kuralı gereği bir takımdan en fazla TEAM_LIMIT kişi olabilir —
+// bu, kadro kurma ekranındaki kısıtla AYNI. Seçim GK -> DEF -> MID -> FWD
+// sırasıyla açgözlü (greedy) yapılır; bu, matematiksel olarak mutlak
+// en yüksek toplamı garanti etmez (ör. bazı nadir durumlarda farklı bir
+// sıralama daha yüksek toplam verebilir) ama kadro kurma ekranındaki
+// aynı basit mantığı izler ve pratikte neredeyse her zaman en iyi ya da
+// en iyiye çok yakın kombinasyonu bulur.
 function pickBestXI(byPosition: Record<Position, TeamOfWeekPlayer[]>): TeamOfWeekResult {
   if (byPosition.GK.length === 0) return EMPTY_RESULT;
-  const gk = byPosition.GK[0];
 
   let best: {
     formation: Formation;
     total: number;
+    gk: TeamOfWeekPlayer;
     def: TeamOfWeekPlayer[];
     mid: TeamOfWeekPlayer[];
     fwd: TeamOfWeekPlayer[];
@@ -38,16 +69,19 @@ function pickBestXI(byPosition: Record<Position, TeamOfWeekPlayer[]>): TeamOfWee
 
   for (const formation of FORMATIONS) {
     const layout = FORMATION_LAYOUT[formation];
-    if (
-      byPosition.DEF.length < layout.DEF ||
-      byPosition.MID.length < layout.MID ||
-      byPosition.FWD.length < layout.FWD
-    ) {
-      continue; // bu dizilişi dolduracak kadar oyuncu yok
-    }
-    const def = byPosition.DEF.slice(0, layout.DEF);
-    const mid = byPosition.MID.slice(0, layout.MID);
-    const fwd = byPosition.FWD.slice(0, layout.FWD);
+    const teamCounts: Record<string, number> = {};
+
+    const gkPick = pickPositionGreedy(byPosition.GK, 1, teamCounts);
+    if (!gkPick) continue;
+    const gk = gkPick[0];
+
+    const def = pickPositionGreedy(byPosition.DEF, layout.DEF, teamCounts);
+    if (!def) continue;
+    const mid = pickPositionGreedy(byPosition.MID, layout.MID, teamCounts);
+    if (!mid) continue;
+    const fwd = pickPositionGreedy(byPosition.FWD, layout.FWD, teamCounts);
+    if (!fwd) continue;
+
     const total =
       gk.points +
       def.reduce((s, p) => s + p.points, 0) +
@@ -55,17 +89,17 @@ function pickBestXI(byPosition: Record<Position, TeamOfWeekPlayer[]>): TeamOfWee
       fwd.reduce((s, p) => s + p.points, 0);
 
     if (!best || total > best.total) {
-      best = { formation, total, def, mid, fwd };
+      best = { formation, total, gk, def, mid, fwd };
     }
   }
 
-  // Hiçbir geçerli diziliş dolmuyorsa (çok erken bir hafta, veri az) bile
-  // en azından kaleciyi göster — boş sayfa yerine.
-  if (!best) return { formation: "4-3-3", players: [gk] };
+  // Hiçbir geçerli diziliş takım limitiyle birlikte dolmuyorsa (çok erken
+  // bir hafta, veri az) bile en azından kaleciyi göster — boş sayfa yerine.
+  if (!best) return { formation: "4-3-3", players: [byPosition.GK[0]] };
 
   return {
     formation: best.formation,
-    players: [...best.fwd, ...best.mid, ...best.def, gk],
+    players: [...best.fwd, ...best.mid, ...best.def, best.gk],
   };
 }
 
