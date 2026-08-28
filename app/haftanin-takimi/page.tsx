@@ -22,6 +22,7 @@ export default function HaftaninTakimiPage() {
   const [slots, setSlots] = useState<SquadSlot[]>(() => buildSlots("4-3-3"));
   const [pointsMap, setPointsMap] = useState<Record<string, number>>({});
   const [totalPoints, setTotalPoints] = useState(0);
+  const [captainId, setCaptainId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalPlayer, setModalPlayer] = useState<Player | null>(null);
 
@@ -60,14 +61,30 @@ export default function HaftaninTakimiPage() {
         });
       });
 
+      // Kaptan: bu 11'deki en yüksek puanlı oyuncu — puanı ×2 sayılır.
+      // Eşitlik olursa listede ilk gelen (puana göre zaten azalan sırada
+      // olmasa da result.players sırası formasyona göre gruplu geldiği
+      // için) en yüksek puanlıyı buluyoruz, hangi sırada olduğu önemli
+      // değil, sadece puanı en yüksek olan.
+      const captain =
+        result.players.length > 0
+          ? result.players.reduce((best, p) => (p.points > best.points ? p : best))
+          : null;
+
       const map: Record<string, number> = {};
-      result.players.forEach((p) => (map[p.id] = p.points));
-      const total = result.players.reduce((sum, p) => sum + p.points, 0);
+      result.players.forEach((p) => {
+        map[p.id] = p.id === captain?.id ? p.points * 2 : p.points;
+      });
+      // Toplam puan da kaptanın çarpanını yansıtır: herkesin taban puanı +
+      // kaptanın ekstra katkısı (×2 olduğu için bir katı daha).
+      const rawTotal = result.players.reduce((sum, p) => sum + p.points, 0);
+      const total = rawTotal + (captain?.points ?? 0);
 
       setFormation(result.formation);
       setSlots(newSlots);
       setPointsMap(map);
       setTotalPoints(total);
+      setCaptainId(captain?.id ?? null);
       setLoading(false);
     }
     load();
@@ -124,7 +141,7 @@ export default function HaftaninTakimiPage() {
             ) : (
               <Pitch
                 slots={slots}
-                captainId={null}
+                captainId={captainId}
                 lastWeekPoints={pointsMap}
                 onSlotTap={(slot) => {
                   if (slot.player) setModalPlayer(slot.player);
@@ -135,7 +152,8 @@ export default function HaftaninTakimiPage() {
             <p className="text-center text-[11px] text-foreground/40">
               {selectedFilter === "total"
                 ? `Sezon başından bu yana biriken genel toplam puanlara göre otomatik oluşturulur — geçerli dizilişler arasından en yüksek toplamı veren ${formation} seçildi.`
-                : `O haftanın istatistiklerine göre otomatik oluşturulur — geçerli dizilişler arasından en yüksek toplam puanı veren ${formation} seçildi, mevkilere en yüksek puanlı oyuncular yerleştirildi.`}
+                : `O haftanın istatistiklerine göre otomatik oluşturulur — geçerli dizilişler arasından en yüksek toplam puanı veren ${formation} seçildi, mevkilere en yüksek puanlı oyuncular yerleştirildi.`}{" "}
+              En yüksek puanlı oyuncu otomatik kaptan yapılır, puanı ×2 sayılır.
             </p>
           </>
         )}
