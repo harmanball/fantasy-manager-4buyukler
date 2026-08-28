@@ -69,27 +69,68 @@ function pickBestXI(byPosition: Record<Position, TeamOfWeekPlayer[]>): TeamOfWee
 
   for (const formation of FORMATIONS) {
     const layout = FORMATION_LAYOUT[formation];
+    const needed: Record<Position, number> = {
+      GK: 1,
+      DEF: layout.DEF,
+      MID: layout.MID,
+      FWD: layout.FWD,
+    };
+
+    // Tüm adaylar (mevkiden bağımsız) TEK bir havuzda, puana göre azalan
+    // sırayla birleştirilir. Seçim bu birleşik sırayla yapılır — böylece
+    // örn. çok yüksek puanlı bir forvet, sırf DEF/GK önce "işlendiği" için
+    // değil, GERÇEKTEN en yüksek puanlı olduğu için önceliği alır. Önceki
+    // sürümde seçim mevki mevki (önce GK, sonra DEF, ...) yapıldığından,
+    // bir takımın en iyi oyuncuları erken mevkilerde kotayı doldurup daha
+    // sonraki mevkideki (örn. forvet) gerçekten en yüksek puanlı oyuncuyu
+    // haksız yere dışarıda bırakabiliyordu.
+    const allCandidates = [
+      ...byPosition.GK,
+      ...byPosition.DEF,
+      ...byPosition.MID,
+      ...byPosition.FWD,
+    ].sort((a, b) => b.points - a.points);
+
     const teamCounts: Record<string, number> = {};
+    const picked: Record<Position, TeamOfWeekPlayer[]> = {
+      GK: [],
+      DEF: [],
+      MID: [],
+      FWD: [],
+    };
 
-    const gkPick = pickPositionGreedy(byPosition.GK, 1, teamCounts);
-    if (!gkPick) continue;
-    const gk = gkPick[0];
+    for (const p of allCandidates) {
+      if (picked[p.position].length >= needed[p.position]) continue;
+      const current = teamCounts[p.team] ?? 0;
+      if (current >= TEAM_LIMIT) continue;
+      picked[p.position].push(p);
+      teamCounts[p.team] = current + 1;
+    }
 
-    const def = pickPositionGreedy(byPosition.DEF, layout.DEF, teamCounts);
-    if (!def) continue;
-    const mid = pickPositionGreedy(byPosition.MID, layout.MID, teamCounts);
-    if (!mid) continue;
-    const fwd = pickPositionGreedy(byPosition.FWD, layout.FWD, teamCounts);
-    if (!fwd) continue;
+    if (
+      picked.GK.length < 1 ||
+      picked.DEF.length < layout.DEF ||
+      picked.MID.length < layout.MID ||
+      picked.FWD.length < layout.FWD
+    ) {
+      continue; // takım limitiyle birlikte bu diziliş doldurulamadı
+    }
 
     const total =
-      gk.points +
-      def.reduce((s, p) => s + p.points, 0) +
-      mid.reduce((s, p) => s + p.points, 0) +
-      fwd.reduce((s, p) => s + p.points, 0);
+      picked.GK[0].points +
+      picked.DEF.reduce((s, x) => s + x.points, 0) +
+      picked.MID.reduce((s, x) => s + x.points, 0) +
+      picked.FWD.reduce((s, x) => s + x.points, 0);
 
     if (!best || total > best.total) {
-      best = { formation, total, gk, def, mid, fwd };
+      best = {
+        formation,
+        total,
+        gk: picked.GK[0],
+        def: picked.DEF,
+        mid: picked.MID,
+        fwd: picked.FWD,
+      };
     }
   }
 
