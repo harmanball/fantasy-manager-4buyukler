@@ -118,6 +118,15 @@ export async function GET() {
       });
     }
 
+    // Sabit takım sırası yerine (her zaman GS önce gibi), gerçek maç
+    // tarih/saatine göre kronolojik sıralıyoruz — ilk oynanacak maç en
+    // üstte çıksın diye.
+    fixtures.sort((a, b) => {
+      const aKey = `${a.date}T${a.time || "00:00"}`;
+      const bKey = `${b.date}T${b.time || "00:00"}`;
+      return aKey.localeCompare(bKey);
+    });
+
     return Response.json({ fixtures });
   } catch (err) {
     console.error("Fikstür çekilemedi:", err);
