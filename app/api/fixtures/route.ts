@@ -1,10 +1,8 @@
-import { fetchTrackedFixturesServer } from "@/lib/fixturesServer";
+import { fetchGameweekFixturesFromDb } from "@/lib/gameweekFixtures";
 
-export type { TrackedFixture, TrackedTeamCode } from "@/lib/fixturesServer";
-
-export const revalidate = 3600; // 1 saat — aynı veriyi her istekte yeniden çekmemek için
+export type { TrackedFixture, TrackedTeamCode } from "@/lib/gameweekFixtures";
 
 export async function GET() {
-  const fixtures = await fetchTrackedFixturesServer();
+  const fixtures = await fetchGameweekFixturesFromDb();
   return Response.json({ fixtures });
 }
