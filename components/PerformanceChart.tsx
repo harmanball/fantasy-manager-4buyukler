@@ -15,13 +15,14 @@ export function PerformanceChart({ data }: { data: WeeklyPoint[] }) {
   const width = 320;
   const height = 130;
   const padX = 24;
-  const padTop = 20;
+  const padTop = 24;
   const padBottom = 24;
+
   const maxPoints = Math.max(...data.map((d) => d.points), 1);
   const minPoints = Math.min(...data.map((d) => d.points), 0);
   const range = maxPoints - minPoints || 1;
-
   const stepX = (width - padX * 2) / (data.length - 1);
+
   const points = data.map((d, i) => {
     const x = padX + i * stepX;
     const y =
@@ -30,7 +31,7 @@ export function PerformanceChart({ data }: { data: WeeklyPoint[] }) {
   });
 
   const polyline = points.map((p) => `${p.x},${p.y}`).join(" ");
-  const last = points[points.length - 1];
+  const lastIndex = points.length - 1;
 
   return (
     <div className="rounded-lg border border-charcoal/10 bg-white p-4">
@@ -52,9 +53,22 @@ export function PerformanceChart({ data }: { data: WeeklyPoint[] }) {
             key={i}
             cx={p.x}
             cy={p.y}
-            r={i === points.length - 1 ? 5 : 4}
-            fill={i === points.length - 1 ? "#D4A537" : "#0F3D2E"}
+            r={i === lastIndex ? 5 : 4}
+            fill={i === lastIndex ? "#D4A537" : "#0F3D2E"}
           />
+        ))}
+        {points.map((p, i) => (
+          <text
+            key={i}
+            x={p.x}
+            y={p.y - 10}
+            fontSize="11"
+            fill={i === lastIndex ? "#D4A537" : "#0F3D2E"}
+            fontWeight="600"
+            textAnchor="middle"
+          >
+            {p.points}
+          </text>
         ))}
         {points.map((p, i) => (
           <text
@@ -68,9 +82,6 @@ export function PerformanceChart({ data }: { data: WeeklyPoint[] }) {
             {p.weekNumber}.H
           </text>
         ))}
-        <text x={last.x} y={last.y - 10} fontSize="11" fill="#D4A537" fontWeight="600" textAnchor="middle">
-          {last.points}
-        </text>
       </svg>
     </div>
   );
