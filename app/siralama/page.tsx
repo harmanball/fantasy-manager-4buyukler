@@ -65,10 +65,24 @@ export default function SiralamaPage() {
   const [weeks, setWeeks] = useState<FinishedGameweek[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<"total" | number>("total");
   const [loading, setLoading] = useState(true);
+  const [lastWeekRanks, setLastWeekRanks] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     fetchFinishedGameweeks().then(setWeeks);
   }, []);
+
+  // Genel Toplam görünümünde, her satırın sağına en son biten haftadaki
+  // sırasını da eklemek için — weeks en yeniden en eskiye sıralı geldiği
+  // için weeks[0] "son hafta"dır.
+  useEffect(() => {
+    if (weeks.length === 0) {
+      setLastWeekRanks(new Map());
+      return;
+    }
+    fetchGameweekLeaderboard(weeks[0].id).then((weekRows) => {
+      setLastWeekRanks(new Map(weekRows.map((r, i) => [r.user_id, i + 1])));
+    });
+  }, [weeks]);
 
   useEffect(() => {
     let cancelled = false;
@@ -174,6 +188,8 @@ export default function SiralamaPage() {
         <ol className="flex flex-col gap-1.5">
           {rows.map((row, i) => {
             const isMe = session?.user.id === row.user_id;
+            const lastWeekRank =
+              selectedFilter === "total" ? lastWeekRanks.get(row.user_id) : undefined;
             return (
               <li key={row.user_id}>
                 <Link
@@ -220,8 +236,15 @@ export default function SiralamaPage() {
                         )}
                       </div>
                     </div>
-                    <span className="shrink-0 font-display text-base font-semibold">
-                      {row.total_points}
+                    <span className="flex shrink-0 flex-col items-end">
+                      <span className="font-display text-base font-semibold">
+                        {row.total_points}
+                      </span>
+                      {lastWeekRank !== undefined && (
+                        <span className="text-[10px] text-foreground/45">
+                          Son hafta {lastWeekRank}.
+                        </span>
+                      )}
                     </span>
                   </Link>
                 </li>
