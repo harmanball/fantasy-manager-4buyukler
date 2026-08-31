@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { ADMIN_EMAILS } from "@/lib/adminConfig";
 import { fetchPlayers, Player } from "@/lib/players";
 import { parseStatsBlock, ParsedStatRow } from "@/lib/statsParser";
+import { parseScoreLines, ParsedScoreLine } from "@/lib/scoreParser";
 import { fetchTransferWindowOverride, TransferWindowOverride } from "@/lib/transferWindow";
 import { AppHeader } from "@/components/AppHeader";
 
@@ -18,7 +19,9 @@ interface GameweekRow {
   deadline: string;
 }
 
-const PLACEHOLDER = `# Format: TAKIM|OYUNCU|DAKİKA|GOL|ASİST|TEMİZKALE|SARI|KIRMIZI|KKGOL|PENKAÇAN|MAÇPUANI|MOTM
+const PLACEHOLDER = `# Maç sonuçlandıysa, en üste isteğe bağlı skor satırı ekleyebilirsin:
+# SKOR|TS|2|1  (TS kendi maçında 2, rakip 1 attı)
+# Format: TAKIM|OYUNCU|DAKİKA|GOL|ASİST|TEMİZKALE|SARI|KIRMIZI|KKGOL|PENKAÇAN|MAÇPUANI|MOTM
 GS|Victor Osimhen|90|2|1|0|0|0|0|0|8.4|1
 GS|Günay Güvenc|90|0|0|0|0|1|0|0|5.6|0`;
 
@@ -34,6 +37,7 @@ export default function AdminPage() {
 
   const [statsText, setStatsText] = useState("");
   const [parsed, setParsed] = useState<ParsedStatRow[] | null>(null);
+  const [parsedScores, setParsedScores] = useState<ParsedScoreLine[]>([]);
   const [saving, setSaving] = useState(false);
   const [resultMsg, setResultMsg] = useState<string | null>(null);
 
@@ -82,6 +86,7 @@ export default function AdminPage() {
 
   function handlePreview() {
     setParsed(parseStatsBlock(statsText));
+    setParsedScores(parseScoreLines(statsText));
     setResultMsg(null);
   }
 
@@ -91,6 +96,7 @@ export default function AdminPage() {
     setResultMsg(null);
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
+
     const res = await fetch("/api/admin/save-stats", {
       method: "POST",
       headers: {
@@ -100,13 +106,34 @@ export default function AdminPage() {
       body: JSON.stringify({ gameweekId: selectedGw, rows: parsed }),
     });
     const json = await res.json();
-    setSaving(false);
+
     if (!res.ok) {
+      setSaving(false);
       setResultMsg(`Hata: ${json.error}`);
       return;
     }
+
+    let scoreMsg = "";
+    if (parsedScores.length > 0) {
+      const scoreRes = await fetch("/api/admin/save-fixture-scores", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ gameweekId: selectedGw, scores: parsedScores }),
+      });
+      if (scoreRes.ok) {
+        const scoreJson = await scoreRes.json();
+        scoreMsg = ` — ${scoreJson.updated} maç skoru güncellendi ✓`;
+      } else {
+        scoreMsg = " — skor kaydedilemedi (fikstür kaydı bulunamamış olabilir)";
+      }
+    }
+
+    setSaving(false);
     setResultMsg(
-      `${json.matchedCount} oyuncu güncellendi, puanlar hesaplandı ✓` +
+      `${json.matchedCount} oyuncu güncellendi, puanlar hesaplandı ✓${scoreMsg}` +
         (json.unmatched.length > 0
           ? ` — eşleşmeyenler: ${json.unmatched.join(", ")}`
           : "")
@@ -351,7 +378,7 @@ export default function AdminPage() {
             value={statsText}
             onChange={(e) => setStatsText(e.target.value)}
             placeholder={PLACEHOLDER}
-            rows={8}
+            rows={9}
             className="mb-2 w-full rounded-lg border border-charcoal/15 p-3 font-mono text-xs outline-none focus:border-pitch"
           />
 
@@ -361,6 +388,21 @@ export default function AdminPage() {
           >
             Önizle
           </button>
+
+          {parsedScores.length > 0 && (
+            <div className="mb-3 rounded-lg border border-gold/40 bg-gold/10 px-3 py-2">
+              <p className="text-xs font-medium text-charcoal">
+                Tespit edilen maç sonucu/sonuçları:
+              </p>
+              <ul className="mt-1 flex flex-col gap-0.5">
+                {parsedScores.map((s, i) => (
+                  <li key={i} className="text-xs text-foreground/70">
+                    {s.team}: {s.teamScore} - {s.opponentScore}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {parsed && (
             <div className="mb-3 max-h-64 overflow-x-auto overflow-y-auto rounded-lg border border-charcoal/10">
