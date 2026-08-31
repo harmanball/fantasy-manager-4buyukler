@@ -9,30 +9,98 @@ export interface TrackedFixture {
   venue: string | null;
 }
 
-interface TSDBEvent {
-  strHomeTeam: string;
-  strAwayTeam: string;
-  dateEvent: string;
-  strTime: string | null;
-  strVenue: string | null;
-  idLeague: string | null;
-}
-
-// TheSportsDB'deki Türkiye Süper Lig ligi id'si.
-const SUPER_LIG_ID = "4339";
-const DAYS_TO_SCAN = 10;
+// ESPN'in kendi sitesinde kullandığı, herkese açık ve anahtar/kayıt
+// gerektirmeyen uç noktası. Resmi/belgelenmiş değil ("gizli" API) ama
+// TheSportsDB'nin aksine topluluk kaynaklı değil, ESPN'in kendi ticari
+// verisi — TFF'nin son dakika saat/tarih değişikliklerini çok daha
+// hızlı yansıtması bekleniyor. Süper Lig kodu: "tur.1".
+const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer/tur.1";
 
 // Türkiye yaz/kış saati uygulamıyor, her zaman sabit UTC+3.
 const TURKEY_OFFSET_MS = 3 * 60 * 60 * 1000;
 
-const TRACKED: { code: TrackedTeamCode; keyword: string }[] = [
-  { code: "GS", keyword: "galatasaray" },
-  { code: "FB", keyword: "fenerbahce" },
-  { code: "BJK", keyword: "besiktas" },
-  { code: "TS", keyword: "trabzonspor" },
+const TRACKED: { code: TrackedTeamCode; espnId: string }[] = [
+  { code: "GS", espnId: "432" }, // Galatasaray
+  { code: "FB", espnId: "436" }, // Fenerbahçe
+  { code: "BJK", espnId: "1895" }, // Beşiktaş
+  { code: "TS", espnId: "997" }, // Trabzonspor
 ];
 
-function normalize(s: string): string {
+interface ESPNCompetitor {
+  homeAway: "home" | "away";
+  team: { displayName: string };
+}
+
+interface ESPNEvent {
+  date: string; // UTC ISO, örn. "2026-09-04T17:00Z"
+  competitions: {
+    venue?: { fullName?: string };
+    competitors: ESPNCompetitor[];
+  }[];
+}
+
+interface ESPNScheduleResponse {
+  events?: ESPNEvent[];
+}
+
+function toTurkeyDateTime(utcIso: string): { date: string; time: string } {
+  const utcDate = new Date(utcIso);
+  if (isNaN(utcDate.getTime())) return { date: "", time: "" };
+  const turkeyDate = new Date(utcDate.getTime() + TURKEY_OFFSET_MS);
+  return {
+    date: turkeyDate.toISOString().slice(0, 10),
+    time: turkeyDate.toISOString().slice(11, 16),
+  };
+}
+
+async function fetchNextFixtureForTeam(
+  code: TrackedTeamCode,
+  espnId: string
+): Promise<TrackedFixture | null> {
+  try {
+    const res = await fetch(
+      `${ESPN_BASE}/teams/${espnId}/schedule?fixture=true`,
+      { next: { revalidate: 3600 } }
+    );
+    if (!res.ok) return null;
+
+    const data = (await res.json()) as ESPNScheduleResponse;
+    const events = data.events ?? [];
+    const now = new Date();
+
+    // events sezonun geri kalanını (bugünden itibaren) kronolojik sırayla
+    // içeriyor — yine de güvenlik için tarihi geçmiş olanları eleyip ilk
+    // gerçekten gelecekteki maçı alıyoruz.
+    const next = events.find((e) => new Date(e.date) > now);
+    if (!next || !next.competitions?.[0]) return null;
+
+    const comp = next.competitions[0];
+    const self = comp.competitors.find(
+      (c) => normalizeName(c.team.displayName) === teamKeyword(code)
+    );
+    const opponent = comp.competitors.find(
+      (c) => normalizeName(c.team.displayName) !== teamKeyword(code)
+    );
+    if (!self || !opponent) return null;
+
+    const { date, time } = toTurkeyDateTime(next.date);
+    if (!date) return null;
+
+    return {
+      team: code,
+      opponent: opponent.team.displayName,
+      isHome: self.homeAway === "home",
+      date,
+      time,
+      venue: comp.venue?.fullName ?? null,
+    };
+  } catch (err) {
+    console.error(`${code} için fikstür çekilemedi:`, err);
+    return null;
+  }
+}
+
+function normalizeName(s: string): string {
   return s
     .toLocaleLowerCase("tr")
     .replace(/ş/g, "s")
@@ -43,44 +111,16 @@ function normalize(s: string): string {
     .replace(/ü/g, "u");
 }
 
-function formatDateParam(d: Date): string {
-  return d.toISOString().slice(0, 10); // YYYY-MM-DD
-}
-
-// TheSportsDB'nin "yerel saat" alanı (strTimeLocal / dateEventLocal)
-// TOPLULUK KAYNAKLI olduğu için tutarsız doldurulabiliyor — bazı maçlarda
-// doğru, bazılarında UTC değeriyle aynı (yani hâlâ 3 saat geride) kalmış
-// çıkabiliyor. Bu yüzden ona hiç güvenmiyoruz: sadece güvenilir olan UTC
-// alanından (dateEvent + strTime), Türkiye'nin sabit +3 saatlik farkını
-// KENDİMİZ ekleyerek hesaplıyoruz. Gün değişimi (örn. UTC 22:00 ->
-// Türkiye'de ertesi gün 01:00) de burada doğru şekilde ele alınıyor.
-function toTurkeyDateTime(
-  utcDateStr: string,
-  utcTimeStr: string
-): { date: string; time: string } {
-  const utcDate = new Date(`${utcDateStr}T${utcTimeStr}:00Z`);
-  if (isNaN(utcDate.getTime())) {
-    return { date: utcDateStr, time: utcTimeStr };
-  }
-  const turkeyDate = new Date(utcDate.getTime() + TURKEY_OFFSET_MS);
-  return {
-    date: turkeyDate.toISOString().slice(0, 10),
-    time: turkeyDate.toISOString().slice(11, 16),
-  };
-}
-
-async function fetchEventsForDay(dateStr: string): Promise<TSDBEvent[]> {
-  try {
-    const res = await fetch(
-      `https://www.thesportsdb.com/api/v1/json/123/eventsday.php?d=${dateStr}&l=${SUPER_LIG_ID}`,
-      { next: { revalidate: 3600 } }
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data?.events as TSDBEvent[]) ?? [];
-  } catch (err) {
-    console.error(`${dateStr} için maçlar çekilemedi:`, err);
-    return [];
+function teamKeyword(code: TrackedTeamCode): string {
+  switch (code) {
+    case "GS":
+      return "galatasaray";
+    case "FB":
+      return "fenerbahce";
+    case "BJK":
+      return "besiktas";
+    case "TS":
+      return "trabzonspor";
   }
 }
 
@@ -89,52 +129,16 @@ async function fetchEventsForDay(dateStr: string): Promise<TSDBEvent[]> {
 // tarafı kartlar için) hem admin route'ları (hafta deadline'ını hesaplamak
 // için) bu AYNI fonksiyonu kullanır.
 export async function fetchTrackedFixturesServer(): Promise<TrackedFixture[]> {
-  try {
-    const today = new Date();
-    const dayStrings = Array.from({ length: DAYS_TO_SCAN }, (_, i) => {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      return formatDateParam(d);
-    });
+  const results = await Promise.all(
+    TRACKED.map((t) => fetchNextFixtureForTeam(t.code, t.espnId))
+  );
+  const fixtures = results.filter((f): f is TrackedFixture => f !== null);
 
-    const dayResults = await Promise.all(dayStrings.map(fetchEventsForDay));
-    const allEvents = dayResults.flat();
-    allEvents.sort((a, b) => (a.dateEvent < b.dateEvent ? -1 : 1));
+  fixtures.sort((a, b) => {
+    const aKey = `${a.date}T${a.time || "00:00"}`;
+    const bKey = `${b.date}T${b.time || "00:00"}`;
+    return aKey.localeCompare(bKey);
+  });
 
-    const fixtures: TrackedFixture[] = [];
-    for (const t of TRACKED) {
-      const match = allEvents.find((e) => {
-        const home = normalize(e.strHomeTeam ?? "");
-        const away = normalize(e.strAwayTeam ?? "");
-        return home.includes(t.keyword) || away.includes(t.keyword);
-      });
-      if (!match) continue;
-
-      const isHome = normalize(match.strHomeTeam ?? "").includes(t.keyword);
-      const rawTime = match.strTime ? match.strTime.slice(0, 5) : "";
-      const { date, time } = rawTime
-        ? toTurkeyDateTime(match.dateEvent, rawTime)
-        : { date: match.dateEvent, time: "" };
-
-      fixtures.push({
-        team: t.code,
-        opponent: isHome ? match.strAwayTeam : match.strHomeTeam,
-        isHome,
-        date,
-        time,
-        venue: match.strVenue ?? null,
-      });
-    }
-
-    fixtures.sort((a, b) => {
-      const aKey = `${a.date}T${a.time || "00:00"}`;
-      const bKey = `${b.date}T${b.time || "00:00"}`;
-      return aKey.localeCompare(bKey);
-    });
-
-    return fixtures;
-  } catch (err) {
-    console.error("Fikstür çekilemedi:", err);
-    return [];
-  }
+  return fixtures;
 }
