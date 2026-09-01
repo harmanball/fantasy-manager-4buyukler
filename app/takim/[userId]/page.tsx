@@ -41,6 +41,10 @@ export default function TakimPage() {
   // Gösterilen kadronun "bu haftanın canlı seçimi" değil, kilitli bir
   // önceki hafta olduğunu belirtmek için — sadece bilgi notu amaçlı.
   const [showingLockedPrevWeek, setShowingLockedPrevWeek] = useState(false);
+  // Kullanıcı son 1-2 haftadır kadrosunu güncellemediyse, gösterilen kadro
+  // daha da eski bir haftadan geliyor olabilir — bunu da ayrıca belirtmek
+  // için.
+  const [shownWeekName, setShownWeekName] = useState<string | null>(null);
 
   const [formation, setFormation] = useState<Formation>("4-3-3");
   const [slots, setSlots] = useState<SquadSlot[]>(() => buildSlots("4-3-3"));
@@ -79,6 +83,7 @@ export default function TakimPage() {
 
       let saved: Awaited<ReturnType<typeof fetchUserSquad>> = [];
       let fromPrevWeek = false;
+      let shownWeek: string | null = null;
 
       if (openGw) {
         if (windowOpen) {
@@ -95,11 +100,22 @@ export default function TakimPage() {
         }
       }
 
+      // Ne "bu hafta" ne "bir önceki hafta" bir kayıt verdiyse, kullanıcı
+      // bir süredir kadrosunu güncellememiş olabilir. Sadece EN SON biten
+      // haftaya bakmak yerine, geçmiş haftaları geriye doğru TEK TEK
+      // tarayıp bir kayıt bulana kadar devam ediyoruz — aksi halde,
+      // 2+ hafta önce kurulmuş ama sonra hiç dokunulmamış bir kadro
+      // "bulunamadı" olarak görünüyordu.
       if (saved.length === 0) {
-        const finished = await fetchFinishedGameweeks();
-        if (finished.length > 0) {
-          saved = await fetchUserSquad(targetUserId, finished[0].id);
-          fromPrevWeek = false;
+        const finished = await fetchFinishedGameweeks(); // en yeni hafta en başta
+        for (const gw of finished) {
+          const attempt = await fetchUserSquad(targetUserId, gw.id);
+          if (attempt.length > 0) {
+            saved = attempt;
+            fromPrevWeek = false;
+            shownWeek = gw.name || `${gw.week_number}. Hafta`;
+            break;
+          }
         }
       }
       if (cancelled) return;
@@ -110,6 +126,7 @@ export default function TakimPage() {
         setSlots(result.slots);
         setCaptainId(result.captainId);
         setShowingLockedPrevWeek(fromPrevWeek);
+        setShownWeekName(shownWeek);
       } else {
         setNotFound(true);
       }
@@ -175,6 +192,13 @@ export default function TakimPage() {
             <p className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-charcoal">
               Transfer penceresi açık olduğu için bu haftaki kadrosu henüz
               gösterilmiyor — gördüğün, bir önceki (kilitli) haftanın
+              kadrosu.
+            </p>
+          )}
+          {shownWeekName && (
+            <p className="rounded-lg border border-charcoal/10 bg-white px-3 py-2 text-xs text-foreground/60">
+              Bu kullanıcı son haftalarda kadrosunu güncellememiş —
+              gördüğün, en son kayıtlı olduğu hafta olan {shownWeekName}
               kadrosu.
             </p>
           )}
