@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
   if (fixtures.length > 0) {
     await admin.from("gameweek_fixtures").insert(
-      fixtures.map((f) => ({
+      fixtures.map((f: { team: string; opponent: string; isHome: boolean; date: string; time: string; venue: string | null }) => ({
         gameweek_id: inserted.id,
         team: f.team,
         opponent: f.opponent,
@@ -72,6 +72,36 @@ export async function POST(request: Request) {
         venue: f.venue,
       }))
     );
+  }
+
+  // Kadrosunu güncellemeyen kullanıcılar için: bir önceki haftanın
+  // kadrosunu yeni haftaya OTOMATİK KOPYALA — "haftalarca güncellemesen
+  // bile kadron saklı kalsın ve puan almaya devam etsin" kuralı gereği.
+  // Transfer sayısında bir sınır olmadığı için bu kopyalama herhangi bir
+  // transfer hakkını "harcamış" saymaz, sadece aynı seçimleri sessizce
+  // taşır.
+  const { data: prevGw } = await admin
+    .from("gameweeks")
+    .select("id")
+    .eq("week_number", weekNumber - 1)
+    .maybeSingle();
+
+  if (prevGw) {
+    const { data: prevPicks } = await admin
+      .from("user_picks")
+      .select("user_id, player_id, is_captain")
+      .eq("gameweek_id", prevGw.id);
+
+    if (prevPicks && prevPicks.length > 0) {
+      await admin.from("user_picks").insert(
+        prevPicks.map((p: { user_id: string; player_id: string; is_captain: boolean }) => ({
+          user_id: p.user_id,
+          gameweek_id: inserted.id,
+          player_id: p.player_id,
+          is_captain: p.is_captain,
+        }))
+      );
+    }
   }
 
   return Response.json({ ok: true });
