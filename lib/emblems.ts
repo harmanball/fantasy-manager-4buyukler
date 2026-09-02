@@ -10,7 +10,15 @@ export type EmblemId =
   | "eagle"
   | "wolf"
   | "diamond"
-  | "target";
+  | "target"
+  | "shield_fr"
+  | "shield_es"
+  | "shield_de"
+  | "banner"
+  | "hexagon"
+  | "lozenge"
+  | "oval"
+  | "armor";
 
 export const EMBLEMS: { id: EmblemId; label: string }[] = [
   { id: "shield", label: "Kalkan" },
@@ -25,6 +33,14 @@ export const EMBLEMS: { id: EmblemId; label: string }[] = [
   { id: "wolf", label: "Kurt" },
   { id: "diamond", label: "Elmas" },
   { id: "target", label: "Hedef" },
+  { id: "shield_fr", label: "Fransız Kalkan" },
+  { id: "shield_es", label: "İspanyol Kalkan" },
+  { id: "shield_de", label: "Alman Kalkan" },
+  { id: "banner", label: "Şerit" },
+  { id: "hexagon", label: "Altıgen" },
+  { id: "lozenge", label: "Baklava" },
+  { id: "oval", label: "Oval" },
+  { id: "armor", label: "Zırh" },
 ];
 
 export const DEFAULT_EMBLEM: EmblemId = "shield";
