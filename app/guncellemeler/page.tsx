@@ -56,11 +56,27 @@ function PaletteIcon() {
   );
 }
 
+function ClockIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M12 7.5V12l3 2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 const ICONS: Record<UpdateNoteIcon, () => React.JSX.Element> = {
   bell: BellIcon,
   calendar: CalendarIcon,
   refresh: RefreshIcon,
   palette: PaletteIcon,
+  clock: ClockIcon,
 };
 
 // Kadro sayfasında açılan "Yenilikler" pop-up'ıyla aynı içeriği (updateNotes.ts)
@@ -74,7 +90,6 @@ export default function GuncellemelerPage() {
       <main className="mx-auto max-w-2xl px-3 py-4 sm:px-6 sm:py-6">
       <div className="flex flex-col gap-6 rounded-xl bg-background p-4 sm:p-6">
         <PageHeader icon="info" title="Güncellemeler" />
-
         <div className="flex flex-col gap-3">
           {UPDATE_NOTES.map((note, i) => {
             const IconComp = ICONS[note.icon];
