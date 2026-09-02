@@ -106,6 +106,82 @@ function renderShape(emblem: EmblemId, a: string, b: string) {
           <path d="M22 28 L36 62 L14 34 Z M50 28 L36 62 L58 34 Z" fill={a} opacity={0.25} />
         </>
       );
+    case "shield_fr":
+      // Fransız kalkanı — düz üst, yuvarlak alt
+      return (
+        <>
+          <path d="M36 8 L58 14 V34 C58 54 50 60 36 64 C22 60 14 54 14 34 V14 Z" fill={a} />
+          <path d="M36 8 L58 14 V34 C58 54 50 60 36 64 Z" fill={b} opacity={0.55} />
+        </>
+      );
+    case "shield_es":
+      // İspanyol kalkanı — yukarı ve aşağı yuvarlatılmış, oval hatlı
+      return (
+        <>
+          <path
+            d="M36 6 C50 8 54 16 54 26 C54 48 48 58 36 66 C24 58 18 48 18 26 C18 16 22 8 36 6 Z"
+            fill={a}
+          />
+          <path
+            d="M36 6 C50 8 54 16 54 26 C54 48 48 58 36 66 Z"
+            fill={b}
+            opacity={0.55}
+          />
+        </>
+      );
+    case "shield_de":
+      // Alman kalkanı — çentikli üst, sivri alt
+      return (
+        <>
+          <path d="M14 10 L36 16 L58 10 V32 L36 64 L14 32 Z" fill={a} />
+          <path d="M36 16 L58 10 V32 L36 64 Z" fill={b} opacity={0.55} />
+        </>
+      );
+    case "banner":
+      // Şerit / bayrak amblem — düz üst, V şeklinde kesik alt
+      return (
+        <>
+          <path d="M14 10 H58 V46 L36 60 L14 46 Z" fill={a} />
+          <path d="M36 10 H58 V46 L36 60 Z" fill={b} opacity={0.55} />
+        </>
+      );
+    case "hexagon":
+      return (
+        <>
+          <path d="M36 6 L60 20 V52 L36 66 L12 52 V20 Z" fill={a} />
+          <path d="M36 6 L60 20 V52 L36 66 Z" fill={b} opacity={0.55} />
+        </>
+      );
+    case "lozenge":
+      // Baklava — dik köşegen amblem
+      return (
+        <>
+          <path d="M36 4 L58 36 L36 68 L14 36 Z" fill={a} />
+          <path d="M36 4 L58 36 L36 68 Z" fill={b} opacity={0.55} />
+        </>
+      );
+    case "oval":
+      return (
+        <>
+          <ellipse cx="36" cy="36" rx="22" ry="30" fill={a} />
+          <path d="M36 6 A22 30 0 0 1 36 66 Z" fill={b} opacity={0.55} />
+        </>
+      );
+    case "armor":
+      // Zırh — kavisli kenarlı klasik forma arması
+      return (
+        <>
+          <path
+            d="M36 6 C50 8 54 16 54 24 C58 24 58 30 54 34 C52 44 48 50 44 54 L36 68 L28 54 C24 50 20 44 18 34 C14 30 14 24 18 24 C18 16 22 8 36 6 Z"
+            fill={a}
+          />
+          <path
+            d="M36 6 C50 8 54 16 54 24 C58 24 58 30 54 34 C52 44 48 50 44 54 L36 68 Z"
+            fill={b}
+            opacity={0.55}
+          />
+        </>
+      );
     case "target":
     default:
       return (
