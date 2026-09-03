@@ -63,8 +63,9 @@ export default function NasilOynanirPage() {
           kılar.
         </Bul>
         <Bul>
-          <strong>Bütçe ve oyuncu fiyatı yoktur.</strong> Parasal hiçbir koşul
-          bulunmaz, kadronu tamamen serbestçe kurarsın.
+          <strong>Bütçe, oyuncu fiyatı ve transfer sınırı yoktur.</strong>{" "}
+          Parasal hiçbir koşul bulunmaz ve pencere açıkken dilediğin kadar
+          transfer yapabilirsin, kadronu tamamen serbestçe kurarsın.
         </Bul>
         <Bul>
           Geçerli dizilişler: 4-4-2, 4-5-1, 4-3-3, 3-4-3, 3-5-2, 5-4-1, 5-3-2.
@@ -79,21 +80,20 @@ export default function NasilOynanirPage() {
         </Bul>
       </Section>
 
-      <Section title="Hafta ve Değişiklik Penceresi">
+      <Section title="Hafta ve Transfer Penceresi">
         <Bul>
-          Kadro, diziliş, kaptan ve transfer değişiklikleri yalnızca{" "}
-          <strong>Salı–Çarşamba–Perşembe</strong> günleri yapılabilir. Bu
-          günler içinde <strong>sınırsız</strong> kez kaydedebilirsin.
+          Transfer penceresi, o haftanın <strong>ilk 4 büyük maçından 3
+          saat öncesine</strong> kadar açık kalır ve o noktada otomatik
+          olarak kapanır.
         </Bul>
         <Bul>
-          Kadro, her durumda o haftanın ilk 4-büyük maçının başlama saatinde
-          kesin olarak kilitlenir.
+          Pencere açıkken kadro, diziliş, kaptan ve transfer
+          değişikliklerini <strong>sınırsız</strong> kez kaydedebilirsin.
         </Bul>
         <Bul>
-          Pencere dışında (örneğin Cumartesi) siteye giren bir kullanıcı o
-          hafta için değişiklik yapamaz — kadro sayfası bunu bildirir, ama
-          isteğe bağlı olarak bir sonraki hafta için düzenleme yapmaya devam
-          edebilir.
+          Pencere kapandığında kadron o hafta için kilitlenir. Kadronu hiç
+          güncellemesen bile önceki haftaki kadron otomatik olarak bu
+          haftaya da taşınır ve normal şekilde puan almaya devam eder.
         </Bul>
         <Bul>Yalnızca Süper Lig maçları puanlanır.</Bul>
       </Section>
@@ -130,8 +130,9 @@ export default function NasilOynanirPage() {
 
       <Section title="Maçın Yıldızı Bonusu">
         <Bul>
-          Her maçın <strong>Maçın Yıldızı</strong>, FotMob&apos;un
-          &quot;Maçın adamı&quot; seçimidir — tamamen kaynak kullanılır.
+          Her maçın <strong>Maçın Yıldızı</strong>, güvenilir spor
+          istatistik kaynaklarının (FotMob, Ofsayt vb.) &quot;Maçın
+          adamı&quot; seçimidir.
         </Bul>
         <Bul>Maçın Yıldızı seçilen oyuncunun puanı <strong>×2</strong> ile çarpılır.</Bul>
         <Bul>
@@ -142,17 +143,31 @@ export default function NasilOynanirPage() {
 
       <Section title="Veri Kaynağı">
         <Bul>
-          Tüm istatistikler (dakika, gol, asist, temiz kale, kart, maç puanı,
-          Maçın Yıldızı){" "}
+          Tüm istatistikler (dakika, gol, asist, temiz kale, kart, maç
+          puanı, Maçın Yıldızı) resmi maç raporları ve güvenilir spor
+          istatistik siteleri (
           <a
             href="https://www.fotmob.com"
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-pitch underline underline-offset-2"
           >
-            www.fotmob.com
+            FotMob
+          </a>
+          ,{" "}
+          <a
+            href="https://ofsayt.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-pitch underline underline-offset-2"
+          >
+            Ofsayt
           </a>{" "}
-          referans alınır.
+          vb.) referans alınarak elle işlenir.
+        </Bul>
+        <Bul>
+          4 büyüklerin haftalık fikstürü (rakip, tarih, saat) otomatik
+          olarak çekilir ve hafta açıldığında sabitlenir.
         </Bul>
       </Section>
 
