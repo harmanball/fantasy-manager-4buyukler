@@ -26,35 +26,30 @@ import { PlayerPointsModal } from "@/components/PlayerPointsModal";
 import { CaptainPickerSheet } from "@/components/CaptainPickerSheet";
 import { Skeleton } from "@/components/Skeleton";
 import { shareText, getSiteUrl } from "@/lib/share";
-import { fetchIsTransferWindowOpen } from "@/lib/transferWindow";
+import { fetchIsTransferWindowOpen, fetchOpenGameweekDeadline } from "@/lib/transferWindow";
 import { WeeklyFixtures } from "@/components/WeeklyFixtures";
 import { UpdateNotesModal } from "@/components/UpdateNotesModal";
 import { TeamEmblem } from "@/components/TeamEmblem";
 import { EmblemId, DEFAULT_EMBLEM, DEFAULT_COLOR1, DEFAULT_COLOR2 } from "@/lib/emblems";
 
-// Transfer penceresi her zaman bir sonraki Cuma 00:00'da kapanır
-// (Salı/Çarşamba/Perşembe açık kuralına göre).
-function getWindowCloseTime(): Date {
-  const now = new Date();
-  let daysUntil = (5 - now.getDay() + 7) % 7;
-  if (daysUntil === 0) daysUntil = 7;
-  const close = new Date(now);
-  close.setDate(now.getDate() + daysUntil);
-  close.setHours(0, 0, 0, 0);
-  return close;
-}
-
-function formatWindowCloseTime(): string {
-  // Gerçek kapanış anı Cuma 00:00 — ama kullanıcıya "Perşembe 23:59"
-  // olarak gösteriyoruz, aynı anı ifade eden daha sezgisel bir yazım.
-  const close = getWindowCloseTime();
-  const displayMoment = new Date(close.getTime() - 60 * 1000);
-  const dateStr = displayMoment.toLocaleDateString("tr-TR", {
+// Gerçek deadline'ı ("4 Eylül Cuma 17:00" gibi) okunaklı Türkçe metne
+// çevirir. Artık kendi başına bir tarih HESAPLAMIYOR — sadece
+// lib/transferWindow.ts'den gelen, veritabanındaki gerçek deadline'ı
+// biçimlendiriyor. Eskiden burada "her zaman bir sonraki Cuma 00:00"
+// varsayan, gerçek deadline'dan bağımsız bir hesaplama vardı — bu, DB'deki
+// deadline ne olursa olsun ekranda hep yanlış bir saat göstermesine
+// sebep oluyordu.
+function formatDeadline(deadline: Date): string {
+  const dateStr = deadline.toLocaleDateString("tr-TR", {
     day: "numeric",
     month: "long",
     weekday: "long",
   });
-  return `${dateStr} 23:59`;
+  const timeStr = deadline.toLocaleTimeString("tr-TR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${dateStr} ${timeStr}`;
 }
 
 export default function KadroPage() {
@@ -87,6 +82,7 @@ export default function KadroPage() {
   const [modalPlayer, setModalPlayer] = useState<Player | null>(null);
   const [captainPickerOpen, setCaptainPickerOpen] = useState(false);
   const [windowOpen, setWindowOpen] = useState<boolean | null>(null);
+  const [windowDeadline, setWindowDeadline] = useState<Date | null>(null);
   const showEditor = windowOpen === true;
 
   // Bu hafta için hiç kayıtlı seçim yoksa (yeni açılan hafta) ve önceki
@@ -97,6 +93,7 @@ export default function KadroPage() {
 
   useEffect(() => {
     fetchIsTransferWindowOpen().then(setWindowOpen);
+    fetchOpenGameweekDeadline().then(setWindowDeadline);
   }, []);
 
   const [saving, setSaving] = useState(false);
@@ -515,8 +512,9 @@ export default function KadroPage() {
               Transfer penceresi açık
             </p>
             <p className="mx-auto mt-1.5 max-w-[240px] text-xs leading-relaxed text-ivory/65">
-              Transfer penceresi {formatWindowCloseTime()}&apos;da kapanacak.
-              Unutmadan kaydetmeyi unutma.
+              {windowDeadline
+                ? `Transfer penceresi ${formatDeadline(windowDeadline)}'da kapanacak. Unutmadan kaydetmeyi unutma.`
+                : "Unutmadan kaydetmeyi unutma."}
             </p>
           </div>
         </div>
