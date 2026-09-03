@@ -26,14 +26,16 @@ export async function fetchTransferWindowOverride(): Promise<TransferWindowOverr
     .select("value")
     .eq("key", "transfer_window_override")
     .maybeSingle();
-
   if (error || !data) return 0;
   const v = data.value as number;
   return v === 1 || v === 2 ? v : 0;
 }
 
 // Şu an "open"/"upcoming" durumundaki haftanın SABİT deadline'ını getirir.
-async function fetchOpenGameweekDeadline(): Promise<Date | null> {
+// Dışa açık: kadro sayfası, pencerenin gerçekte NE ZAMAN kapanacağını
+// ekranda göstermek için bunu doğrudan kullanır — artık kendi başına,
+// gerçek deadline'dan bağımsız bir tarih hesaplamıyor.
+export async function fetchOpenGameweekDeadline(): Promise<Date | null> {
   const { data, error } = await supabase
     .from("gameweeks")
     .select("deadline")
@@ -41,7 +43,6 @@ async function fetchOpenGameweekDeadline(): Promise<Date | null> {
     .order("week_number", { ascending: true })
     .limit(1)
     .maybeSingle();
-
   if (error || !data?.deadline) return null;
   return new Date(data.deadline);
 }
@@ -51,9 +52,7 @@ export async function fetchIsTransferWindowOpen(): Promise<boolean> {
   const override = await fetchTransferWindowOverride();
   if (override === 1) return true;
   if (override === 2) return false;
-
   const deadline = await fetchOpenGameweekDeadline();
   if (!deadline) return isDayWithinWindow();
-
   return new Date() < deadline;
 }
