@@ -130,9 +130,16 @@ export default function NasilOynanirPage() {
 
       <Section title="Maçın Yıldızı Bonusu">
         <Bul>
-          Her maçın <strong>Maçın Yıldızı</strong>, güvenilir spor
-          istatistik kaynaklarının (FotMob, Ofsayt vb.) &quot;Maçın
-          adamı&quot; seçimidir.
+          Her maçın <strong>Maçın Yıldızı</strong>,{" "}
+          <a
+            href="https://ofsayt.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-pitch underline underline-offset-2"
+          >
+            Ofsayt
+          </a>{" "}
+          üzerinden belirlenen &quot;Maçın adamı&quot; seçimidir.
         </Bul>
         <Bul>Maçın Yıldızı seçilen oyuncunun puanı <strong>×2</strong> ile çarpılır.</Bul>
         <Bul>
@@ -144,17 +151,7 @@ export default function NasilOynanirPage() {
       <Section title="Veri Kaynağı">
         <Bul>
           Tüm istatistikler (dakika, gol, asist, temiz kale, kart, maç
-          puanı, Maçın Yıldızı) resmi maç raporları ve güvenilir spor
-          istatistik siteleri (
-          <a
-            href="https://www.fotmob.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-pitch underline underline-offset-2"
-          >
-            FotMob
-          </a>
-          ,{" "}
+          puanı, Maçın Yıldızı){" "}
           <a
             href="https://ofsayt.com"
             target="_blank"
@@ -163,7 +160,7 @@ export default function NasilOynanirPage() {
           >
             Ofsayt
           </a>{" "}
-          vb.) referans alınarak elle işlenir.
+          referans alınarak elle işlenir.
         </Bul>
         <Bul>
           4 büyüklerin haftalık fikstürü (rakip, tarih, saat) otomatik
