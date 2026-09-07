@@ -10,7 +10,7 @@ async function computeDeadline(): Promise<{ deadline: string; fixtures: Awaited<
   let deadline = nextFridayMidnight();
   if (fixtures.length > 0) {
     const first = fixtures[0];
-    const kickoff = new Date(`${first.date}T${first.time || "00:00"}:00`);
+    const kickoff = new Date(`${first.date}T${first.time || "00:00"}:00+03:00`);
     if (!isNaN(kickoff.getTime())) {
       deadline = new Date(kickoff.getTime() - CLOSE_BEFORE_KICKOFF_MS).toISOString();
     }
