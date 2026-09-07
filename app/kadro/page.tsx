@@ -509,7 +509,9 @@ export default function KadroPage() {
               </svg>
             </div>
             <p className="mt-2 font-display text-base font-semibold text-ivory sm:text-lg">
-              Transfer penceresi açık
+              {gameweek
+                ? `${gameweek.name || `${gameweek.week_number}. Hafta`} Transfer Penceresi Açık`
+                : "Transfer penceresi açık"}
             </p>
             <p className="mx-auto mt-1.5 max-w-[240px] text-xs leading-relaxed text-ivory/65">
               {windowDeadline
