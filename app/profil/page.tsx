@@ -217,7 +217,7 @@ export default function ProfilPage() {
               type="text"
               value={slogan}
               onChange={(e) => setSlogan(e.target.value)}
-              maxLength={40}
+              maxLength={75}
               placeholder="Kısa bir slogan yaz"
               className="h-10 w-full rounded-lg border border-charcoal/15 px-3 text-sm outline-none focus:border-pitch"
             />
