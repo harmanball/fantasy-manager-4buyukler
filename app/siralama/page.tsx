@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { SkeletonRow } from "@/components/Skeleton";
 import { shareText, getSiteUrl } from "@/lib/share";
 import { TeamEmblem } from "@/components/TeamEmblem";
+import { EmblemId } from "@/lib/emblems";
 
 function TrophyIcon() {
   return (
@@ -51,19 +52,45 @@ function RelegationArrowIcon() {
 // Sıralamadaki her satırın solunda gösterilecek rozet: ilk 3 için
 // kupa/madalya, listenin en alt 3 satırı için küme düşme oku. Diğer
 // satırlarda hizalamayı bozmasın diye aynı genişlikte boş bir alan bırakılır.
-function RankBadge({ rank, totalRows }: { rank: number; totalRows: number }) {
+// Haftalık Birincilikler görünümünde küme düşme oku hiç gösterilmez
+// (showRelegation=false) — o liste "en çok 1. olan" sıralaması, kimsenin
+// "düşmesi" gibi bir anlam taşımıyor.
+function RankBadge({
+  rank,
+  totalRows,
+  showRelegation = true,
+}: {
+  rank: number;
+  totalRows: number;
+  showRelegation?: boolean;
+}) {
   if (rank === 1) return <TrophyIcon />;
   if (rank === 2) return <MedalIcon tone="silver" />;
   if (rank === 3) return <MedalIcon tone="bronze" />;
-  if (totalRows > 3 && rank > totalRows - 3) return <RelegationArrowIcon />;
+  if (showRelegation && totalRows > 3 && rank > totalRows - 3) return <RelegationArrowIcon />;
   return <span className="w-[18px] shrink-0" aria-hidden="true" />;
 }
+
+interface WeeklyWinRow {
+  user_id: string;
+  username: string;
+  squad_name: string | null;
+  emblem: EmblemId;
+  team_color1: string;
+  team_color2: string;
+  slogan: string | null;
+  winCount: number;
+  total_points: number;
+}
+
+type FilterValue = "total" | "weekly_wins" | number;
 
 export default function SiralamaPage() {
   const { session } = useSession();
   const [rows, setRows] = useState<LeaderboardRowWithTrend[]>([]);
+  const [weeklyWinRows, setWeeklyWinRows] = useState<WeeklyWinRow[]>([]);
   const [weeks, setWeeks] = useState<FinishedGameweek[]>([]);
-  const [selectedFilter, setSelectedFilter] = useState<"total" | number>("total");
+  const [selectedFilter, setSelectedFilter] = useState<FilterValue>("total");
   const [loading, setLoading] = useState(true);
   const [lastWeekRanks, setLastWeekRanks] = useState<Map<string, number>>(new Map());
 
@@ -84,10 +111,49 @@ export default function SiralamaPage() {
     });
   }, [weeks]);
 
+  // Her bitmiş haftanın 1.sini bulup kaç kez 1. olunduğunu sayar. Genel
+  // sıralamadaki HERKES bu listede yer alır (hiç 1. olmayanlar da 0 ile
+  // görünür) — eşitlikte genel toplam puana göre sıralanır.
+  async function loadWeeklyWins(): Promise<WeeklyWinRow[]> {
+    const totals = await fetchLeaderboardWithTrend();
+
+    const winCounts = new Map<string, number>();
+    for (const w of weeks) {
+      const weekRows = await fetchGameweekLeaderboard(w.id);
+      if (weekRows.length === 0) continue;
+      const winnerId = weekRows[0].user_id;
+      winCounts.set(winnerId, (winCounts.get(winnerId) ?? 0) + 1);
+    }
+
+    const result: WeeklyWinRow[] = totals.map((r) => ({
+      user_id: r.user_id,
+      username: r.username,
+      squad_name: r.squad_name,
+      emblem: r.emblem,
+      team_color1: r.team_color1,
+      team_color2: r.team_color2,
+      slogan: r.slogan,
+      winCount: winCounts.get(r.user_id) ?? 0,
+      total_points: r.total_points,
+    }));
+
+    result.sort((a, b) => b.winCount - a.winCount || b.total_points - a.total_points);
+    return result;
+  }
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
       setLoading(true);
+
+      if (selectedFilter === "weekly_wins") {
+        const wins = await loadWeeklyWins();
+        if (cancelled) return;
+        setWeeklyWinRows(wins);
+        setLoading(false);
+        return;
+      }
+
       const r =
         selectedFilter === "total"
           ? await fetchLeaderboardWithTrend()
@@ -103,17 +169,38 @@ export default function SiralamaPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFilter, weeks]);
+
+  const isWeeklyWins = selectedFilter === "weekly_wins";
 
   // Kullanıcının bu filtredeki kendi satırı ve sırası — paylaşım metni için.
-  const myRowIndex = session
-    ? rows.findIndex((r) => r.user_id === session.user.id)
+  const myRowIndexInRows = session ? rows.findIndex((r) => r.user_id === session.user.id) : -1;
+  const myRowIndexInWins = session
+    ? weeklyWinRows.findIndex((r) => r.user_id === session.user.id)
     : -1;
-  const myRow = myRowIndex >= 0 ? rows[myRowIndex] : null;
+  const myRowIndex = isWeeklyWins ? myRowIndexInWins : myRowIndexInRows;
+  const myWinRow = myRowIndexInWins >= 0 ? weeklyWinRows[myRowIndexInWins] : null;
+  const myRow = myRowIndexInRows >= 0 ? rows[myRowIndexInRows] : null;
   const myRank = myRowIndex >= 0 ? myRowIndex + 1 : null;
 
   function handleShareRank() {
-    if (!myRow || !myRank) return;
+    if (!myRank) return;
+
+    if (isWeeklyWins) {
+      if (!myWinRow) return;
+      const shareUrl = `${getSiteUrl()}/paylas/siralama?rank=${myRank}&points=${
+        myWinRow.winCount
+      }&name=${encodeURIComponent(
+        myWinRow.squad_name || myWinRow.username
+      )}&scope=${encodeURIComponent("haftalık birincilik sayısında")}`;
+      shareText(
+        `Fantasy Manager: 4 Büyükler'de haftalık birincilik sayısında #${myRank}. sıradayım, ${myWinRow.winCount} kez 1. oldum! ${shareUrl}`
+      );
+      return;
+    }
+
+    if (!myRow) return;
     const scopeText =
       selectedFilter === "total"
         ? "genel toplamda"
@@ -142,12 +229,16 @@ export default function SiralamaPage() {
 
       <select
         value={selectedFilter}
-        onChange={(e) =>
-          setSelectedFilter(e.target.value === "total" ? "total" : Number(e.target.value))
-        }
+        onChange={(e) => {
+          const v = e.target.value;
+          setSelectedFilter(
+            v === "total" ? "total" : v === "weekly_wins" ? "weekly_wins" : Number(v)
+          );
+        }}
         className="h-10 w-full rounded-lg border border-charcoal/15 bg-white px-3 text-sm"
       >
         <option value="total">Genel Toplam</option>
+        <option value="weekly_wins">Haftalık Birincilikler</option>
         {weeks.map((w) => (
           <option key={w.id} value={w.id}>
             {w.name || `${w.week_number}. Hafta`}
@@ -162,7 +253,14 @@ export default function SiralamaPage() {
         </p>
       )}
 
-      {!loading && myRow && myRank && (
+      {isWeeklyWins && (
+        <p className="text-center text-[11px] text-foreground/45">
+          Her hafta en yüksek puanı alan kişiye +1 yazılır. Eşitlikte genel
+          toplam puan belirleyicidir.
+        </p>
+      )}
+
+      {!loading && myRank && (isWeeklyWins ? myWinRow : myRow) && (
         <button
           onClick={handleShareRank}
           className="rounded-lg border border-charcoal/15 py-2.5 text-sm font-medium text-foreground hover:bg-charcoal/5"
@@ -179,6 +277,65 @@ export default function SiralamaPage() {
           <SkeletonRow />
           <SkeletonRow />
         </div>
+      ) : isWeeklyWins ? (
+        weeklyWinRows.length === 0 ? (
+          <p className="rounded-lg border border-charcoal/10 bg-white px-4 py-6 text-center text-sm text-foreground/60">
+            Henüz kimse puan almadı — ilk hafta tamamlanınca burada
+            görünecek.
+          </p>
+        ) : (
+          <ol className="flex flex-col gap-1.5">
+            {weeklyWinRows.map((row, i) => {
+              const isMe = session?.user.id === row.user_id;
+              return (
+                <li key={row.user_id}>
+                  <Link
+                    href={isMe ? "/kadro" : `/takim/${row.user_id}`}
+                    className={`flex items-center justify-between rounded-lg border px-3 py-2.5 transition-colors active:bg-charcoal/5 ${
+                      isMe
+                        ? "border-gold bg-gold/10"
+                        : "border-charcoal/10 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <RankBadge rank={i + 1} totalRows={weeklyWinRows.length} showRelegation={false} />
+                      <span className="w-9 shrink-0 text-right text-sm font-medium text-foreground/50">
+                        {i + 1}
+                      </span>
+                      <TeamEmblem
+                        emblem={row.emblem}
+                        color1={row.team_color1}
+                        color2={row.team_color2}
+                        size={24}
+                      />
+                      <div>
+                        <p className="text-sm font-medium leading-tight">
+                          {row.squad_name || row.username}
+                          {isMe && (
+                            <span className="ml-1.5 text-xs font-normal text-gold">
+                              (sen)
+                            </span>
+                          )}
+                        </p>
+                        {row.slogan && (
+                          <p className="text-[10px] italic leading-tight text-foreground/45">
+                            {row.slogan}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <span className="flex shrink-0 flex-col items-end">
+                      <span className="font-display text-base font-semibold">
+                        {row.winCount}
+                      </span>
+                      <span className="text-[10px] text-foreground/45">kez 1.</span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        )
       ) : rows.length === 0 ? (
         <p className="rounded-lg border border-charcoal/10 bg-white px-4 py-6 text-center text-sm text-foreground/60">
           Henüz kimse puan almadı — ilk hafta tamamlanınca sıralama burada
