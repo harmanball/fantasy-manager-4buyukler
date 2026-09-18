@@ -52,9 +52,9 @@ function RelegationArrowIcon() {
 // Sıralamadaki her satırın solunda gösterilecek rozet: ilk 3 için
 // kupa/madalya, listenin en alt 3 satırı için küme düşme oku. Diğer
 // satırlarda hizalamayı bozmasın diye aynı genişlikte boş bir alan bırakılır.
-// Haftalık Birincilikler görünümünde küme düşme oku hiç gösterilmez
-// (showRelegation=false) — o liste "en çok 1. olan" sıralaması, kimsenin
-// "düşmesi" gibi bir anlam taşımıyor.
+// Haftalık Birincilikler ve Hafta Başına Puan görünümlerinde küme düşme
+// oku hiç gösterilmez (showRelegation=false) — bu listeler "en iyi
+// performans" sıralaması, kimsenin "düşmesi" gibi bir anlam taşımıyor.
 function RankBadge({
   rank,
   totalRows,
@@ -83,12 +83,26 @@ interface WeeklyWinRow {
   total_points: number;
 }
 
-type FilterValue = "total" | "weekly_wins" | number;
+interface PerGameRow {
+  user_id: string;
+  username: string;
+  squad_name: string | null;
+  emblem: EmblemId;
+  team_color1: string;
+  team_color2: string;
+  slogan: string | null;
+  gamesPlayed: number;
+  total_points: number;
+  avgPoints: number;
+}
+
+type FilterValue = "total" | "weekly_wins" | "per_game" | number;
 
 export default function SiralamaPage() {
   const { session } = useSession();
   const [rows, setRows] = useState<LeaderboardRowWithTrend[]>([]);
   const [weeklyWinRows, setWeeklyWinRows] = useState<WeeklyWinRow[]>([]);
+  const [perGameRows, setPerGameRows] = useState<PerGameRow[]>([]);
   const [weeks, setWeeks] = useState<FinishedGameweek[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<FilterValue>("total");
   const [loading, setLoading] = useState(true);
@@ -141,6 +155,44 @@ export default function SiralamaPage() {
     return result;
   }
 
+  // Her kullanıcının kadrosunun bulunduğu hafta sayısını bulup, genel
+  // toplam puanını bu sayıya bölerek "hafta başına ortalama puan"ı
+  // hesaplar. Geç katılan ya da bazı haftaları kaçıran kullanıcıları da
+  // adil şekilde kıyaslar. Hiç hafta oynamayan biri varsa listeden
+  // çıkarılır, ortalama tanımsız olur.
+  async function loadPerGame(): Promise<PerGameRow[]> {
+    const totals = await fetchLeaderboardWithTrend();
+
+    const gamesPlayed = new Map<string, number>();
+    for (const w of weeks) {
+      const weekRows = await fetchGameweekLeaderboard(w.id);
+      for (const wr of weekRows) {
+        gamesPlayed.set(wr.user_id, (gamesPlayed.get(wr.user_id) ?? 0) + 1);
+      }
+    }
+
+    const result: PerGameRow[] = totals
+      .map((r) => {
+        const played = gamesPlayed.get(r.user_id) ?? 0;
+        return {
+          user_id: r.user_id,
+          username: r.username,
+          squad_name: r.squad_name,
+          emblem: r.emblem,
+          team_color1: r.team_color1,
+          team_color2: r.team_color2,
+          slogan: r.slogan,
+          gamesPlayed: played,
+          total_points: r.total_points,
+          avgPoints: played > 0 ? r.total_points / played : 0,
+        };
+      })
+      .filter((r) => r.gamesPlayed > 0);
+
+    result.sort((a, b) => b.avgPoints - a.avgPoints || b.total_points - a.total_points);
+    return result;
+  }
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -150,6 +202,14 @@ export default function SiralamaPage() {
         const wins = await loadWeeklyWins();
         if (cancelled) return;
         setWeeklyWinRows(wins);
+        setLoading(false);
+        return;
+      }
+
+      if (selectedFilter === "per_game") {
+        const perGame = await loadPerGame();
+        if (cancelled) return;
+        setPerGameRows(perGame);
         setLoading(false);
         return;
       }
@@ -173,14 +233,23 @@ export default function SiralamaPage() {
   }, [selectedFilter, weeks]);
 
   const isWeeklyWins = selectedFilter === "weekly_wins";
+  const isPerGame = selectedFilter === "per_game";
 
   // Kullanıcının bu filtredeki kendi satırı ve sırası — paylaşım metni için.
   const myRowIndexInRows = session ? rows.findIndex((r) => r.user_id === session.user.id) : -1;
   const myRowIndexInWins = session
     ? weeklyWinRows.findIndex((r) => r.user_id === session.user.id)
     : -1;
-  const myRowIndex = isWeeklyWins ? myRowIndexInWins : myRowIndexInRows;
+  const myRowIndexInPerGame = session
+    ? perGameRows.findIndex((r) => r.user_id === session.user.id)
+    : -1;
+  const myRowIndex = isWeeklyWins
+    ? myRowIndexInWins
+    : isPerGame
+    ? myRowIndexInPerGame
+    : myRowIndexInRows;
   const myWinRow = myRowIndexInWins >= 0 ? weeklyWinRows[myRowIndexInWins] : null;
+  const myPerGameRow = myRowIndexInPerGame >= 0 ? perGameRows[myRowIndexInPerGame] : null;
   const myRow = myRowIndexInRows >= 0 ? rows[myRowIndexInRows] : null;
   const myRank = myRowIndex >= 0 ? myRowIndex + 1 : null;
 
@@ -196,6 +265,18 @@ export default function SiralamaPage() {
       )}&scope=${encodeURIComponent("haftalık birincilik sayısında")}`;
       shareText(
         `Fantasy Manager: 4 Büyükler'de haftalık birincilik sayısında #${myRank}. sıradayım, ${myWinRow.winCount} kez 1. oldum! ${shareUrl}`
+      );
+      return;
+    }
+
+    if (isPerGame) {
+      if (!myPerGameRow) return;
+      const avgText = myPerGameRow.avgPoints.toFixed(1);
+      const shareUrl = `${getSiteUrl()}/paylas/siralama?rank=${myRank}&points=${avgText}&name=${encodeURIComponent(
+        myPerGameRow.squad_name || myPerGameRow.username
+      )}&scope=${encodeURIComponent("hafta başına puanda")}`;
+      shareText(
+        `Fantasy Manager: 4 Büyükler'de hafta başına puanda #${myRank}. sıradayım, hafta başına ${avgText} puan alıyorum! ${shareUrl}`
       );
       return;
     }
@@ -232,13 +313,20 @@ export default function SiralamaPage() {
         onChange={(e) => {
           const v = e.target.value;
           setSelectedFilter(
-            v === "total" ? "total" : v === "weekly_wins" ? "weekly_wins" : Number(v)
+            v === "total"
+              ? "total"
+              : v === "weekly_wins"
+              ? "weekly_wins"
+              : v === "per_game"
+              ? "per_game"
+              : Number(v)
           );
         }}
         className="h-10 w-full rounded-lg border border-charcoal/15 bg-white px-3 text-sm"
       >
         <option value="total">Genel Toplam</option>
         <option value="weekly_wins">Haftalık Birincilikler</option>
+        <option value="per_game">Hafta Başına Puan</option>
         {weeks.map((w) => (
           <option key={w.id} value={w.id}>
             {w.name || `${w.week_number}. Hafta`}
@@ -260,14 +348,23 @@ export default function SiralamaPage() {
         </p>
       )}
 
-      {!loading && myRank && (isWeeklyWins ? myWinRow : myRow) && (
-        <button
-          onClick={handleShareRank}
-          className="rounded-lg border border-charcoal/15 py-2.5 text-sm font-medium text-foreground hover:bg-charcoal/5"
-        >
-          Sıralamamı paylaş
-        </button>
+      {isPerGame && (
+        <p className="text-center text-[11px] text-foreground/45">
+          Genel toplam puan, kadronun bulunduğu hafta sayısına bölünür —
+          geç katılanları da adil şekilde kıyaslar.
+        </p>
       )}
+
+      {!loading &&
+        myRank &&
+        (isWeeklyWins ? myWinRow : isPerGame ? myPerGameRow : myRow) && (
+          <button
+            onClick={handleShareRank}
+            className="rounded-lg border border-charcoal/15 py-2.5 text-sm font-medium text-foreground hover:bg-charcoal/5"
+          >
+            Sıralamamı paylaş
+          </button>
+        )}
 
       {loading ? (
         <div className="flex flex-col gap-1.5">
@@ -329,6 +426,67 @@ export default function SiralamaPage() {
                         {row.winCount}
                       </span>
                       <span className="text-[10px] text-foreground/45">kez 1.</span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        )
+      ) : isPerGame ? (
+        perGameRows.length === 0 ? (
+          <p className="rounded-lg border border-charcoal/10 bg-white px-4 py-6 text-center text-sm text-foreground/60">
+            Henüz kimse puan almadı — ilk hafta tamamlanınca burada
+            görünecek.
+          </p>
+        ) : (
+          <ol className="flex flex-col gap-1.5">
+            {perGameRows.map((row, i) => {
+              const isMe = session?.user.id === row.user_id;
+              return (
+                <li key={row.user_id}>
+                  <Link
+                    href={isMe ? "/kadro" : `/takim/${row.user_id}`}
+                    className={`flex items-center justify-between rounded-lg border px-3 py-2.5 transition-colors active:bg-charcoal/5 ${
+                      isMe
+                        ? "border-gold bg-gold/10"
+                        : "border-charcoal/10 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <RankBadge rank={i + 1} totalRows={perGameRows.length} showRelegation={false} />
+                      <span className="w-9 shrink-0 text-right text-sm font-medium text-foreground/50">
+                        {i + 1}
+                      </span>
+                      <TeamEmblem
+                        emblem={row.emblem}
+                        color1={row.team_color1}
+                        color2={row.team_color2}
+                        size={24}
+                      />
+                      <div>
+                        <p className="text-sm font-medium leading-tight">
+                          {row.squad_name || row.username}
+                          {isMe && (
+                            <span className="ml-1.5 text-xs font-normal text-gold">
+                              (sen)
+                            </span>
+                          )}
+                        </p>
+                        {row.slogan && (
+                          <p className="text-[10px] italic leading-tight text-foreground/45">
+                            {row.slogan}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <span className="flex shrink-0 flex-col items-end">
+                      <span className="font-display text-base font-semibold">
+                        {row.avgPoints.toFixed(1)}
+                      </span>
+                      <span className="text-[10px] text-foreground/45">
+                        puan/hafta · {row.gamesPlayed} hafta
+                      </span>
                     </span>
                   </Link>
                 </li>
