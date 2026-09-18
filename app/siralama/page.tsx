@@ -334,13 +334,6 @@ export default function SiralamaPage() {
         ))}
       </select>
 
-      {selectedFilter === "total" && (
-        <p className="text-center text-[11px] text-foreground/45">
-          Puanlar eşitse sıralama şuna göre belirlenir: önce en yüksek tek
-          hafta puanı, hâlâ eşitse en çok haftalık 1.lik sayısı.
-        </p>
-      )}
-
       {isWeeklyWins && (
         <p className="text-center text-[11px] text-foreground/45">
           Her hafta en yüksek puanı alan kişiye +1 yazılır. Eşitlikte genel
@@ -354,17 +347,6 @@ export default function SiralamaPage() {
           geç katılanları da adil şekilde kıyaslar.
         </p>
       )}
-
-      {!loading &&
-        myRank &&
-        (isWeeklyWins ? myWinRow : isPerGame ? myPerGameRow : myRow) && (
-          <button
-            onClick={handleShareRank}
-            className="rounded-lg border border-charcoal/15 py-2.5 text-sm font-medium text-foreground hover:bg-charcoal/5"
-          >
-            Sıralamamı paylaş
-          </button>
-        )}
 
       {loading ? (
         <div className="flex flex-col gap-1.5">
@@ -567,6 +549,24 @@ export default function SiralamaPage() {
             })}
         </ol>
       )}
+
+      {selectedFilter === "total" && (
+        <p className="text-center text-[11px] text-foreground/45">
+          Puanlar eşitse sıralama şuna göre belirlenir: önce en yüksek tek
+          hafta puanı, hâlâ eşitse en çok haftalık 1.lik sayısı.
+        </p>
+      )}
+
+      {!loading &&
+        myRank &&
+        (isWeeklyWins ? myWinRow : isPerGame ? myPerGameRow : myRow) && (
+          <button
+            onClick={handleShareRank}
+            className="rounded-lg border border-charcoal/15 py-2.5 text-sm font-medium text-foreground hover:bg-charcoal/5"
+          >
+            Sıralamamı paylaş
+          </button>
+        )}
       </div>
       </main>
     </>
