@@ -9,12 +9,15 @@ import {
 } from "@/lib/leaderboard";
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
 import { useSession } from "@/lib/useSession";
+import { supabase } from "@/lib/supabase";
 import { AppHeader } from "@/components/AppHeader";
 import { PageHeader } from "@/components/PageHeader";
 import { SkeletonRow } from "@/components/Skeleton";
 import { shareText, getSiteUrl } from "@/lib/share";
 import { TeamEmblem } from "@/components/TeamEmblem";
+import { JerseyIcon } from "@/components/JerseyIcon";
 import { EmblemId } from "@/lib/emblems";
+import { TeamCode } from "@/lib/teams";
 
 function TrophyIcon() {
   return (
@@ -96,6 +99,22 @@ interface PerGameRow {
   avgPoints: number;
 }
 
+interface WeeklyHighlights {
+  teamOfWeek: {
+    squad_name: string | null;
+    username: string;
+    emblem: EmblemId;
+    team_color1: string;
+    team_color2: string;
+  } | null;
+  playerOfWeek: {
+    name: string;
+    team: TeamCode | null;
+    points: number;
+    fantasyTeams: string[];
+  } | null;
+}
+
 type FilterValue = "total" | "weekly_wins" | "per_game" | number;
 
 export default function SiralamaPage() {
@@ -107,6 +126,7 @@ export default function SiralamaPage() {
   const [selectedFilter, setSelectedFilter] = useState<FilterValue>("total");
   const [loading, setLoading] = useState(true);
   const [lastWeekRanks, setLastWeekRanks] = useState<Map<string, number>>(new Map());
+  const [highlights, setHighlights] = useState<WeeklyHighlights | null>(null);
 
   useEffect(() => {
     fetchFinishedGameweeks().then(setWeeks);
@@ -123,6 +143,68 @@ export default function SiralamaPage() {
     fetchGameweekLeaderboard(weeks[0].id).then((weekRows) => {
       setLastWeekRanks(new Map(weekRows.map((r, i) => [r.user_id, i + 1])));
     });
+  }, [weeks]);
+
+  // En son biten haftanın 1.si ("Haftanın Takımı") ve o haftanın en
+  // yüksek puanlı gerçek futbolcusu ("Haftanın Futbolcusu") — ayrıca o
+  // futbolcuyu kadrosuna alan tüm fantazi takımların isimleri.
+  async function loadHighlights(): Promise<WeeklyHighlights> {
+    if (weeks.length === 0) return { teamOfWeek: null, playerOfWeek: null };
+    const lastWeek = weeks[0];
+
+    const weekRows = await fetchGameweekLeaderboard(lastWeek.id);
+    const teamOfWeek = weekRows.length > 0 ? weekRows[0] : null;
+
+    const { data: topStat } = await supabase
+      .from("player_stats")
+      .select("player_id, points, players(name, teams(short_code))")
+      .eq("gameweek_id", lastWeek.id)
+      .order("points", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let playerOfWeek: WeeklyHighlights["playerOfWeek"] = null;
+
+    if (topStat) {
+      const playerRel = topStat.players as unknown as
+        | { name: string; teams: { short_code: string } | { short_code: string }[] }
+        | { name: string; teams: { short_code: string } | { short_code: string }[] }[];
+      const player = Array.isArray(playerRel) ? playerRel[0] : playerRel;
+      const teamRel = player?.teams;
+      const teamCode = Array.isArray(teamRel) ? teamRel[0]?.short_code : teamRel?.short_code;
+
+      const { data: pickRows } = await supabase
+        .from("user_picks")
+        .select("profiles(squad_name, username)")
+        .eq("gameweek_id", lastWeek.id)
+        .eq("player_id", topStat.player_id as string);
+
+      const fantasyTeams = (pickRows ?? []).map((r) => {
+        const profRel = r.profiles as unknown as
+          | { squad_name: string | null; username: string }
+          | { squad_name: string | null; username: string }[];
+        const prof = Array.isArray(profRel) ? profRel[0] : profRel;
+        return prof?.squad_name || prof?.username || "?";
+      });
+
+      playerOfWeek = {
+        name: player?.name ?? "?",
+        team: (teamCode as TeamCode) ?? null,
+        points: (topStat.points as number) ?? 0,
+        fantasyTeams,
+      };
+    }
+
+    return { teamOfWeek, playerOfWeek };
+  }
+
+  useEffect(() => {
+    if (weeks.length === 0) {
+      setHighlights(null);
+      return;
+    }
+    loadHighlights().then(setHighlights);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weeks]);
 
   // Her bitmiş haftanın 1.sini bulup kaç kez 1. olunduğunu sayar. Genel
@@ -307,6 +389,56 @@ export default function SiralamaPage() {
       <main className="mx-auto max-w-3xl px-3 py-4 sm:px-6 sm:py-6">
       <div className="flex flex-col gap-4 rounded-xl bg-background p-4 sm:p-6">
         <PageHeader icon="trophy" title="Lig Sıralaması" />
+
+      {highlights && (highlights.teamOfWeek || highlights.playerOfWeek) && (
+        <div className="grid grid-cols-2 gap-0 rounded-2xl bg-pitch p-5">
+          <div className="flex flex-col items-center gap-2 px-2 text-center">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-gold">
+              Haftanın Takımı
+            </p>
+            {highlights.teamOfWeek ? (
+              <>
+                <TeamEmblem
+                  emblem={highlights.teamOfWeek.emblem}
+                  color1={highlights.teamOfWeek.team_color1}
+                  color2={highlights.teamOfWeek.team_color2}
+                  size={52}
+                />
+                <p className="text-sm font-medium text-ivory">
+                  {highlights.teamOfWeek.squad_name || highlights.teamOfWeek.username}
+                </p>
+              </>
+            ) : (
+              <p className="text-xs text-ivory/50">—</p>
+            )}
+          </div>
+
+          <div className="flex flex-col items-center gap-2 border-l border-ivory/15 px-2 text-center">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-gold">
+              Haftanın Futbolcusu
+            </p>
+            {highlights.playerOfWeek ? (
+              <>
+                {highlights.playerOfWeek.team ? (
+                  <JerseyIcon team={highlights.playerOfWeek.team} size={52} />
+                ) : (
+                  <div className="h-[52px] w-[52px]" />
+                )}
+                <p className="text-sm font-medium text-ivory">
+                  {highlights.playerOfWeek.name}
+                </p>
+                {highlights.playerOfWeek.fantasyTeams.length > 0 && (
+                  <p className="text-[10px] leading-tight text-ivory/50">
+                    {highlights.playerOfWeek.fantasyTeams.join(" · ")}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-ivory/50">—</p>
+            )}
+          </div>
+        </div>
+      )}
 
       <select
         value={selectedFilter}
