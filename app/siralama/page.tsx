@@ -58,6 +58,9 @@ function RelegationArrowIcon() {
 // Haftalık Birincilikler ve Hafta Başına Puan görünümlerinde küme düşme
 // oku hiç gösterilmez (showRelegation=false) — bu listeler "en iyi
 // performans" sıralaması, kimsenin "düşmesi" gibi bir anlam taşımıyor.
+// TÜM durumlar (ikon var/yok, hangi ikon) aynı sabit 22x22 kapsayıcı
+// içinde ortalanır — böylece kupa/madalya/ok/boşluk arasında geçiş
+// yaparken satır hizası ASLA kaymaz (mobilde dengesiz görünen buydu).
 function RankBadge({
   rank,
   totalRows,
@@ -67,11 +70,21 @@ function RankBadge({
   totalRows: number;
   showRelegation?: boolean;
 }) {
-  if (rank === 1) return <TrophyIcon />;
-  if (rank === 2) return <MedalIcon tone="silver" />;
-  if (rank === 3) return <MedalIcon tone="bronze" />;
-  if (showRelegation && totalRows > 3 && rank > totalRows - 3) return <RelegationArrowIcon />;
-  return <span className="w-[18px] shrink-0" aria-hidden="true" />;
+  let icon: React.ReactNode = null;
+  if (rank === 1) icon = <TrophyIcon />;
+  else if (rank === 2) icon = <MedalIcon tone="silver" />;
+  else if (rank === 3) icon = <MedalIcon tone="bronze" />;
+  else if (showRelegation && totalRows > 3 && rank > totalRows - 3)
+    icon = <RelegationArrowIcon />;
+
+  return (
+    <span
+      className="flex h-[22px] w-[22px] shrink-0 items-center justify-center"
+      aria-hidden="true"
+    >
+      {icon}
+    </span>
+  );
 }
 
 interface WeeklyWinRow {
@@ -495,7 +508,7 @@ export default function SiralamaPage() {
                         emblem={row.emblem}
                         color1={row.team_color1}
                         color2={row.team_color2}
-                        size={24}
+                        size={28}
                       />
                       <div>
                         <p className="text-sm font-medium leading-tight">
@@ -554,7 +567,7 @@ export default function SiralamaPage() {
                         emblem={row.emblem}
                         color1={row.team_color1}
                         color2={row.team_color2}
-                        size={24}
+                        size={28}
                       />
                       <div>
                         <p className="text-sm font-medium leading-tight">
@@ -625,7 +638,7 @@ export default function SiralamaPage() {
                         emblem={row.emblem}
                         color1={row.team_color1}
                         color2={row.team_color2}
-                        size={24}
+                        size={28}
                       />
                       <div>
                         <p className="text-sm font-medium leading-tight">
