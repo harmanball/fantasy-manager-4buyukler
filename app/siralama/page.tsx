@@ -474,7 +474,7 @@ export default function SiralamaPage() {
                           )}
                         </p>
                         {row.slogan && (
-                          <p className="truncate text-[10px] italic leading-tight text-foreground/45">
+                          <p className="break-words text-[10px] italic leading-tight text-foreground/45">
                             {row.slogan}
                           </p>
                         )}
@@ -535,7 +535,7 @@ export default function SiralamaPage() {
                           )}
                         </p>
                         {row.slogan && (
-                          <p className="truncate text-[10px] italic leading-tight text-foreground/45">
+                          <p className="break-words text-[10px] italic leading-tight text-foreground/45">
                             {row.slogan}
                           </p>
                         )}
@@ -608,7 +608,7 @@ export default function SiralamaPage() {
                           )}
                         </p>
                         {row.slogan && (
-                          <p className="truncate text-[10px] italic leading-tight text-foreground/45">
+                          <p className="break-words text-[10px] italic leading-tight text-foreground/45">
                             {row.slogan}
                           </p>
                         )}
