@@ -19,72 +19,22 @@ import { JerseyIcon } from "@/components/JerseyIcon";
 import { EmblemId } from "@/lib/emblems";
 import { TeamCode } from "@/lib/teams";
 
-function TrophyIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" className="text-gold" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M7 3h10v2h3a1 1 0 011 1v1a4 4 0 01-4 4h-.26A6 6 0 0113 15.9V18h3a1 1 0 011 1v1H7v-1a1 1 0 011-1h3v-2.1A6 6 0 016.26 11H6a4 4 0 01-4-4V6a1 1 0 011-1h3V3zM5 7a2 2 0 002 2V7H5zm14 0v2a2 2 0 002-2h-2z"
-      />
-    </svg>
-  );
-}
-
-function MedalIcon({ tone }: { tone: "silver" | "bronze" }) {
-  const colorClass = tone === "silver" ? "text-zinc-400" : "text-amber-700";
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" className={colorClass} aria-hidden="true">
-      <path fill="currentColor" d="M8 2l2 6H8.5L6.5 2H8zm8 0h-1.5l-2 6H14l2-6z" />
-      <circle cx="12" cy="14.5" r="6.5" fill="currentColor" />
-      <path
-        fill="#fff"
-        d="M12 10.8l1.1 2.3 2.5.4-1.8 1.7.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.7 2.5-.4z"
-      />
-    </svg>
-  );
-}
-
-function RelegationArrowIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" className="text-red-600" aria-hidden="true">
-      <path fill="currentColor" d="M11 3h2v9h4l-5 6-5-6h4V3z" />
-    </svg>
-  );
-}
-
-// Sıralamadaki her satırın solunda gösterilecek rozet: ilk 3 için
-// kupa/madalya, listenin en alt 3 satırı için küme düşme oku. Diğer
-// satırlarda hizalamayı bozmasın diye aynı genişlikte boş bir alan bırakılır.
-// Haftalık Birincilikler ve Hafta Başına Puan görünümlerinde küme düşme
-// oku hiç gösterilmez (showRelegation=false) — bu listeler "en iyi
-// performans" sıralaması, kimsenin "düşmesi" gibi bir anlam taşımıyor.
-// TÜM durumlar (ikon var/yok, hangi ikon) aynı sabit 22x22 kapsayıcı
-// içinde ortalanır — böylece kupa/madalya/ok/boşluk arasında geçiş
-// yaparken satır hizası ASLA kaymaz (mobilde dengesiz görünen buydu).
-function RankBadge({
-  rank,
-  totalRows,
-  showRelegation = true,
-}: {
-  rank: number;
-  totalRows: number;
-  showRelegation?: boolean;
-}) {
-  let icon: React.ReactNode = null;
-  if (rank === 1) icon = <TrophyIcon />;
-  else if (rank === 2) icon = <MedalIcon tone="silver" />;
-  else if (rank === 3) icon = <MedalIcon tone="bronze" />;
-  else if (showRelegation && totalRows > 3 && rank > totalRows - 3)
-    icon = <RelegationArrowIcon />;
-
-  return (
-    <span
-      className="flex h-[22px] w-[22px] shrink-0 items-center justify-center"
-      aria-hidden="true"
-    >
-      {icon}
-    </span>
-  );
+// Sıralamadaki her satırın çerçeve rengini belirler: 1. yeşil, 2-3. mavi,
+// (sadece showRelegation açıksa) son 3 satır kırmızı — hiçbir ikon
+// kullanılmaz, sadece kalın renkli çerçeve. Kendi satırın (isMe) her
+// zaman altın çerçeveyle öne çıkar, rütbe renklerinden bağımsız.
+function rowBorderClass(
+  rank: number,
+  totalRows: number,
+  isMe: boolean,
+  showRelegation: boolean
+): string {
+  if (isMe) return "border border-gold bg-gold/10";
+  if (rank === 1) return "border-4 border-green-700 bg-white";
+  if (rank === 2 || rank === 3) return "border-4 border-blue-700 bg-white";
+  if (showRelegation && totalRows > 3 && rank > totalRows - 3)
+    return "border-4 border-red-700 bg-white";
+  return "border border-charcoal/10 bg-white";
 }
 
 interface WeeklyWinRow {
@@ -493,25 +443,27 @@ export default function SiralamaPage() {
                 <li key={row.user_id}>
                   <Link
                     href={isMe ? "/kadro" : `/takim/${row.user_id}`}
-                    className={`flex items-center justify-between rounded-lg border px-3 py-2.5 transition-colors active:bg-charcoal/5 ${
-                      isMe
-                        ? "border-gold bg-gold/10"
-                        : "border-charcoal/10 bg-white"
-                    }`}
+                    className={`flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors active:bg-charcoal/5 ${rowBorderClass(
+                      i + 1,
+                      weeklyWinRows.length,
+                      isMe,
+                      false
+                    )}`}
                   >
                     <div className="flex items-center gap-3">
-                      <RankBadge rank={i + 1} totalRows={weeklyWinRows.length} showRelegation={false} />
                       <span className="w-9 shrink-0 text-right text-sm font-medium text-foreground/50">
                         {i + 1}
                       </span>
-                      <TeamEmblem
-                        emblem={row.emblem}
-                        color1={row.team_color1}
-                        color2={row.team_color2}
-                        size={28}
-                      />
-                      <div>
-                        <p className="text-sm font-medium leading-tight">
+                      <span className="shrink-0">
+                        <TeamEmblem
+                          emblem={row.emblem}
+                          color1={row.team_color1}
+                          color2={row.team_color2}
+                          size={28}
+                        />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium leading-tight">
                           {row.squad_name || row.username}
                           {isMe && (
                             <span className="ml-1.5 text-xs font-normal text-gold">
@@ -520,7 +472,7 @@ export default function SiralamaPage() {
                           )}
                         </p>
                         {row.slogan && (
-                          <p className="text-[10px] italic leading-tight text-foreground/45">
+                          <p className="truncate text-[10px] italic leading-tight text-foreground/45">
                             {row.slogan}
                           </p>
                         )}
@@ -552,25 +504,27 @@ export default function SiralamaPage() {
                 <li key={row.user_id}>
                   <Link
                     href={isMe ? "/kadro" : `/takim/${row.user_id}`}
-                    className={`flex items-center justify-between rounded-lg border px-3 py-2.5 transition-colors active:bg-charcoal/5 ${
-                      isMe
-                        ? "border-gold bg-gold/10"
-                        : "border-charcoal/10 bg-white"
-                    }`}
+                    className={`flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors active:bg-charcoal/5 ${rowBorderClass(
+                      i + 1,
+                      perGameRows.length,
+                      isMe,
+                      false
+                    )}`}
                   >
                     <div className="flex items-center gap-3">
-                      <RankBadge rank={i + 1} totalRows={perGameRows.length} showRelegation={false} />
                       <span className="w-9 shrink-0 text-right text-sm font-medium text-foreground/50">
                         {i + 1}
                       </span>
-                      <TeamEmblem
-                        emblem={row.emblem}
-                        color1={row.team_color1}
-                        color2={row.team_color2}
-                        size={28}
-                      />
-                      <div>
-                        <p className="text-sm font-medium leading-tight">
+                      <span className="shrink-0">
+                        <TeamEmblem
+                          emblem={row.emblem}
+                          color1={row.team_color1}
+                          color2={row.team_color2}
+                          size={28}
+                        />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium leading-tight">
                           {row.squad_name || row.username}
                           {isMe && (
                             <span className="ml-1.5 text-xs font-normal text-gold">
@@ -579,7 +533,7 @@ export default function SiralamaPage() {
                           )}
                         </p>
                         {row.slogan && (
-                          <p className="text-[10px] italic leading-tight text-foreground/45">
+                          <p className="truncate text-[10px] italic leading-tight text-foreground/45">
                             {row.slogan}
                           </p>
                         )}
@@ -614,14 +568,14 @@ export default function SiralamaPage() {
               <li key={row.user_id}>
                 <Link
                   href={isMe ? "/kadro" : `/takim/${row.user_id}`}
-                  className={`flex items-center justify-between rounded-lg border px-3 py-2.5 transition-colors active:bg-charcoal/5 ${
-                      isMe
-                        ? "border-gold bg-gold/10"
-                        : "border-charcoal/10 bg-white"
-                    }`}
+                  className={`flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors active:bg-charcoal/5 ${rowBorderClass(
+                      i + 1,
+                      rows.length,
+                      isMe,
+                      true
+                    )}`}
                   >
                     <div className="flex items-center gap-3">
-                      <RankBadge rank={i + 1} totalRows={rows.length} />
                       <span className="flex w-9 shrink-0 items-center justify-end gap-1 text-right text-sm font-medium text-foreground/50">
                         {i + 1}
                         {row.rankChange === "up" && (
@@ -634,14 +588,16 @@ export default function SiralamaPage() {
                           <span className="text-foreground/25" aria-label="değişiklik yok">–</span>
                         )}
                       </span>
-                      <TeamEmblem
-                        emblem={row.emblem}
-                        color1={row.team_color1}
-                        color2={row.team_color2}
-                        size={28}
-                      />
-                      <div>
-                        <p className="text-sm font-medium leading-tight">
+                      <span className="shrink-0">
+                        <TeamEmblem
+                          emblem={row.emblem}
+                          color1={row.team_color1}
+                          color2={row.team_color2}
+                          size={28}
+                        />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium leading-tight">
                           {row.squad_name || row.username}
                           {isMe && (
                             <span className="ml-1.5 text-xs font-normal text-gold">
@@ -650,7 +606,7 @@ export default function SiralamaPage() {
                           )}
                         </p>
                         {row.slogan && (
-                          <p className="text-[10px] italic leading-tight text-foreground/45">
+                          <p className="truncate text-[10px] italic leading-tight text-foreground/45">
                             {row.slogan}
                           </p>
                         )}
