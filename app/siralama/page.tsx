@@ -111,7 +111,6 @@ interface WeeklyHighlights {
     name: string;
     team: TeamCode | null;
     points: number;
-    fantasyTeams: string[];
   } | null;
 }
 
@@ -146,8 +145,7 @@ export default function SiralamaPage() {
   }, [weeks]);
 
   // En son biten haftanın 1.si ("Haftanın Takımı") ve o haftanın en
-  // yüksek puanlı gerçek futbolcusu ("Haftanın Futbolcusu") — ayrıca o
-  // futbolcuyu kadrosuna alan tüm fantazi takımların isimleri.
+  // yüksek puanlı gerçek futbolcusu ("Haftanın Futbolcusu").
   async function loadHighlights(): Promise<WeeklyHighlights> {
     if (weeks.length === 0) return { teamOfWeek: null, playerOfWeek: null };
     const lastWeek = weeks[0];
@@ -173,25 +171,10 @@ export default function SiralamaPage() {
       const teamRel = player?.teams;
       const teamCode = Array.isArray(teamRel) ? teamRel[0]?.short_code : teamRel?.short_code;
 
-      const { data: pickRows } = await supabase
-        .from("user_picks")
-        .select("profiles(squad_name, username)")
-        .eq("gameweek_id", lastWeek.id)
-        .eq("player_id", topStat.player_id as string);
-
-      const fantasyTeams = (pickRows ?? []).map((r) => {
-        const profRel = r.profiles as unknown as
-          | { squad_name: string | null; username: string }
-          | { squad_name: string | null; username: string }[];
-        const prof = Array.isArray(profRel) ? profRel[0] : profRel;
-        return prof?.squad_name || prof?.username || "?";
-      });
-
       playerOfWeek = {
         name: player?.name ?? "?",
         team: (teamCode as TeamCode) ?? null,
         points: (topStat.points as number) ?? 0,
-        fantasyTeams,
       };
     }
 
@@ -427,11 +410,6 @@ export default function SiralamaPage() {
                 <p className="text-sm font-medium text-ivory">
                   {highlights.playerOfWeek.name}
                 </p>
-                {highlights.playerOfWeek.fantasyTeams.length > 0 && (
-                  <p className="text-[10px] leading-tight text-ivory/50">
-                    {highlights.playerOfWeek.fantasyTeams.join(" · ")}
-                  </p>
-                )}
               </>
             ) : (
               <p className="text-xs text-ivory/50">—</p>
