@@ -47,22 +47,7 @@ function MedalIcon({ tone }: { tone: "silver" | "bronze" }) {
 function RelegationArrowIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" className="text-red-600" aria-hidden="true">
-      <path
-        d="M4 7l6 6 4-4 6 8"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M20 12v5h-5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path fill="currentColor" d="M11 3h2v9h4l-5 6-5-6h4V3z" />
     </svg>
   );
 }
@@ -519,16 +504,14 @@ export default function SiralamaPage() {
                       <span className="w-9 shrink-0 text-right text-sm font-medium text-foreground/50">
                         {i + 1}
                       </span>
-                      <span className="shrink-0">
-                        <TeamEmblem
-                          emblem={row.emblem}
-                          color1={row.team_color1}
-                          color2={row.team_color2}
-                          size={28}
-                        />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium leading-tight">
+                      <TeamEmblem
+                        emblem={row.emblem}
+                        color1={row.team_color1}
+                        color2={row.team_color2}
+                        size={28}
+                      />
+                      <div>
+                        <p className="text-sm font-medium leading-tight">
                           {row.squad_name || row.username}
                           {isMe && (
                             <span className="ml-1.5 text-xs font-normal text-gold">
@@ -537,7 +520,7 @@ export default function SiralamaPage() {
                           )}
                         </p>
                         {row.slogan && (
-                          <p className="truncate text-[10px] italic leading-tight text-foreground/45">
+                          <p className="text-[10px] italic leading-tight text-foreground/45">
                             {row.slogan}
                           </p>
                         )}
@@ -580,16 +563,14 @@ export default function SiralamaPage() {
                       <span className="w-9 shrink-0 text-right text-sm font-medium text-foreground/50">
                         {i + 1}
                       </span>
-                      <span className="shrink-0">
-                        <TeamEmblem
-                          emblem={row.emblem}
-                          color1={row.team_color1}
-                          color2={row.team_color2}
-                          size={28}
-                        />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium leading-tight">
+                      <TeamEmblem
+                        emblem={row.emblem}
+                        color1={row.team_color1}
+                        color2={row.team_color2}
+                        size={28}
+                      />
+                      <div>
+                        <p className="text-sm font-medium leading-tight">
                           {row.squad_name || row.username}
                           {isMe && (
                             <span className="ml-1.5 text-xs font-normal text-gold">
@@ -598,7 +579,7 @@ export default function SiralamaPage() {
                           )}
                         </p>
                         {row.slogan && (
-                          <p className="truncate text-[10px] italic leading-tight text-foreground/45">
+                          <p className="text-[10px] italic leading-tight text-foreground/45">
                             {row.slogan}
                           </p>
                         )}
@@ -653,16 +634,14 @@ export default function SiralamaPage() {
                           <span className="text-foreground/25" aria-label="değişiklik yok">–</span>
                         )}
                       </span>
-                      <span className="shrink-0">
-                        <TeamEmblem
-                          emblem={row.emblem}
-                          color1={row.team_color1}
-                          color2={row.team_color2}
-                          size={28}
-                        />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium leading-tight">
+                      <TeamEmblem
+                        emblem={row.emblem}
+                        color1={row.team_color1}
+                        color2={row.team_color2}
+                        size={28}
+                      />
+                      <div>
+                        <p className="text-sm font-medium leading-tight">
                           {row.squad_name || row.username}
                           {isMe && (
                             <span className="ml-1.5 text-xs font-normal text-gold">
@@ -671,7 +650,7 @@ export default function SiralamaPage() {
                           )}
                         </p>
                         {row.slogan && (
-                          <p className="truncate text-[10px] italic leading-tight text-foreground/45">
+                          <p className="text-[10px] italic leading-tight text-foreground/45">
                             {row.slogan}
                           </p>
                         )}
