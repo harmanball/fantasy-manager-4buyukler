@@ -21,19 +21,21 @@ import { TeamCode } from "@/lib/teams";
 
 // Sıralamadaki her satırın çerçeve rengini belirler: 1. yeşil, 2-3. mavi,
 // (sadece showRelegation açıksa) son 3 satır kırmızı — hiçbir ikon
-// kullanılmaz, sadece kalın renkli çerçeve. Kendi satırın (isMe) her
-// zaman altın çerçeveyle öne çıkar, rütbe renklerinden bağımsız.
+// kullanılmaz, sadece kalın renkli çerçeve. Rütbe rengi HER ZAMAN önce
+// gelir — kendi satırın (isMe) ilk 3'te ya da son 3'teyse yine o rütbe
+// rengini alır, "(sen)" etiketi zaten kimin satırı olduğunu gösteriyor.
+// isMe altın çerçeve sadece rütbe rengi uygulanmayan orta satırlarda çıkar.
 function rowBorderClass(
   rank: number,
   totalRows: number,
   isMe: boolean,
   showRelegation: boolean
 ): string {
-  if (isMe) return "border border-gold bg-gold/10";
   if (rank === 1) return "border-4 border-green-700 bg-white";
   if (rank === 2 || rank === 3) return "border-4 border-blue-700 bg-white";
   if (showRelegation && totalRows > 3 && rank > totalRows - 3)
     return "border-4 border-red-700 bg-white";
+  if (isMe) return "border border-gold bg-gold/10";
   return "border border-charcoal/10 bg-white";
 }
 
@@ -450,7 +452,7 @@ export default function SiralamaPage() {
                       false
                     )}`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
                       <span className="w-9 shrink-0 text-right text-sm font-medium text-foreground/50">
                         {i + 1}
                       </span>
@@ -511,7 +513,7 @@ export default function SiralamaPage() {
                       false
                     )}`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
                       <span className="w-9 shrink-0 text-right text-sm font-medium text-foreground/50">
                         {i + 1}
                       </span>
@@ -575,7 +577,7 @@ export default function SiralamaPage() {
                       true
                     )}`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
                       <span className="flex w-9 shrink-0 items-center justify-end gap-1 text-right text-sm font-medium text-foreground/50">
                         {i + 1}
                         {row.rankChange === "up" && (
