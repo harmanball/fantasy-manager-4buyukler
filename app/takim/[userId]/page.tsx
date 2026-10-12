@@ -52,8 +52,6 @@ export default function TakimPage() {
   const [captainId, setCaptainId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  // Transfer penceresi açıkken başkasının skor tahminleri gizlidir.
-  const [predictionsHidden, setPredictionsHidden] = useState(true);
   const [modalPlayer, setModalPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
@@ -83,7 +81,6 @@ export default function TakimPage() {
       const openGw = await fetchOpenGameweek();
       const windowOpen = await fetchIsTransferWindowOpen();
       if (cancelled) return;
-      setPredictionsHidden(windowOpen);
 
       let saved: Awaited<ReturnType<typeof fetchUserSquad>> = [];
       let fromPrevWeek = false;
@@ -189,7 +186,6 @@ export default function TakimPage() {
       <PredictionsView
         userId={targetUserId}
         ownerName={ownerName}
-        hidden={predictionsHidden}
       />
 
       {notFound ? (
