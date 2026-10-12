@@ -186,6 +186,12 @@ export default function TakimPage() {
         </div>
       )}
 
+      <PredictionsView
+        userId={targetUserId}
+        ownerName={ownerName}
+        hidden={predictionsHidden}
+      />
+
       {notFound ? (
         <p className="rounded-lg border border-charcoal/10 bg-white px-4 py-6 text-center text-sm text-foreground/60">
           Bu kullanıcının görüntülenebilir bir kadrosu bulunamadı.
@@ -231,12 +237,6 @@ export default function TakimPage() {
           />
         </>
       )}
-
-      <PredictionsView
-        userId={targetUserId}
-        ownerName={ownerName}
-        hidden={predictionsHidden}
-      />
 
       {modalPlayer && (
         <PlayerPointsModal
