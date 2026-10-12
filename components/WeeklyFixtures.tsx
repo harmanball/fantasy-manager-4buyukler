@@ -115,7 +115,8 @@ export function WeeklyFixtures({
     <>
       <div className="rounded-xl bg-pitch px-4 py-[1.1rem]">
         <h3 className="text-center text-[13px] font-medium uppercase tracking-wide text-gold">
-          4 Büyükler Kimlerle Oynuyor - Tahmin Yap
+          4 Büyükler Kimlerle Oynuyor -{" "}
+          <span className="text-sm font-bold text-red-400">Tahmin Yap</span>
         </h3>
         {showBoxes && !locked && (
           <p className="mb-3.5 mt-1.5 text-center text-[11px] text-ivory/60">
