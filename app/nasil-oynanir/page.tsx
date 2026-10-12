@@ -132,12 +132,12 @@ export default function NasilOynanirPage() {
         <Bul>
           Her maçın <strong>Maçın Yıldızı</strong>,{" "}
           <a
-            href="https://ofsayt.com"
+            href="https://www.fotmob.com"
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-pitch underline underline-offset-2"
           >
-            Ofsayt
+            FotMob
           </a>{" "}
           üzerinden belirlenen &quot;Maçın adamı&quot; seçimidir.
         </Bul>
@@ -153,12 +153,12 @@ export default function NasilOynanirPage() {
           Tüm istatistikler (dakika, gol, asist, temiz kale, kart, maç
           puanı, Maçın Yıldızı){" "}
           <a
-            href="https://ofsayt.com"
+            href="https://www.fotmob.com"
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-pitch underline underline-offset-2"
           >
-            Ofsayt
+            FotMob
           </a>{" "}
           referans alınarak elle işlenir.
         </Bul>
