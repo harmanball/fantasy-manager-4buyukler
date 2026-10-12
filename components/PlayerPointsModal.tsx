@@ -145,12 +145,12 @@ export function PlayerPointsModal({
             <p className="mt-2 text-center text-[10px] text-foreground/40">
               Bu istatistikler için{" "}
               <a
-                href="https://ofsayt.com"
+                href="https://www.fotmob.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline underline-offset-2"
               >
-                ofsayt.com
+                www.fotmob.com
               </a>{" "}
               referans alınır.
             </p>
