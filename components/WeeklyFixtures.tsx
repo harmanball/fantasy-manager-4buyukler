@@ -137,17 +137,24 @@ export function WeeklyFixtures({
                 key={f.team}
                 className="rounded-lg bg-ivory/[0.06] px-3 py-2.5"
               >
-                <button
-                  onClick={() => setOpenTeam(f)}
-                  className="mb-2 flex w-full items-center justify-between gap-2 text-left text-[11px] leading-snug text-ivory/60"
-                >
+                {/* Oyuncu puanları penceresi sadece maç bittiyse (skor girildiyse)
+                    anlamlı — oynanmamış maçta hiç istatistik olmadığı için
+                    "Puanlar" bağlantısı o zaman gösterilmez. */}
+                <div className="mb-2 flex w-full items-center justify-between gap-2 text-[11px] leading-snug text-ivory/60">
                   <span>
                     {teamName} {f.isHome ? "iç sahada" : "deplasmanda"} ·{" "}
                     {formatDate(f.date)}
                     {f.time && ` ${f.time}`}
                   </span>
-                  <span className="shrink-0 text-ivory/40">Puanlar ›</span>
-                </button>
+                  {finished && (
+                    <button
+                      onClick={() => setOpenTeam(f)}
+                      className="shrink-0 text-ivory/70 underline underline-offset-2"
+                    >
+                      Puanlar ›
+                    </button>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-2">
                   <span className="min-w-0 flex-1 break-words text-sm font-medium text-ivory">
