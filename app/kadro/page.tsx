@@ -514,9 +514,17 @@ export default function KadroPage() {
                 : "Transfer penceresi açık"}
             </p>
             <p className="mx-auto mt-1.5 max-w-[240px] text-xs leading-relaxed text-ivory/65">
-              {windowDeadline
-                ? `Transfer penceresi ${formatDeadline(windowDeadline)}'da kapanacak. Kaydetmeyi unutma!`
-                : "Kaydetmeyi unutma!"}
+              {windowDeadline ? (
+                <>
+                  Transfer penceresi{" "}
+                  <span className="text-sm font-bold text-red-400">
+                    {formatDeadline(windowDeadline)}
+                  </span>
+                  &apos;da kapanacak. Kaydetmeyi unutma!
+                </>
+              ) : (
+                "Kaydetmeyi unutma!"
+              )}
             </p>
           </div>
         </div>
