@@ -515,8 +515,8 @@ export default function KadroPage() {
             </p>
             <p className="mx-auto mt-1.5 max-w-[240px] text-xs leading-relaxed text-ivory/65">
               {windowDeadline
-                ? `Transfer penceresi ${formatDeadline(windowDeadline)}'da kapanacak. Unutmadan kaydetmeyi unutma.`
-                : "Unutmadan kaydetmeyi unutma."}
+                ? `Transfer penceresi ${formatDeadline(windowDeadline)}'da kapanacak. Kaydetmeyi unutma!`
+                : "Kaydetmeyi unutma!"}
             </p>
           </div>
         </div>
