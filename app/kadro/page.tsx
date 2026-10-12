@@ -530,7 +530,7 @@ export default function KadroPage() {
         </div>
       )}
 
-      <WeeklyFixtures />
+      <WeeklyFixtures userId={session.user.id} locked={windowOpen !== true} />
 
       <FormationPicker value={formation} onChange={showEditor ? changeFormation : () => {}} />
 
