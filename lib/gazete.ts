@@ -119,6 +119,20 @@ export async function loadGazeteData(): Promise<GazeteData> {
 
   const finishedIds = new Set(weeks.map((w) => w.id));
 
+  // Aynı isimli oyuncu veritabanında birden fazla kayıtsa (ör. transfer
+  // güncellemesinde yeniden eklenmişse) tek oyuncu sayılır; aksi halde
+  // sahiplik yüzdeleri ve "farklı oyuncu" sayıları bozulur.
+  const normName = (n: string) =>
+    n.toLocaleLowerCase("tr").replace(/\s+/g, " ").trim();
+  const canonByName = new Map<string, string>();
+  const canonById = new Map<string, string>();
+  for (const r of playerRows) {
+    const key = normName((r.name as string) ?? "");
+    if (!canonByName.has(key)) canonByName.set(key, r.id as string);
+    canonById.set(r.id as string, canonByName.get(key)!);
+  }
+  const canon = (id: string) => canonById.get(id) ?? id;
+
   const teams = new Map<string, GazeteTeam>();
   for (const p of profiles) {
     const id = p.id as string;
@@ -149,8 +163,9 @@ export async function loadGazeteData(): Promise<GazeteData> {
     const byWeek = picks.get(u)!;
     if (!byWeek.has(gw)) byWeek.set(gw, { playerIds: [], captainId: null });
     const set = byWeek.get(gw)!;
-    set.playerIds.push(r.player_id as string);
-    if (r.is_captain) set.captainId = r.player_id as string;
+    const pid = canon(r.player_id as string);
+    if (!set.playerIds.includes(pid)) set.playerIds.push(pid);
+    if (r.is_captain) set.captainId = pid;
   }
 
   const stats = new Map<number, Map<string, StatRow>>();
@@ -158,13 +173,16 @@ export async function loadGazeteData(): Promise<GazeteData> {
     const gw = r.gameweek_id as number;
     if (!finishedIds.has(gw)) continue;
     if (!stats.has(gw)) stats.set(gw, new Map());
-    stats.get(gw)!.set(r.player_id as string, {
+    const row: StatRow = {
       points: (r.points as number) ?? 0,
       minutes: (r.minutes as number) ?? 0,
       motm: !!r.is_motm,
       yellow: (r.yellow_card as number) ?? 0,
       red: (r.red_card as number) ?? 0,
-    });
+    };
+    const pid = canon(r.player_id as string);
+    const prev = stats.get(gw)!.get(pid);
+    if (!prev || row.minutes > prev.minutes) stats.get(gw)!.set(pid, row);
   }
 
   const players = new Map<string, PlayerInfo>();
@@ -715,11 +733,11 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
       headline: pick<Part[]>(
         [
           [{ text: t.name, hot: true }, { text: " tek haftada " }, { text: `${bw.value} puan`, hot: true }, { text: " topladı" }],
-          [{ text: "Rekor " }, { text: t.name, hot: true }, { text: "’den: " }, { text: `${bw.value} puan!`, hot: true }],
+          [{ text: "Rekor haftası: " }, { text: t.name, hot: true }, { text: " " }, { text: `${bw.value} puan!`, hot: true }],
         ],
         seed + 3
       ),
-      deck: `${bw.weekLabel}da alınan puan, sezonun rekoru.`,
+      deck: `${bw.weekLabel}: tek haftada alınan en yüksek puan, sezonun rekoru.`,
       bigNumber: String(bw.value),
       bigLabel: "puan · tek hafta",
       after: facts.bestWeekRunners[0]
@@ -785,7 +803,7 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
         ],
         seed + 6
       ),
-      deck: `${facts.riser.weekLabel}da genel sıralamada en çok yer atlayan takım.`,
+      deck: `${facts.riser.weekLabel}: genel sıralamada en çok yer atlayan takım.`,
       after:
         facts.faller && T(facts.faller.userId)
           ? `Düşen: ${T(facts.faller.userId)!.name} −${facts.faller.value} (${facts.faller.weekLabel})`
@@ -823,7 +841,7 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
       team: t,
       headline: pick<Part[]>(
         [
-          [{ text: "Kaptanlık " }, { text: t.name, hot: true }, { text: "’ye " }, { text: `+${g1.value} puan`, hot: true }, { text: " kazandırdı" }],
+          [{ text: "Kaptanlık getirisi: " }, { text: t.name, hot: true }, { text: " " }, { text: `+${g1.value} puan`, hot: true }, { text: " kazandı" }],
           [{ text: t.name, hot: true }, { text: " kaptan bandıyla " }, { text: `+${g1.value} puan`, hot: true }, { text: " kopardı" }],
         ],
         seed + 8
@@ -854,8 +872,8 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
       id: "differential",
       kicker: "Farklı düşünen",
       team: t,
-      headline: [{ text: t.name, hot: true }, { text: ", az kişinin görebildiği " }, { text: d.player, hot: true }, { text: "’yu keşfetti" }],
-      deck: `Takımların sadece %${d.pct}’inde bulunan oyuncu sezonda ${d.points} puan getirdi.`,
+      headline: [{ text: "Kalabalığa karışmadı: " }, { text: t.name, hot: true }, { text: " kadrosunda " }, { text: d.player, hot: true }, { text: " var" }],
+      deck: `Bu oyuncu takımların yalnızca %${d.pct} oranında kadrosunda ve sezonda ${d.points} puan getirdi.`,
       full: true,
     });
   }
@@ -870,7 +888,7 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
       team: t,
       headline: pick<Part[]>(
         [
-          [{ text: t.name, hot: true }, { text: "’in oyuncuları " }, { text: `${m1.value} kez`, hot: true }, { text: " Maçın Yıldızı seçildi" }],
+          [{ text: t.name, hot: true }, { text: ": oyuncuları " }, { text: `${m1.value} kez`, hot: true }, { text: " Maçın Yıldızı seçildi" }],
           [{ text: "Gecenin yıldızı hep onda: " }, { text: t.name, hot: true }, { text: ` ${m1.value} Maçın Yıldızı` }],
         ],
         seed + 9
@@ -892,7 +910,7 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
         id: "gentle",
         kicker: "Centilmen",
         team: t,
-        headline: [{ text: t.name, hot: true }, { text: "’de fair play: sezonda sadece " }, { text: `${total} kart`, hot: true }],
+        headline: [{ text: "Fair play: " }, { text: t.name, hot: true }, { text: " sezonda sadece " }, { text: `${total} kart`, hot: true }, { text: " gördü" }],
         deck: "Kadrosundaki oyuncular sezonda en az kart gören takım.",
         after:
           T(rough.userId) && rough.userId !== gentle.userId
@@ -910,7 +928,7 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
       id: "fan",
       kicker: "Kulüp hayranı",
       team: t,
-      headline: [{ text: t.name, hot: true }, { text: "’nin kadrosu " }, { text: `%${f1.pct} ${CLUB_ADJ[f1.club]}`, hot: true }],
+      headline: [{ text: t.name, hot: true }, { text: ": kadro " }, { text: `%${f1.pct} ${CLUB_ADJ[f1.club]}`, hot: true }],
       deck: "Kadrosunu en çok tek bir kulübün oyuncularıyla dolduran takım.",
       after:
         facts.clubFans.slice(1).map((f) => `${CLUB_NAMES[f.club]}: ${T(f.userId)?.name ?? "?"} %${f.pct}`).join(" · ") ||
@@ -951,11 +969,11 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
       headline: pick<Part[]>(
         [
           [{ text: t.name, hot: true }, { text: " bir haftada " }, { text: `+${c.gain} puan`, hot: true }, { text: " artırdı" }],
-          [{ text: "Küllerinden doğdu: " }, { text: t.name, hot: true }, { text: ` ${c.from}’den ${c.to}’e çıktı` }],
+          [{ text: "Küllerinden doğdu: " }, { text: t.name, hot: true }, { text: ` ${c.from} → ${c.to}` }],
         ],
         seed + 11
       ),
-      deck: `${c.weekLabel}da bir önceki haftaya göre en büyük puan yükselişi: ${c.from}’den ${c.to}’e.`,
+      deck: `${c.weekLabel}: bir önceki haftaya göre en büyük puan yükselişi (${c.from} → ${c.to}).`,
       bigNumber: `+${c.gain}`,
       bigLabel: "puan",
       after: after(facts.comebackRunners, data, (e) => `+${e.value}`, 0),
@@ -972,7 +990,7 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
       team: t,
       headline: pick<Part[]>(
         [
-          [{ text: t.name, hot: true }, { text: "’in " }, { text: c.weekLabel, hot: true }, { text: ` bir türlü olmadı: ${c.points} puan` }],
+          [{ text: "Bir türlü olmadı: " }, { text: t.name, hot: true }, { text: " " }, { text: c.weekLabel, hot: true }, { text: `, ${c.points} puan` }],
           [{ text: "Unutulması gereken hafta: " }, { text: t.name, hot: true }, { text: ` ${c.points} puanda kaldı` }],
         ],
         seed + 12
@@ -1073,7 +1091,7 @@ function buildQuote(data: GazeteData, W: WeekInfo[], facts: Facts, seed: number)
   const cs = facts.latestCaptainStar;
   if (cs && T(cs.userId) && cs.points > 0) {
     options.push([
-      { text: T(cs.userId)!.name, hot: true }, { text: "’in kaptanı " }, { text: cs.player, hot: true },
+      { text: T(cs.userId)!.name, hot: true }, { text: " takımında kaptan " }, { text: cs.player, hot: true },
       { text: ` bu hafta tek başına ${cs.points} puan getirdi.` },
     ]);
   }
