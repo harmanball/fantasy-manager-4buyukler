@@ -34,6 +34,7 @@ interface PlayerInfo {
   id: string;
   name: string;
   club: string; // GS / FB / BJK / TS
+  position: string; // GK / DEF / MID / FWD
 }
 
 export interface GazeteData {
@@ -113,7 +114,7 @@ export async function loadGazeteData(): Promise<GazeteData> {
         "player_id, gameweek_id, points, minutes, is_motm, yellow_card, red_card",
         ["gameweek_id", "player_id"]
       ),
-      fetchAll("players", "id, name, teams(short_code)", ["id"]),
+      fetchAll("players", "id, name, position, teams(short_code)", ["id"]),
       supabase.from("game_settings").select("key, value").eq("key", "captain_multiplier"),
     ]);
 
@@ -193,6 +194,7 @@ export async function loadGazeteData(): Promise<GazeteData> {
       id: r.id as string,
       name: r.name as string,
       club: club ?? "?",
+      position: ((r.position as string) ?? "").toUpperCase(),
     });
   }
 
@@ -222,6 +224,8 @@ export interface Story {
   rows?: { team: GazeteTeam; label: string; value: string }[];
   race?: { team: GazeteTeam; points: number; pct: number }[];
   quote?: Part[];
+  fbars?: { label: string; pct: number; right: string; hot?: boolean }[];
+  matrix?: { cols: string[]; rows: { team: GazeteTeam; cells: number[]; hiIdx: number }[] };
   full?: boolean;
 }
 
@@ -292,6 +296,19 @@ interface Facts {
   captainChangers: Entry[];
   weekAvg: number;
   latestCaptainStar: { userId: string; player: string; points: number } | null;
+  formations: FormationFacts;
+}
+
+interface FormationFacts {
+  total: number; // toplam kadro sayısı
+  dist: { formation: string; count: number }[]; // çoktan aza
+  avgPoints: { formation: string; avg: number; count: number }[]; // yüksekten düşüğe
+  changers: (Entry & { list: string[] })[]; // en çok farklı diziliş
+  loyal: (Entry & { formation: string })[]; // hep aynı diziliş
+  attack: Entry[]; // ortalama forvet
+  defence: Entry[]; // ortalama defans
+  matrixCols: string[];
+  matrix: { userId: string; cells: number[]; hiIdx: number }[];
 }
 
 function weekLabel(w: WeekInfo): string {
@@ -624,6 +641,76 @@ function computeFacts(data: GazeteData, W: WeekInfo[]): Facts {
     }
   }
 
+  // Diziliş istatistikleri (DEF-MID-FWD sayısından)
+  const formByUser = new Map<string, { w: number; f: string; def: number; fwd: number }[]>();
+  for (const [u, byWeek] of data.picks) {
+    for (const w of W) {
+      const sq = byWeek.get(w.id);
+      if (!sq) continue;
+      let def = 0, mid = 0, fwd = 0;
+      for (const p of sq.playerIds) {
+        const pos = data.players.get(p)?.position;
+        if (pos === "DEF") def++;
+        else if (pos === "MID") mid++;
+        else if (pos === "FWD") fwd++;
+      }
+      if (def + mid + fwd !== 10) continue;
+      if (!formByUser.has(u)) formByUser.set(u, []);
+      formByUser.get(u)!.push({ w: w.id, f: `${def}-${mid}-${fwd}`, def, fwd });
+    }
+  }
+  const distMap = new Map<string, number>();
+  const ptsMap = new Map<string, { sum: number; n: number }>();
+  let totalSquads = 0;
+  for (const [u, list] of formByUser) {
+    for (const x of list) {
+      totalSquads++;
+      distMap.set(x.f, (distMap.get(x.f) ?? 0) + 1);
+      const pts = data.scores.get(u)?.get(x.w);
+      if (pts !== undefined && pts > 0) {
+        const cur = ptsMap.get(x.f) ?? { sum: 0, n: 0 };
+        cur.sum += pts;
+        cur.n += 1;
+        ptsMap.set(x.f, cur);
+      }
+    }
+  }
+  const dist = [...distMap.entries()].map(([formation, count]) => ({ formation, count })).sort((a, b) => b.count - a.count);
+  const avgPoints = [...ptsMap.entries()]
+    .filter(([, v]) => v.n >= 3)
+    .map(([formation, v]) => ({ formation, avg: Math.round(v.sum / v.n), count: v.n }))
+    .sort((a, b) => b.avg - a.avg);
+  const fChangers: FormationFacts["changers"] = [];
+  const fLoyal: FormationFacts["loyal"] = [];
+  const fAttack: Entry[] = [];
+  const fDefence: Entry[] = [];
+  const matrixCols = dist.slice(0, 5).map((d) => d.formation);
+  const matrix: FormationFacts["matrix"] = [];
+  for (const [u, list] of formByUser) {
+    if (!eligible.has(u)) continue;
+    const set = [...new Set(list.map((x) => x.f))];
+    fChangers.push({ userId: u, value: set.length, list: set });
+    if (set.length === 1 && list.length >= 3) fLoyal.push({ userId: u, value: list.length, formation: set[0] });
+    fAttack.push({ userId: u, value: list.reduce((a, x) => a + x.fwd, 0) / list.length });
+    fDefence.push({ userId: u, value: list.reduce((a, x) => a + x.def, 0) / list.length });
+  }
+  for (const [u, list] of formByUser) {
+    const cells = matrixCols.map((c) => list.filter((x) => x.f === c).length);
+    const max = Math.max(...cells, 0);
+    matrix.push({ userId: u, cells, hiIdx: max > 0 ? cells.indexOf(max) : -1 });
+  }
+  const formations: FormationFacts = {
+    total: totalSquads,
+    dist,
+    avgPoints,
+    changers: sortDesc(fChangers) as FormationFacts["changers"],
+    loyal: [...fLoyal].sort((a, b) => b.value - a.value),
+    attack: sortDesc(fAttack),
+    defence: sortDesc(fDefence),
+    matrixCols,
+    matrix,
+  };
+
   return {
     collector,
     loyal: sortAsc(collector),
@@ -653,6 +740,7 @@ function computeFacts(data: GazeteData, W: WeekInfo[]): Facts {
     captainChangers,
     weekAvg: Math.round(weekAvgOf(latest.id)),
     latestCaptainStar,
+    formations,
   };
 }
 
@@ -764,28 +852,6 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
       bigLabel: "puan · tek hafta",
       after: facts.bestWeekRunners[0]
         ? `Ardından: ${T(facts.bestWeekRunners[0].userId)?.name ?? "?"} (${facts.bestWeekRunners[0].value})`
-        : undefined,
-    });
-  }
-
-  // İstikrar
-  const s1 = facts.stable[0];
-  if (s1 && T(s1.userId)) {
-    const t = T(s1.userId)!;
-    add({
-      id: "stable",
-      kicker: "İstikrar ödülü",
-      team: t,
-      headline: pick<Part[]>(
-        [
-          [{ text: t.name, hot: true }, { text: " hiç şaşmadı: " }, { text: `±${Math.round(s1.value)}`, hot: true }],
-          [{ text: "Saat gibi çalışıyor: " }, { text: t.name, hot: true }, { text: ` haftalık puanı ${s1.min}–${s1.max} arasında` }],
-        ],
-        seed + 4
-      ),
-      deck: `Haftalık puanları birbirine en yakın takım; hep ${s1.min}–${s1.max} arasında kaldı.`,
-      after: facts.stable[1]
-        ? `Ardından: ${T(facts.stable[1].userId)?.name ?? "?"} (±${Math.round(facts.stable[1].value)})`
         : undefined,
     });
   }
@@ -942,23 +1008,6 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
     }
   }
 
-  // Kulüp hayranı
-  const f1 = facts.clubFans[0];
-  if (f1 && T(f1.userId)) {
-    const t = T(f1.userId)!;
-    add({
-      id: "fan",
-      kicker: "Kulüp hayranı",
-      team: t,
-      headline: [{ text: t.name, hot: true }, { text: ": kadro " }, { text: `%${f1.pct} ${CLUB_ADJ[f1.club]}`, hot: true }],
-      deck: "Kadrosunu en çok tek bir kulübün oyuncularıyla dolduran takım.",
-      after:
-        facts.clubFans.slice(1).map((f) => `${CLUB_NAMES[f.club]}: ${T(f.userId)?.name ?? "?"} %${f.pct}`).join(" · ") ||
-        undefined,
-      full: true,
-    });
-  }
-
   // Son dakika golü
   if (facts.closestWeek && T(facts.closestWeek.userId)) {
     const c = facts.closestWeek;
@@ -1096,6 +1145,140 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
       add({ id: "records", kicker: "Rekorlar tablosu", headline: [{ text: "Sezonun rekorları bir arada" }], rows, full: true });
   }
 
+  // ── Diziliş kartları ──
+  const F = facts.formations;
+  const avg1 = (v: number) => (Math.round(v * 10) / 10).toString().replace(".", ",");
+
+  if (F.changers[0] && T(F.changers[0].userId) && F.changers[0].value > 1) {
+    const c = F.changers[0];
+    const t = T(c.userId)!;
+    add({
+      id: "formchanger",
+      kicker: "Diziliş delisi",
+      team: t,
+      headline: pick<Part[]>(
+        [
+          [{ text: t.name, hot: true }, { text: ` ${W.length} haftada ` }, { text: `${c.value} farklı diziliş`, hot: true }, { text: " denedi" }],
+          [{ text: "Taktik tahtası hiç boş kalmadı: " }, { text: t.name, hot: true }, { text: ` ${c.value} diziliş` }],
+        ],
+        seed + 14
+      ),
+      deck: `Dizilişi en çok değiştiren takım: ${c.list.join(", ")}.`,
+      bigNumber: String(c.value),
+      bigLabel: "farklı diziliş",
+      after: after(F.changers, data, (e) => `${e.value} diziliş`),
+    });
+  }
+
+  if (F.loyal[0] && T(F.loyal[0].userId)) {
+    const c = F.loyal[0];
+    const t = T(c.userId)!;
+    const others = F.loyal.slice(1, 3).map((e) => T(e.userId)?.name).filter(Boolean);
+    add({
+      id: "formloyal",
+      kicker: "Dizilişine sadık",
+      team: t,
+      headline: pick<Part[]>(
+        [
+          [{ text: t.name, hot: true }, { text: ` ${c.value} haftanın hepsinde ` }, { text: c.formation, hot: true }, { text: " oynadı" }],
+          [{ text: "Değişmeyen tek şey: " }, { text: t.name, hot: true }, { text: " hep " }, { text: c.formation, hot: true }],
+        ],
+        seed + 15
+      ),
+      deck: "Hiç diziliş değiştirmeyen takım.",
+      bigNumber: `${c.value}/${W.length}`,
+      bigLabel: `hafta · ${c.formation}`,
+      after: others.length ? `Ayrıca: ${others.join(" · ")}` : undefined,
+    });
+  }
+
+  if (F.attack[0] && T(F.attack[0].userId)) {
+    const a = F.attack[0];
+    const t = T(a.userId)!;
+    const least = F.attack[F.attack.length - 1];
+    add({
+      id: "formattack",
+      kicker: "Hücum hattı",
+      team: t,
+      headline: [{ text: t.name, hot: true }, { text: " en çok forvet oynatan takım: haftada " }, { text: `${avg1(a.value)} forvet`, hot: true }],
+      deck: "Sezon boyunca kadrosunda ortalama en çok forvet bulunduran takım.",
+      bigNumber: avg1(a.value),
+      bigLabel: "ortalama forvet",
+      after:
+        least && T(least.userId) && least.userId !== a.userId
+          ? `En az forvet: ${T(least.userId)!.name} (${avg1(least.value)})`
+          : undefined,
+    });
+  }
+
+  if (F.defence[0] && T(F.defence[0].userId)) {
+    const a = F.defence[0];
+    const t = T(a.userId)!;
+    add({
+      id: "formdefence",
+      kicker: "Defans duvarı",
+      team: t,
+      headline: [{ text: t.name, hot: true }, { text: " kadrosunu defansla kurdu: haftada " }, { text: `${avg1(a.value)} defans`, hot: true }],
+      deck: "Sezon boyunca kadrosunda ortalama en çok defans oyuncusu bulunduran takım.",
+      bigNumber: avg1(a.value),
+      bigLabel: "ortalama defans",
+    });
+  }
+
+  if (F.dist[0] && F.total > 0) {
+    const top = F.dist[0];
+    const shown = F.dist.slice(0, 4);
+    const rest = F.dist.slice(4).reduce((a, d) => a + d.count, 0);
+    const rows = shown.map((d) => ({
+      label: d.formation,
+      pct: Math.round((d.count / top.count) * 100),
+      right: `${d.count} kez · %${Math.round((d.count / F.total) * 100)}`,
+    }));
+    if (rest > 0) rows.push({ label: "diğer", pct: Math.round((rest / top.count) * 100), right: `${rest} kez · %${Math.round((rest / F.total) * 100)}` });
+    add({
+      id: "formdist",
+      kicker: "Lig geneli — hangi diziliş kaç kez?",
+      headline: [{ text: "Ligin gözdesi " }, { text: top.formation, hot: true }, { text: `: kadroların %${Math.round((top.count / F.total) * 100)}’i bu dizilişle kuruldu` }],
+      deck: `${F.total} kadro incelendi.`,
+      fbars: rows,
+      full: true,
+    });
+  }
+
+  if (F.avgPoints.length >= 2) {
+    const top = F.avgPoints[0];
+    const second = F.avgPoints.find((x) => x.formation !== top.formation && x.formation === F.dist[0]?.formation) ?? F.avgPoints[1];
+    const max = top.avg || 1;
+    add({
+      id: "formpoints",
+      kicker: "En çok puan getiren diziliş",
+      headline: [{ text: top.formation, hot: true }, { text: ` kullananlar haftada ortalama ` }, { text: `${top.avg} puan`, hot: true }, { text: ` aldı, ${second.formation} kullananlar ${second.avg}` }],
+      deck: "Diziliş tek başına puanı belirlemez; sadece o dizilişi seçen takımların haftalık ortalaması (en az 3 kadro).",
+      fbars: F.avgPoints.slice(0, 4).map((x, i) => ({
+        label: x.formation,
+        pct: Math.round((x.avg / max) * 100),
+        right: `ort. ${x.avg}`,
+        hot: i === 0,
+      })),
+      full: true,
+    });
+  }
+
+  if (F.matrix.length > 0 && F.matrixCols.length > 0) {
+    const rows = F.matrix
+      .map((r) => ({ team: T(r.userId), cells: r.cells, hiIdx: r.hiIdx }))
+      .filter((r): r is { team: GazeteTeam; cells: number[]; hiIdx: number } => !!r.team)
+      .sort((a, b) => a.team.name.localeCompare(b.team.name, "tr"));
+    add({
+      id: "formmatrix",
+      kicker: "Diziliş tablosu — takım takım kaç kez?",
+      headline: [],
+      deck: "Her satırda en çok tercih edilen diziliş kırmızıyla işaretli.",
+      matrix: { cols: F.matrixCols, rows },
+      full: true,
+    });
+  }
+
   return out;
 }
 
@@ -1192,9 +1375,10 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
   const layout: [string, string[]][] = [
     ["Haftanın Sözü", ["quote"]],
     ["Kadro Servisi", ["collector", "loyal", "transfers"]],
-    ["Puan Durumu", ["bestweek", "closest", "comeback", "worst", "stable", "champion", "riser", "race"]],
+    ["Puan Durumu", ["bestweek", "closest", "comeback", "worst", "champion", "riser", "race"]],
     ["Kaptan Köşesi", ["captainhit", "captaingain", "captainchanger", "crowd", "differential"]],
-    ["Tribün Magazin", ["motm", "gentle", "fan"]],
+    ["Diziliş Servisi", ["formchanger", "formloyal", "formattack", "formdefence", "formdist", "formpoints", "formmatrix"]],
+    ["Tribün Magazin", ["motm", "gentle"]],
     ["Sezon Rekorları", ["records"]],
   ];
 
