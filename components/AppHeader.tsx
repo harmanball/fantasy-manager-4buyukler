@@ -213,10 +213,10 @@ export function AppHeader() {
           Lig Sıralaması
         </Link>
         <Link
-          href="/nasil-oynanir"
-          className="text-xs font-medium text-foreground/70 underline underline-offset-2 hover:text-foreground"
+          href="/lig-gazetesi"
+          className="text-xs font-bold text-red-600 underline underline-offset-2 hover:text-red-700"
         >
-          Nasıl Oynanır?
+          Lig Gazetesi
         </Link>
       </div>
 
