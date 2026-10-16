@@ -93,6 +93,58 @@ function StoryCard({ story, meId }: { story: Story; meId?: string }) {
           </tbody>
         </table>
       )}
+      {story.fbars && (
+        <div className="flex flex-col gap-2">
+          {story.fbars.map((b) => (
+            <div key={b.label} className="flex items-center gap-2 text-xs">
+              <span className="w-12 flex-none font-serif font-bold">{b.label}</span>
+              <div className="h-2 flex-1 overflow-hidden rounded bg-charcoal/15">
+                <i className={`block h-full ${b.hot ? "bg-red-700" : "bg-charcoal"}`} style={{ width: `${b.pct}%` }} />
+              </div>
+              <b className="w-24 flex-none text-right font-serif text-[12px]">{b.right}</b>
+            </div>
+          ))}
+        </div>
+      )}
+      {story.matrix && (
+        <div className="-mx-1 overflow-x-auto">
+          <table className="w-full min-w-[420px] text-xs">
+            <thead>
+              <tr className="text-[10.5px] font-semibold text-charcoal/60">
+                <th className="py-1 text-left">Takım</th>
+                {story.matrix.cols.map((c) => (
+                  <th key={c} className="py-1 text-center">{c}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {story.matrix.rows.map((r) => (
+                <tr key={r.team.userId} className="border-b border-charcoal/10 last:border-0">
+                  <td className="py-1.5 pr-2">
+                    <Link
+                      href={r.team.userId === meId ? "/kadro" : `/takim/${r.team.userId}`}
+                      className="flex items-center gap-2"
+                    >
+                      <TeamEmblem emblem={r.team.emblem} color1={r.team.color1} color2={r.team.color2} size={20} />
+                      <span className="truncate">{r.team.name}</span>
+                    </Link>
+                  </td>
+                  {r.cells.map((n, i) => (
+                    <td
+                      key={i}
+                      className={`py-1.5 text-center font-serif font-bold ${
+                        i === r.hiIdx ? "bg-red-700/10 text-red-700" : n === 0 ? "text-charcoal/25" : ""
+                      }`}
+                    >
+                      {n === 0 ? "–" : n}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {story.bars && (
         <div className="flex flex-col gap-2">
           {story.bars.map((b) => (
