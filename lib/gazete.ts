@@ -629,7 +629,7 @@ function computeFacts(data: GazeteData, W: WeekInfo[]): Facts {
     captainChangers.push({ userId: u, value: set.size });
   }
 
-  // Son haftanın kaptan yıldızı (Haftanın sözü için)
+  // Son haftanın kaptan yıldızı (Haftanın haberi için)
   let latestCaptainStar: Facts["latestCaptainStar"] = null;
   for (const [u, byWeek] of data.picks) {
     const cap = byWeek.get(latest.id)?.captainId;
@@ -1282,7 +1282,7 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
   return out;
 }
 
-// Haftanın sözü: son haftanın verisinden seçilen tek satırlık not.
+// Haftanın haberi: son haftanın verisinden seçilen tek satırlık not.
 function buildQuote(data: GazeteData, W: WeekInfo[], facts: Facts, seed: number): Story | null {
   const T = (id: string) => data.teams.get(id);
   const options: Part[][] = [];
@@ -1309,7 +1309,7 @@ function buildQuote(data: GazeteData, W: WeekInfo[], facts: Facts, seed: number)
   if (options.length === 0) return null;
   return {
     id: "quote",
-    kicker: "Haftanın sözü",
+    kicker: "Haftanın haberi",
     headline: [],
     quote: pick(options, seed),
     full: true,
@@ -1373,7 +1373,7 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
   }
 
   const layout: [string, string[]][] = [
-    ["Haftanın Sözü", ["quote"]],
+    ["Haftanın Haberi", ["quote"]],
     ["Kadro Servisi", ["collector", "loyal", "transfers"]],
     ["Puan Durumu", ["bestweek", "closest", "comeback", "worst", "champion", "riser", "race"]],
     ["Kaptan Köşesi", ["captainhit", "captaingain", "captainchanger", "crowd", "differential"]],
