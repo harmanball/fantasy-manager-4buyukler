@@ -30,9 +30,11 @@ function StoryCard({ story, meId }: { story: Story; meId?: string }) {
       <div className="text-[10.5px] font-bold uppercase tracking-wider text-red-700">
         {story.kicker}
       </div>
-      <h3 className="font-serif text-lg font-bold leading-snug text-charcoal">
-        <Headline parts={story.headline} />
-      </h3>
+      {story.headline.length > 0 && (
+        <h3 className="font-serif text-lg font-bold leading-snug text-charcoal">
+          <Headline parts={story.headline} />
+        </h3>
+      )}
       {(t || story.bigNumber) && (
         <div className="flex items-center gap-3">
           {t && <TeamEmblem emblem={t.emblem} color1={t.color1} color2={t.color2} size={34} />}
@@ -50,6 +52,47 @@ function StoryCard({ story, meId }: { story: Story; meId?: string }) {
         </div>
       )}
       {story.deck && <p className="text-xs leading-relaxed text-charcoal/75">{story.deck}</p>}
+      {story.quote && (
+        <p className="px-2 py-1 text-center font-serif text-xl italic leading-snug text-charcoal">
+          “<Headline parts={story.quote} />”
+        </p>
+      )}
+      {story.race && (
+        <div className="flex flex-col gap-2">
+          {story.race.map((r, i) => (
+            <div key={r.team.userId} className="flex items-center gap-2 text-xs">
+              <span className="w-28 flex-none truncate text-charcoal/70">
+                {i + 1}. {r.team.name}
+              </span>
+              <div className="h-2 flex-1 overflow-hidden rounded bg-charcoal/15">
+                <i className={`block h-full ${i === 1 ? "bg-red-700" : "bg-charcoal"}`} style={{ width: `${r.pct}%` }} />
+              </div>
+              <b className="w-10 flex-none text-right font-serif">{r.points}</b>
+            </div>
+          ))}
+        </div>
+      )}
+      {story.rows && (
+        <table className="w-full text-[12.5px]">
+          <tbody>
+            {story.rows.map((r) => (
+              <tr key={r.label} className="border-b border-charcoal/10 last:border-0">
+                <td className="w-2/5 py-1.5 pr-2 text-charcoal/65">{r.label}</td>
+                <td className="py-1.5">
+                  <Link
+                    href={r.team.userId === meId ? "/kadro" : `/takim/${r.team.userId}`}
+                    className="flex items-center gap-2"
+                  >
+                    <TeamEmblem emblem={r.team.emblem} color1={r.team.color1} color2={r.team.color2} size={22} />
+                    <span className="truncate">{r.team.name}</span>
+                  </Link>
+                </td>
+                <td className="whitespace-nowrap py-1.5 text-right font-serif font-bold">{r.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
       {story.bars && (
         <div className="flex flex-col gap-2">
           {story.bars.map((b) => (
