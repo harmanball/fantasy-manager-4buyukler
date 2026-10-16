@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
 import { TeamEmblem } from "@/components/TeamEmblem";
+import { PressConference } from "@/components/PressConference";
 import { useSession } from "@/lib/useSession";
 import { loadGazeteData, buildIssue, GazeteData, Part, Story } from "@/lib/gazete";
 
@@ -35,7 +36,8 @@ function StoryCard({ story, meId }: { story: Story; meId?: string }) {
           <Headline parts={story.headline} />
         </h3>
       )}
-      {(t || story.bigNumber) && (
+      {story.quote && t && <PressConference team={t} />}
+      {(t || story.bigNumber) && !story.quote && (
         <div className="flex items-center gap-3">
           {t && <TeamEmblem emblem={t.emblem} color1={t.color1} color2={t.color2} size={34} />}
           {t && <span className="min-w-0 break-words text-sm font-semibold text-charcoal">{t.name}</span>}
@@ -53,7 +55,7 @@ function StoryCard({ story, meId }: { story: Story; meId?: string }) {
       )}
       {story.deck && <p className="text-xs leading-relaxed text-charcoal/75">{story.deck}</p>}
       {story.quote && (
-        <p className="px-2 py-1 text-center font-serif text-xl italic leading-snug text-charcoal">
+        <p className="px-2 py-1 text-center font-serif text-lg italic leading-snug text-charcoal sm:text-xl">
           “<Headline parts={story.quote} />”
         </p>
       )}
