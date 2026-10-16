@@ -19,6 +19,7 @@ const NAV_ITEMS: { href: string; label: string; icon: IconName }[] = [
   { href: "/kadro", label: "Kadro", icon: "shirt" },
   { href: "/puanlarim", label: "Puanlarım", icon: "chart" },
   { href: "/siralama", label: "Lig Sıralaması", icon: "trophy" },
+  { href: "/lig-gazetesi", label: "Lig Gazetesi", icon: "trophy" },
   { href: "/futbolcu-puanlari", label: "Futbolcu Puanları", icon: "users" },
   { href: "/haftanin-takimi", label: "Haftanın Takımı", icon: "star" },
   { href: "/profil", label: "Profil", icon: "user" },
