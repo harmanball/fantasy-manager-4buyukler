@@ -1285,33 +1285,44 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
 // Haftanın haberi: son haftanın verisinden seçilen tek satırlık not.
 function buildQuote(data: GazeteData, W: WeekInfo[], facts: Facts, seed: number): Story | null {
   const T = (id: string) => data.teams.get(id);
-  const options: Part[][] = [];
+  const options: { parts: Part[]; userId: string }[] = [];
   const ww = facts.weekWinner;
   if (ww && T(ww.userId) && facts.weekAvg > 0 && ww.points > facts.weekAvg) {
-    options.push([
-      { text: "Bu hafta " }, { text: T(ww.userId)!.name, hot: true },
-      { text: ` ${ww.points} puanla lig ortalamasının ` }, { text: `${ww.points - facts.weekAvg} puan`, hot: true }, { text: " üstüne çıktı." },
-    ]);
+    options.push({
+      userId: ww.userId,
+      parts: [
+        { text: "Bu hafta " }, { text: T(ww.userId)!.name, hot: true },
+        { text: ` ${ww.points} puanla lig ortalamasının ` }, { text: `${ww.points - facts.weekAvg} puan`, hot: true }, { text: " üstüne çıktı." },
+      ],
+    });
   }
   const cs = facts.latestCaptainStar;
   if (cs && T(cs.userId) && cs.points > 0) {
-    options.push([
-      { text: T(cs.userId)!.name, hot: true }, { text: " takımında kaptan " }, { text: cs.player, hot: true },
-      { text: ` bu hafta tek başına ${cs.points} puan getirdi.` },
-    ]);
+    options.push({
+      userId: cs.userId,
+      parts: [
+        { text: T(cs.userId)!.name, hot: true }, { text: " takımında kaptan " }, { text: cs.player, hot: true },
+        { text: ` bu hafta tek başına ${cs.points} puan getirdi.` },
+      ],
+    });
   }
   if (facts.race.length >= 2 && T(facts.race[0].userId) && T(facts.race[1].userId)) {
-    options.push([
-      { text: T(facts.race[0].userId)!.name, hot: true }, { text: " zirvede; kovalayan " },
-      { text: T(facts.race[1].userId)!.name, hot: true }, { text: ` sadece ${facts.gapNow} puan geride.` },
-    ]);
+    options.push({
+      userId: facts.race[0].userId,
+      parts: [
+        { text: T(facts.race[0].userId)!.name, hot: true }, { text: " zirvede; kovalayan " },
+        { text: T(facts.race[1].userId)!.name, hot: true }, { text: ` sadece ${facts.gapNow} puan geride.` },
+      ],
+    });
   }
   if (options.length === 0) return null;
+  const chosen = pick(options, seed);
   return {
     id: "quote",
     kicker: "Haftanın haberi",
     headline: [],
-    quote: pick(options, seed),
+    quote: chosen.parts,
+    team: T(chosen.userId),
     full: true,
   };
 }
