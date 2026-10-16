@@ -30,10 +30,6 @@ export function PressConference({ team }: { team: PressTeam }) {
             <stop offset="0" stopColor="#7a5230" />
             <stop offset="1" stopColor="#4a301b" />
           </linearGradient>
-          <linearGradient id="pc-skin" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#5a6b65" />
-            <stop offset="1" stopColor="#3d4a46" />
-          </linearGradient>
           <radialGradient id="pc-v" cx="0.5" cy="0.5" r="0.75">
             <stop offset="0.6" stopColor="#000" stopOpacity="0" />
             <stop offset="1" stopColor="#000" stopOpacity="0.5" />
@@ -46,9 +42,17 @@ export function PressConference({ team }: { team: PressTeam }) {
         <path d="M600 500 l-12 14 12 90 12 -90 z" fill="#b91c1c" />
         <path d="M470 500 L560 470 L600 560 L530 675 L470 675 Z" fill="#101a31" />
         <path d="M730 500 L640 470 L600 560 L670 675 L730 675 Z" fill="#101a31" />
-        <rect x="567" y="430" width="66" height="48" rx="10" fill="url(#pc-skin)" />
-        <ellipse cx="600" cy="370" rx="72" ry="86" fill="url(#pc-skin)" />
-        <path d="M530 350 C530 290 570 276 600 276 C640 276 672 296 670 350 C650 322 625 312 600 312 C575 312 548 322 530 350 Z" fill="#1c2522" />
+        <rect x="567" y="430" width="66" height="48" rx="10" fill="#c28862" />
+        <ellipse cx="600" cy="372" rx="70" ry="84" fill="#d9a07a" />
+        <ellipse cx="530" cy="376" rx="10" ry="16" fill="#c28862" />
+        <ellipse cx="670" cy="376" rx="10" ry="16" fill="#c28862" />
+        <path d="M530 346 C534 294 568 282 600 282 C634 282 666 294 670 346 C650 318 628 312 600 312 C572 312 550 318 530 346 Z" fill="#8a8a8a" />
+        <circle cx="574" cy="368" r="7" fill="#1f2a26" />
+        <circle cx="626" cy="368" r="7" fill="#1f2a26" />
+        <path d="M556 350 Q574 340 590 348" stroke="#5c5c5c" strokeWidth="5" fill="none" strokeLinecap="round" />
+        <path d="M610 348 Q626 340 644 350" stroke="#5c5c5c" strokeWidth="5" fill="none" strokeLinecap="round" />
+        <path d="M600 372 q-8 22 4 26" stroke="#c28862" strokeWidth="4" fill="none" strokeLinecap="round" />
+        <path d="M572 416 Q600 432 628 416" stroke="#7a3e2a" strokeWidth="5" fill="none" strokeLinecap="round" />
         {/* Masa */}
         <rect x="140" y="560" width="920" height="30" fill="url(#pc-table)" />
         <rect x="120" y="585" width="960" height="90" fill="#3b2614" />
