@@ -277,7 +277,7 @@ interface Facts {
   captainHits: Entry[];
   captainGain: Entry[];
   ownership: { label: string; pct: number }[];
-  differential: { userId: string; player: string; pct: number; points: number } | null;
+  differential: { userId: string; player: string; pct: number; points: number; weeks: number } | null;
   motmHunters: Entry[];
   cards: (Entry & { yellow: number; red: number })[];
   clubFans: { userId: string; club: string; pct: number }[];
@@ -465,22 +465,44 @@ function computeFacts(data: GazeteData, W: WeekInfo[]): Facts {
       pct: Math.round((c / Math.max(1, squadCount)) * 100),
     }));
 
-  const seasonPoints = new Map<string, number>();
+  // Farklı düşünen: her hafta, o haftanın kadrolarının en fazla %25'inde bulunan bir
+  // oyuncuyu seçen takımın, o haftalarda o oyuncudan aldığı puanlar toplanır.
+  // (Sahiplik her hafta kendi haftasının kadrolarına göre ölçülür; sezon boyunca
+  // herkesin tuttuğu bir oyuncu, sonradan terk edilince "farklı düşünen" sayılmaz.)
+  const diffMap = new Map<string, { userId: string; playerId: string; points: number; weeks: number; pctSum: number }>();
   for (const w of W) {
-    for (const [p, st] of data.stats.get(w.id) ?? []) {
-      seasonPoints.set(p, (seasonPoints.get(p) ?? 0) + st.points);
+    const squads: [string, PickSet][] = [];
+    for (const [u, byWeek] of data.picks) {
+      const sq = byWeek.get(w.id);
+      if (sq && sq.playerIds.length > 0) squads.push([u, sq]);
+    }
+    if (squads.length < 4) continue;
+    const own = new Map<string, number>();
+    for (const [, sq] of squads) for (const p of sq.playerIds) own.set(p, (own.get(p) ?? 0) + 1);
+    for (const [u, sq] of squads) {
+      for (const p of sq.playerIds) {
+        const pct = ((own.get(p) ?? 0) / squads.length) * 100;
+        const st = data.stats.get(w.id)?.get(p);
+        if (pct > 25 || !st || st.minutes <= 0 || st.points <= 0) continue;
+        const key = u + "|" + p;
+        const cur = diffMap.get(key) ?? { userId: u, playerId: p, points: 0, weeks: 0, pctSum: 0 };
+        cur.points += st.points;
+        cur.weeks += 1;
+        cur.pctSum += pct;
+        diffMap.set(key, cur);
+      }
     }
   }
   let differential: Facts["differential"] = null;
-  if (squadCount >= 4) {
-    for (const [u, s] of latestSquads) {
-      for (const p of s.playerIds) {
-        const pct = Math.round(((owners.get(p) ?? 0) / squadCount) * 100);
-        const pts = seasonPoints.get(p) ?? 0;
-        if (pct <= 25 && pts > 0 && (!differential || pts > differential.points)) {
-          differential = { userId: u, player: data.players.get(p)?.name ?? "?", pct, points: pts };
-        }
-      }
+  for (const d of diffMap.values()) {
+    if (!differential || d.points > differential.points) {
+      differential = {
+        userId: d.userId,
+        player: data.players.get(d.playerId)?.name ?? "?",
+        pct: Math.round(d.pctSum / d.weeks),
+        points: d.points,
+        weeks: d.weeks,
+      };
     }
   }
 
@@ -873,7 +895,7 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
       kicker: "Farklı düşünen",
       team: t,
       headline: [{ text: "Kalabalığa karışmadı: " }, { text: t.name, hot: true }, { text: " kadrosunda " }, { text: d.player, hot: true }, { text: " var" }],
-      deck: `Bu oyuncu takımların yalnızca %${d.pct} oranında kadrosunda ve sezonda ${d.points} puan getirdi.`,
+      deck: `${d.weeks} hafta boyunca takımların ortalama yalnızca %${d.pct} oranında kadrosunda olan bu oyuncu, ona güvenen takıma ${d.points} puan getirdi.`,
       full: true,
     });
   }
