@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { EmblemId, DEFAULT_EMBLEM, DEFAULT_COLOR1, DEFAULT_COLOR2 } from "./emblems";
+import { fetchIsTransferWindowOpen } from "./transferWindow";
 
 // ───────────────────────── Veri modeli ─────────────────────────
 
@@ -45,6 +46,19 @@ export interface GazeteData {
   stats: Map<number, Map<string, StatRow>>; // hafta -> oyuncu -> istatistik
   players: Map<string, PlayerInfo>;
   captainMult: number;
+  // Tahmin Yap verisi (biten haftalar)
+  fixtures: Map<number, FixtureResult[]>; // hafta -> maç sonuçları
+  predictions: Map<string, Map<number, Map<string, { tg: number; og: number }>>>; // kullanıcı -> hafta -> takım -> tahmin
+  // Transfer penceresi kapandıysa, şu an oynanan (henüz bitmemiş) haftanın kadroları
+  lockedWeek: { weekNumber: number; picks: Map<string, PickSet> } | null;
+}
+
+interface FixtureResult {
+  team: string; // GS / FB / BJK / TS
+  opponent: string;
+  isHome: boolean;
+  ts: number | null; // takımın golü
+  os: number | null; // rakibin golü
 }
 
 type Row = Record<string, unknown>;
@@ -90,10 +104,13 @@ export async function loadGazeteData(): Promise<GazeteData> {
     stats: new Map(),
     players: new Map(),
     captainMult: 2,
+    fixtures: new Map(),
+    predictions: new Map(),
+    lockedWeek: null,
   };
   if (weeks.length === 0) return empty;
 
-  const [profiles, scoreRows, pickRows, statRows, playerRows, settingRows] =
+  const [profiles, scoreRows, pickRows, statRows, playerRows, settingRows, fixtureRows, predRows] =
     await Promise.all([
       fetchAll(
         "profiles",
@@ -116,6 +133,15 @@ export async function loadGazeteData(): Promise<GazeteData> {
       ),
       fetchAll("players", "id, name, position, teams(short_code)", ["id"]),
       supabase.from("game_settings").select("key, value").eq("key", "captain_multiplier"),
+      fetchAll("gameweek_fixtures", "gameweek_id, team, opponent, is_home, team_score, opponent_score", [
+        "gameweek_id",
+        "team",
+      ]),
+      fetchAll("fixture_predictions", "user_id, gameweek_id, team, team_goals, opponent_goals", [
+        "gameweek_id",
+        "user_id",
+        "team",
+      ]),
     ]);
 
   const finishedIds = new Set(weeks.map((w) => w.id));
@@ -198,10 +224,66 @@ export async function loadGazeteData(): Promise<GazeteData> {
     });
   }
 
+  const fixtures = new Map<number, FixtureResult[]>();
+  for (const r of fixtureRows) {
+    const gw = r.gameweek_id as number;
+    if (!finishedIds.has(gw)) continue;
+    if (!fixtures.has(gw)) fixtures.set(gw, []);
+    fixtures.get(gw)!.push({
+      team: r.team as string,
+      opponent: (r.opponent as string) ?? "?",
+      isHome: r.is_home !== false,
+      ts: (r.team_score as number | null) ?? null,
+      os: (r.opponent_score as number | null) ?? null,
+    });
+  }
+
+  const predictions = new Map<string, Map<number, Map<string, { tg: number; og: number }>>>();
+  for (const r of predRows) {
+    const gw = r.gameweek_id as number;
+    if (!finishedIds.has(gw)) continue;
+    const u = r.user_id as string;
+    if (!predictions.has(u)) predictions.set(u, new Map());
+    const byWeek = predictions.get(u)!;
+    if (!byWeek.has(gw)) byWeek.set(gw, new Map());
+    byWeek.get(gw)!.set(r.team as string, { tg: r.team_goals as number, og: r.opponent_goals as number });
+  }
+
+  // Transfer penceresi kapandıysa, şu an oynanan haftanın kadroları artık gizli değil.
+  // Pencere AÇIKKEN kimsenin kadrosu gösterilmez.
+  let lockedWeek: GazeteData["lockedWeek"] = null;
+  try {
+    const { data: openGw } = await supabase
+      .from("gameweeks")
+      .select("id, week_number")
+      .in("status", ["open", "upcoming"])
+      .order("week_number", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (openGw) {
+      const windowOpen = await fetchIsTransferWindowOpen();
+      if (!windowOpen) {
+        const lockedPicks = new Map<string, PickSet>();
+        for (const r of pickRows) {
+          if ((r.gameweek_id as number) !== (openGw.id as number)) continue;
+          const u = r.user_id as string;
+          if (!lockedPicks.has(u)) lockedPicks.set(u, { playerIds: [], captainId: null });
+          const set = lockedPicks.get(u)!;
+          const pid = canon(r.player_id as string);
+          if (!set.playerIds.includes(pid)) set.playerIds.push(pid);
+          if (r.is_captain) set.captainId = pid;
+        }
+        if (lockedPicks.size > 0) lockedWeek = { weekNumber: openGw.week_number as number, picks: lockedPicks };
+      }
+    }
+  } catch {
+    lockedWeek = null;
+  }
+
   const mult = ((settingRows.data ?? []) as Row[])[0]?.value;
   const captainMult = typeof mult === "number" ? mult : Number(mult ?? 2) || 2;
 
-  return { weeks, teams, scores, picks, stats, players, captainMult };
+  return { weeks, teams, scores, picks, stats, players, captainMult, fixtures, predictions, lockedWeek };
 }
 
 // ───────────────────────── Gazete içeriği ─────────────────────────
@@ -226,6 +308,7 @@ export interface Story {
   quote?: Part[];
   fbars?: { label: string; pct: number; right: string; hot?: boolean }[];
   matrix?: { cols: string[]; rows: { team: GazeteTeam; cells: number[]; hiIdx: number }[] };
+  table?: { head: string[]; rows: string[][] };
   full?: boolean;
 }
 
@@ -1282,6 +1365,221 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
   return out;
 }
 
+
+// ───────────────────────── Tahmin Köşesi ─────────────────────────
+
+function predPoints(tg: number, og: number, ts: number, os: number): number {
+  if (tg === ts && og === os) return 3; // tam isabet
+  return Math.sign(tg - og) === Math.sign(ts - os) ? 1 : 0; // doğru sonuç
+}
+
+interface PredWeek {
+  userId: string;
+  points: number;
+  exact: number;
+  rows: string[][]; // maç, tahmin, sonuç, puan
+  exactMatches: string[]; // "Galatasaray 2–1 Kasımpaşa"
+}
+
+function predWeek(data: GazeteData, weekId: number): PredWeek[] {
+  const fixtures = data.fixtures.get(weekId) ?? [];
+  const out: PredWeek[] = [];
+  for (const [u, byWeek] of data.predictions) {
+    const preds = byWeek.get(weekId);
+    if (!preds) continue;
+    let points = 0;
+    let exact = 0;
+    let played = 0;
+    const rows: string[][] = [];
+    const exactMatches: string[] = [];
+    for (const f of fixtures) {
+      const pr = preds.get(f.team);
+      if (!pr || f.ts === null || f.os === null) continue;
+      played += 1;
+      const pts = predPoints(pr.tg, pr.og, f.ts, f.os);
+      points += pts;
+      const clubName = CLUB_NAMES[f.team] ?? f.team;
+      const home = f.isHome ? clubName : f.opponent;
+      const away = f.isHome ? f.opponent : clubName;
+      const fmt = (a: number, b: number) => (f.isHome ? `${a}–${b}` : `${b}–${a}`);
+      rows.push([`${home} – ${away}`, fmt(pr.tg, pr.og), fmt(f.ts, f.os), String(pts)]);
+      if (pts === 3) {
+        exact += 1;
+        exactMatches.push(`${home} ${fmt(f.ts, f.os)} ${away}`);
+      }
+    }
+    if (played > 0) out.push({ userId: u, points, exact, rows, exactMatches });
+  }
+  return out.sort((a, b) => b.points - a.points || b.exact - a.exact);
+}
+
+function buildPredictionStories(data: GazeteData, W: WeekInfo[], seed: number): Record<string, Story> {
+  const T = (id: string) => data.teams.get(id);
+  const out: Record<string, Story> = {};
+  const latest = W[W.length - 1];
+  const week = predWeek(data, latest.id);
+
+  const best = week[0];
+  if (best && best.points > 0 && T(best.userId)) {
+    const t = T(best.userId)!;
+    const tied = week.filter((x) => x.points === best.points && x.exact === best.exact && x.userId !== best.userId);
+    out.kahin = {
+      id: "kahin",
+      kicker: "Kahin",
+      team: t,
+      headline: pick<Part[]>(
+        [
+          [{ text: "Haftanın kahini: " }, { text: t.name, hot: true }, { text: ` ${best.points} puan` }],
+          [{ text: t.name, hot: true }, { text: " maçları okudu: " }, { text: `${best.exact} tam isabet`, hot: true }, { text: `, ${best.points} puan` }],
+          [{ text: "Falcı gibi: " }, { text: t.name, hot: true }, { text: ` tahmin liginde ${best.points} puan topladı` }],
+        ],
+        seed + 20
+      ),
+      deck: "Tahmin Yap’ta bu haftanın en çok puan toplayan tahmincisi (tam skor 3, doğru sonuç 1 puan).",
+      table: { head: ["Maç", "Tahmin", "Sonuç", "P"], rows: best.rows },
+      after: tied.length > 0 ? `Aynı puanda: ${tied.map((x) => T(x.userId)?.name ?? "?").slice(0, 3).join(" · ")}` : undefined,
+      full: true,
+    };
+  }
+
+  const exacts = week.filter((x) => x.exact > 0 && T(x.userId));
+  if (exacts.length > 0) {
+    const rows: { team: GazeteTeam; label: string; value: string }[] = [];
+    for (const x of exacts) for (const m of x.exactMatches) rows.push({ team: T(x.userId)!, label: m, value: "tam skor" });
+    out.exact = {
+      id: "exact",
+      kicker: "Tam isabet",
+      headline: [{ text: `${exacts.length} kişi `, hot: true }, { text: "bu hafta skoru tam bildi" }],
+      deck: "Maçın skorunu birebir tahmin edenler.",
+      rows: rows.slice(0, 8),
+      full: true,
+    };
+  }
+
+  // Sezon kahini
+  const total = new Map<string, { pts: number; exact: number }>();
+  for (const w of W) {
+    for (const x of predWeek(data, w.id)) {
+      const cur = total.get(x.userId) ?? { pts: 0, exact: 0 };
+      cur.pts += x.points;
+      cur.exact += x.exact;
+      total.set(x.userId, cur);
+    }
+  }
+  const board = [...total.entries()]
+    .filter(([u, v]) => T(u) && v.pts > 0)
+    .sort((a, b) => b[1].pts - a[1].pts || b[1].exact - a[1].exact);
+  if (board.length > 0) {
+    const [lu, lv] = board[0];
+    out.kahinseason = {
+      id: "kahinseason",
+      kicker: "Sezonun kahini",
+      headline: [{ text: T(lu)!.name, hot: true }, { text: ` tahmin liginde önde: ${lv.pts} puan` }],
+      deck: `Sezon boyunca toplam tahmin puanı. Lider ${lv.exact} kez tam skoru buldu.`,
+      fbars: board.slice(0, 5).map(([u, v], i) => ({
+        label: `${i + 1}.`,
+        pct: Math.round((v.pts / lv.pts) * 100),
+        right: `${T(u)!.name} · ${v.pts}`,
+        hot: i === 0,
+      })),
+      full: true,
+    };
+  }
+  return out;
+}
+
+// ───────────────────────── Kadrolar Açıldı ─────────────────────────
+
+function buildPickStories(
+  data: GazeteData,
+  squads: Map<string, PickSet>,
+  seasonPts: Map<string, number>
+): Record<string, Story> {
+  const T = (id: string) => data.teams.get(id);
+  const out: Record<string, Story> = {};
+  const list = [...squads.entries()].filter(([u, sq]) => T(u) && sq.playerIds.length > 0);
+  if (list.length < 3) return out;
+  const n = list.length;
+
+  // Kaptan oylaması
+  const caps = new Map<string, string[]>();
+  for (const [u, sq] of list) {
+    if (!sq.captainId) continue;
+    if (!caps.has(sq.captainId)) caps.set(sq.captainId, []);
+    caps.get(sq.captainId)!.push(u);
+  }
+  const capList = [...caps.entries()].sort((a, b) => b[1].length - a[1].length);
+  if (capList.length > 0) {
+    const [topId, topUsers] = capList[0];
+    const name = data.players.get(topId)?.name ?? "?";
+    out.pickcaptain = {
+      id: "pickcaptain",
+      kicker: "Kaptan oylaması",
+      headline: [{ text: "Bandı en çok " }, { text: name, hot: true }, { text: ` taktı: %${Math.round((topUsers.length / n) * 100)}` }],
+      deck: `${n} takımın kaptan seçimleri.`,
+      fbars: capList.slice(0, 4).map(([id, us], i) => ({
+        label: `${us.length}`,
+        pct: Math.round((us.length / topUsers.length) * 100),
+        right: data.players.get(id)?.name ?? "?",
+        hot: i === 0,
+      })),
+      after: topUsers.length <= 5 ? `${name}: ${topUsers.map((u) => T(u)!.name).join(" · ")}` : undefined,
+      full: true,
+    };
+  }
+
+  // Tek başına seçilenler
+  const owners = new Map<string, string[]>();
+  for (const [u, sq] of list) for (const p of sq.playerIds) {
+    if (!owners.has(p)) owners.set(p, []);
+    owners.get(p)!.push(u);
+  }
+  const solo = [...owners.entries()]
+    .filter(([, us]) => us.length === 1)
+    .sort((a, b) => (seasonPts.get(b[0]) ?? 0) - (seasonPts.get(a[0]) ?? 0))
+    .slice(0, 5);
+  if (solo.length > 0) {
+    out.picksolo = {
+      id: "picksolo",
+      kicker: "Tek başına seçilenler",
+      headline: [{ text: "Bu hafta kimse " }, { text: "onlara güvenmedi", hot: true }, { text: ", bir takım hariç" }],
+      deck: "Sadece tek bir takımın kadrosunda olan oyuncular.",
+      rows: solo.map(([p, us]) => ({ team: T(us[0])!, label: data.players.get(p)?.name ?? "?", value: CLUB_NAMES[data.players.get(p)?.club ?? ""] ?? "" })),
+      full: true,
+    };
+  }
+
+  // Kadro ikizleri
+  const ov = (a: PickSet, b: PickSet) => {
+    const set = new Set(a.playerIds);
+    return b.playerIds.filter((p) => set.has(p)).length;
+  };
+  let most: { a: string; b: string; v: number } | null = null;
+  let least: { a: string; b: string; v: number } | null = null;
+  for (let i = 0; i < list.length; i++) {
+    for (let j = i + 1; j < list.length; j++) {
+      const v = ov(list[i][1], list[j][1]);
+      if (!most || v > most.v) most = { a: list[i][0], b: list[j][0], v };
+      if (!least || v < least.v) least = { a: list[i][0], b: list[j][0], v };
+    }
+  }
+  if (most && least) {
+    const size = Math.max(...list.map(([, sq]) => sq.playerIds.length));
+    out.picktwins = {
+      id: "picktwins",
+      kicker: "Kadro ikizleri",
+      headline: [{ text: T(most.a)!.name, hot: true }, { text: " ve " }, { text: T(most.b)!.name, hot: true }, { text: ` kadroları ${most.v}/${size} aynı` }],
+      deck: `En farklı iki kadro: ${T(least.a)!.name} – ${T(least.b)!.name} (${least.v}/${size} ortak).`,
+      rows: [
+        { team: T(most.a)!, label: "En benzer", value: `${T(most.b)!.name} · ${most.v}/${size}` },
+        { team: T(least.a)!, label: "En farklı", value: `${T(least.b)!.name} · ${least.v}/${size}` },
+      ],
+      full: true,
+    };
+  }
+  return out;
+}
+
 // Haftanın haberi: son haftanın verisinden seçilen tek satırlık not.
 function buildQuote(data: GazeteData, W: WeekInfo[], facts: Facts, seed: number): Story | null {
   const T = (id: string) => data.teams.get(id);
@@ -1338,6 +1636,19 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
   const stories = buildStories(data, W, facts, latest.weekNumber);
   const quote = buildQuote(data, W, facts, latest.weekNumber);
   if (quote) stories.quote = quote;
+  Object.assign(stories, buildPredictionStories(data, W, latest.weekNumber));
+
+  // Kadrolar açıldı: en yeni sayıda, pencere kapandıysa şu an oynanan haftanın kadroları;
+  // aksi halde (ve eski sayılarda) o sayının kendi haftasının kadroları.
+  const isNewest = latest.id === data.weeks[data.weeks.length - 1].id;
+  const useLocked = isNewest && data.lockedWeek !== null;
+  const squads = useLocked
+    ? data.lockedWeek!.picks
+    : new Map([...data.picks].map(([u, byWeek]) => [u, byWeek.get(latest.id)] as const).filter((x): x is [string, PickSet] => !!x[1]));
+  const pickLabel = useLocked ? `${data.lockedWeek!.weekNumber}. hafta` : weekLabel(latest);
+  const seasonPtsAll = new Map<string, number>();
+  for (const w of W) for (const [p, st] of data.stats.get(w.id) ?? []) seasonPtsAll.set(p, (seasonPtsAll.get(p) ?? 0) + st.points);
+  Object.assign(stories, buildPickStories(data, squads, seasonPtsAll));
 
   // Manşet: o haftanın en büyük olayı.
   let hero: Story | null = null;
@@ -1390,6 +1701,8 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
     ["Kaptan Köşesi", ["captainhit", "captaingain", "captainchanger", "crowd", "differential"]],
     ["Diziliş Servisi", ["formchanger", "formloyal", "formattack", "formdefence", "formdist", "formpoints", "formmatrix"]],
     ["Tribün Magazin", ["motm", "gentle"]],
+    ["Tahmin Köşesi", ["kahin", "exact", "kahinseason"]],
+    [`Kadrolar Açıldı · ${pickLabel}`, ["pickcaptain", "picksolo", "picktwins"]],
     ["Sezon Rekorları", ["records"]],
   ];
 
