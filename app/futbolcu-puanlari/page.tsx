@@ -7,6 +7,7 @@ import {
   PlayerPointsBreakdown,
 } from "@/lib/playerPoints";
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
+import { supabase } from "@/lib/supabase";
 import { AppHeader } from "@/components/AppHeader";
 import { PageHeader } from "@/components/PageHeader";
 import { Skeleton } from "@/components/Skeleton";
@@ -57,8 +58,106 @@ const COLS: { key: SortableKey; label: string; align: "left" | "right" }[] = [
   { key: "mac_puani_bonusu", label: "Reytingi Bonus", align: "right" },
 ];
 
+// Puanların yanında gösterilecek GERÇEK sayılar (kaç gol, kaç asist...).
+// Puanlar zaten view/hesaplamadan geliyor; bunlar sadece player_stats'taki
+// ham sayıları toplar. Supabase tek sorguda en fazla 1000 satır döndürdüğü
+// için sayfa sayfa çekilir.
+interface RawCounts {
+  goals: number;
+  assists: number;
+  cleanSheets: number;
+  yellow: number;
+  red: number;
+  ownGoals: number;
+  penMissed: number;
+  ratingBonusMatches: number;
+}
+
+async function fetchRawCounts(
+  gameweekId: number | null
+): Promise<Map<string, RawCounts>> {
+  const { data: thr } = await supabase
+    .from("game_settings")
+    .select("value")
+    .eq("key", "rating_bonus_threshold")
+    .maybeSingle();
+  const threshold = typeof thr?.value === "number" ? thr.value : Number(thr?.value ?? 8);
+
+  const map = new Map<string, RawCounts>();
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    let q = supabase
+      .from("player_stats")
+      .select(
+        "player_id, minutes, goals, assists, clean_sheet, yellow_card, red_card, own_goals, penalty_missed, match_rating"
+      );
+    if (gameweekId !== null) q = q.eq("gameweek_id", gameweekId);
+    const { data, error } = await q
+      .order("gameweek_id")
+      .order("player_id")
+      .range(from, from + PAGE - 1);
+    if (error || !data) break;
+
+    for (const row of data) {
+      const id = row.player_id as string;
+      const c =
+        map.get(id) ??
+        {
+          goals: 0,
+          assists: 0,
+          cleanSheets: 0,
+          yellow: 0,
+          red: 0,
+          ownGoals: 0,
+          penMissed: 0,
+          ratingBonusMatches: 0,
+        };
+      const minutes = (row.minutes as number) ?? 0;
+      c.goals += (row.goals as number) ?? 0;
+      c.assists += (row.assists as number) ?? 0;
+      if (row.clean_sheet && minutes >= 60) c.cleanSheets += 1;
+      c.yellow += (row.yellow_card as number) ?? 0;
+      c.red += (row.red_card as number) ?? 0;
+      c.ownGoals += (row.own_goals as number) ?? 0;
+      c.penMissed += (row.penalty_missed as number) ?? 0;
+      if (row.match_rating !== null && (row.match_rating as number) >= threshold)
+        c.ratingBonusMatches += 1;
+      map.set(id, c);
+    }
+    if (data.length < PAGE) break;
+  }
+  return map;
+}
+
+// Hücre: puan + (gerçek sayı). Sayı 0 ise parantez gösterilmez.
+function PtCell({ pts, extra }: { pts: number; extra?: string | null }) {
+  return (
+    <>
+      {pts}
+      {extra && (
+        <span className="ml-0.5 text-[10px] font-normal text-foreground/45">
+          ({extra})
+        </span>
+      )}
+    </>
+  );
+}
+
+function cardExtra(c: RawCounts | undefined): string | null {
+  if (!c) return null;
+  const parts: string[] = [];
+  if (c.yellow > 0) parts.push(`${c.yellow}🟨`);
+  if (c.red > 0) parts.push(`${c.red}🟥`);
+  return parts.length ? parts.join(" ") : null;
+}
+
+function numExtra(n: number | undefined): string | null {
+  return n && n > 0 ? String(n) : null;
+}
+
 export default function FutbolcuPuanlariPage() {
   const [rows, setRows] = useState<PlayerPointsBreakdown[]>([]);
+  const [counts, setCounts] = useState<Map<string, RawCounts>>(new Map());
   const [weeks, setWeeks] = useState<FinishedGameweek[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<"total" | number>("total");
   const [loading, setLoading] = useState(true);
@@ -74,12 +173,15 @@ export default function FutbolcuPuanlariPage() {
     let cancelled = false;
     async function load() {
       setLoading(true);
-      const r =
+      const [r, c] = await Promise.all([
         selectedFilter === "total"
-          ? await fetchPlayerPointsBreakdown()
-          : await fetchGameweekPlayersBreakdown(selectedFilter);
+          ? fetchPlayerPointsBreakdown()
+          : fetchGameweekPlayersBreakdown(selectedFilter),
+        fetchRawCounts(selectedFilter === "total" ? null : selectedFilter),
+      ]);
       if (cancelled) return;
       setRows(r);
+      setCounts(c);
       setLoading(false);
     }
     load();
@@ -161,6 +263,10 @@ export default function FutbolcuPuanlariPage() {
         </a>{" "}
         referans alınır.
       </p>
+      <p className="text-center text-[11px] text-foreground/40">
+        Parantez içindeki sayı, o puanın kaç gol / asist / temiz kale vb. ile
+        geldiğini gösterir.
+      </p>
 
       {loading ? (
         <div className="flex flex-col gap-1.5">
@@ -218,13 +324,36 @@ export default function FutbolcuPuanlariPage() {
                   </td>
                   <td className="p-1 px-1.5 text-right sm:p-2">{r.mac_sayisi}</td>
                   <td className="p-1 px-1.5 text-right sm:p-2">{r.oynama_puani}</td>
-                  <td className="p-1 px-1.5 text-right sm:p-2">{r.gol_puani}</td>
-                  <td className="p-1 px-1.5 text-right sm:p-2">{r.asist_puani}</td>
-                  <td className="p-1 px-1.5 text-right sm:p-2">{r.temiz_kale_puani}</td>
-                  <td className="p-1 px-1.5 text-right sm:p-2">{r.kart_puani}</td>
-                  <td className="p-1 px-1.5 text-right sm:p-2">{r.kk_gol_puani}</td>
-                  <td className="p-1 px-1.5 text-right sm:p-2">{r.pen_kacan_puani}</td>
-                  <td className="p-1 px-1.5 text-right sm:p-2">{r.mac_puani_bonusu}</td>
+                  <td className="whitespace-nowrap p-1 px-1.5 text-right sm:p-2">
+                    <PtCell pts={r.gol_puani} extra={numExtra(counts.get(r.player_id)?.goals)} />
+                  </td>
+                  <td className="whitespace-nowrap p-1 px-1.5 text-right sm:p-2">
+                    <PtCell pts={r.asist_puani} extra={numExtra(counts.get(r.player_id)?.assists)} />
+                  </td>
+                  <td className="whitespace-nowrap p-1 px-1.5 text-right sm:p-2">
+                    <PtCell
+                      pts={r.temiz_kale_puani}
+                      extra={numExtra(counts.get(r.player_id)?.cleanSheets)}
+                    />
+                  </td>
+                  <td className="whitespace-nowrap p-1 px-1.5 text-right sm:p-2">
+                    <PtCell pts={r.kart_puani} extra={cardExtra(counts.get(r.player_id))} />
+                  </td>
+                  <td className="whitespace-nowrap p-1 px-1.5 text-right sm:p-2">
+                    <PtCell pts={r.kk_gol_puani} extra={numExtra(counts.get(r.player_id)?.ownGoals)} />
+                  </td>
+                  <td className="whitespace-nowrap p-1 px-1.5 text-right sm:p-2">
+                    <PtCell
+                      pts={r.pen_kacan_puani}
+                      extra={numExtra(counts.get(r.player_id)?.penMissed)}
+                    />
+                  </td>
+                  <td className="whitespace-nowrap p-1 px-1.5 text-right sm:p-2">
+                    <PtCell
+                      pts={r.mac_puani_bonusu}
+                      extra={numExtra(counts.get(r.player_id)?.ratingBonusMatches)}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
