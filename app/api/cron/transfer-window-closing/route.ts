@@ -8,7 +8,7 @@ export async function GET(request: Request) {
 
   const result = await sendPushToAll({
     title: "Transfer penceresi bu gece kapanıyor ⏰",
-    body: "Bu gece 23.59'da transfer penceresi kapanacak, kadronu güncellemeyi unutma! Sınırsız transfer yapabilirsin.",
+    body: "Haftanın ilk maçından 3 saat öncesi transfer penceresi kapanacak, kadronu güncellemeyi unutma! Sınırsız transfer yapabilirsin.",
     url: "/kadro",
   });
 
