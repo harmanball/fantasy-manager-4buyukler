@@ -201,6 +201,9 @@ export interface Story {
   bigLabel?: string;
   after?: string;
   bars?: { label: string; pct: number }[];
+  rows?: { team: GazeteTeam; label: string; value: string }[];
+  race?: { team: GazeteTeam; points: number; pct: number }[];
+  quote?: Part[];
   full?: boolean;
 }
 
@@ -261,6 +264,16 @@ interface Facts {
   cards: (Entry & { yellow: number; red: number })[];
   clubFans: { userId: string; club: string; pct: number }[];
   weekWinner: { userId: string; points: number } | null; // son haftanın birincisi
+  closestWeek: { userId: string; secondId: string; diff: number; weekLabel: string; points: number; secondPoints: number } | null;
+  comeback: { userId: string; gain: number; from: number; to: number; weekLabel: string } | null;
+  comebackRunners: Entry[];
+  worstWeek: { userId: string; points: number; weekLabel: string; avg: number } | null;
+  race: { userId: string; total: number }[];
+  gapNow: number;
+  gapBefore: number | null;
+  captainChangers: Entry[];
+  weekAvg: number;
+  latestCaptainStar: { userId: string; player: string; points: number } | null;
 }
 
 function weekLabel(w: WeekInfo): string {
@@ -271,12 +284,12 @@ function computeFacts(data: GazeteData, W: WeekInfo[]): Facts {
   const weekIds = W.map((w) => w.id);
   const latest = W[W.length - 1];
 
-  // Kadro kaydı çok eksik olan takımlar sayılı kartlara girmez (haksız olmasın).
   const coverage = new Map<string, number>();
   for (const [u, byWeek] of data.picks) {
     coverage.set(u, weekIds.filter((id) => byWeek.has(id)).length);
   }
-  const minCoverage = Math.max(1, W.length - 1);
+  // Tüm haftalarda kadrosu kayıtlı olmayan takımlar sayı kartlarına girmez.
+  const minCoverage = W.length;
   const eligible = new Set(
     [...coverage.entries()].filter(([, c]) => c >= minCoverage).map(([u]) => u)
   );
@@ -491,6 +504,86 @@ function computeFacts(data: GazeteData, W: WeekInfo[]): Facts {
   }
   const clubFans = [...clubBest.values()].sort((a, b) => b.pct - a.pct);
 
+  // Son dakika golü / Pes etmeyen / Kötü hafta
+  let closestWeek: Facts["closestWeek"] = null;
+  let worstWeek: Facts["worstWeek"] = null;
+  const comebackAll: Entry[] = [];
+  let comeback: Facts["comeback"] = null;
+  const weekAvgOf = (id: number) => {
+    const v = [...data.scores.values()].map((m) => m.get(id)).filter((x): x is number => x !== undefined && x > 0);
+    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0;
+  };
+  for (const w of W) {
+    const list = [...data.scores.entries()]
+      .map(([u, m]) => ({ u, p: m.get(w.id) }))
+      .filter((x): x is { u: string; p: number } => x.p !== undefined && x.p > 0)
+      .sort((a, b) => b.p - a.p);
+    if (list.length >= 2 && list[0].p > list[1].p) {
+      const diff = list[0].p - list[1].p;
+      if (!closestWeek || diff < closestWeek.diff)
+        closestWeek = { userId: list[0].u, secondId: list[1].u, diff, weekLabel: weekLabel(w), points: list[0].p, secondPoints: list[1].p };
+    }
+    const low = list[list.length - 1];
+    if (low && list.length >= 3 && (!worstWeek || low.p < worstWeek.points))
+      worstWeek = { userId: low.u, points: low.p, weekLabel: weekLabel(w), avg: Math.round(weekAvgOf(w.id)) };
+  }
+  for (const [u, byWeek] of data.scores) {
+    let best: { gain: number; from: number; to: number; w: WeekInfo } | null = null;
+    for (let i = 1; i < W.length; i++) {
+      const a = byWeek.get(W[i - 1].id);
+      const b = byWeek.get(W[i].id);
+      if (a === undefined || b === undefined || a <= 0) continue;
+      if (b - a > 0 && (!best || b - a > best.gain)) best = { gain: b - a, from: a, to: b, w: W[i] };
+    }
+    if (best) {
+      comebackAll.push({ userId: u, value: best.gain });
+      if (!comeback || best.gain > comeback.gain)
+        comeback = { userId: u, gain: best.gain, from: best.from, to: best.to, weekLabel: weekLabel(best.w) };
+    }
+  }
+  const comebackRunners = sortDesc(comebackAll).filter((e) => e.userId !== comeback?.userId);
+
+  // Zirve yarışı
+  const totalsAt = (k: number) =>
+    [...data.scores.entries()]
+      .map(([u, m]) => {
+        let t = 0;
+        for (let i = 0; i <= k; i++) t += m.get(weekIds[i]) ?? 0;
+        return { userId: u, total: t };
+      })
+      .filter((x) => x.total > 0)
+      .sort((a, b) => b.total - a.total);
+  const race = totalsAt(weekIds.length - 1).slice(0, 3);
+  const gapNow = race.length >= 2 ? race[0].total - race[1].total : 0;
+  let gapBefore: number | null = null;
+  if (weekIds.length >= 4) {
+    const t = totalsAt(weekIds.length - 4);
+    if (t.length >= 2) gapBefore = t[0].total - t[1].total;
+  }
+
+  // Kaptan değiştiren
+  const captainChangers: Entry[] = [];
+  for (const u of eligible) {
+    const set = new Set<string>();
+    for (const id of weekIds) {
+      const c = data.picks.get(u)?.get(id)?.captainId;
+      if (c) set.add(c);
+    }
+    captainChangers.push({ userId: u, value: set.size });
+  }
+
+  // Son haftanın kaptan yıldızı (Haftanın sözü için)
+  let latestCaptainStar: Facts["latestCaptainStar"] = null;
+  for (const [u, byWeek] of data.picks) {
+    const cap = byWeek.get(latest.id)?.captainId;
+    const st = cap ? data.stats.get(latest.id)?.get(cap) : undefined;
+    if (cap && st && st.minutes > 0) {
+      const pts = Math.round(st.points * data.captainMult);
+      if (!latestCaptainStar || pts > latestCaptainStar.points)
+        latestCaptainStar = { userId: u, player: data.players.get(cap)?.name ?? "?", points: pts };
+    }
+  }
+
   return {
     collector,
     loyal: sortAsc(collector),
@@ -510,6 +603,16 @@ function computeFacts(data: GazeteData, W: WeekInfo[]): Facts {
     cards,
     clubFans,
     weekWinner,
+    closestWeek,
+    comeback,
+    comebackRunners,
+    worstWeek,
+    race,
+    gapNow,
+    gapBefore,
+    captainChangers,
+    weekAvg: Math.round(weekAvgOf(latest.id)),
+    latestCaptainStar,
   };
 }
 
@@ -550,14 +653,14 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
         [
           [{ text: `${c1.value} farklı futbolcuyla ` }, { text: t.name, hot: true }, { text: " rekor kırdı!" }],
           [{ text: t.name, hot: true }, { text: ` sezonda tam ` }, { text: `${c1.value} oyuncu`, hot: true }, { text: " kullandı" }],
-          [{ text: "Kadro kapısı hiç kapanmadı: " }, { text: t.name, hot: true }, { text: ` ${c1.value} farklı isim denedi` }],
+          [{ text: "Kadro kapısı hiç kapanmadı: " }, { text: t.name, hot: true }, { text: ` ${c1.value} farklı oyuncu denedi` }],
         ],
         seed
       ),
       deck: "Sezon boyunca kadrosuna en çok farklı oyuncuyu katan takım.",
       bigNumber: String(c1.value),
       bigLabel: "farklı futbolcu kullandı",
-      after: after(facts.collector, data, (e) => String(e.value)),
+      after: after(facts.collector, data, (e) => `${e.value} oyuncu`),
     });
   }
 
@@ -577,7 +680,7 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
         seed + 1
       ),
       deck: "Kadrosunu en az değiştiren, aynı oyunculara güvenen takım.",
-      after: after(facts.loyal, data, (e) => String(e.value)),
+      after: after(facts.loyal, data, (e) => `${e.value} oyuncu`),
     });
   }
 
@@ -592,12 +695,12 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
       headline: pick<Part[]>(
         [
           [{ text: t.name, hot: true }, { text: " durmadı: " }, { text: `${t1.value} transfer!`, hot: true }],
-          [{ text: t.name, hot: true }, { text: " transfer piyasasını salladı: " }, { text: `${t1.value} değişiklik`, hot: true }],
+          [{ text: t.name, hot: true }, { text: " transfer piyasasını salladı: " }, { text: `${t1.value} transfer`, hot: true }],
         ],
         seed + 2
       ),
       deck: "Haftalar arasında kadrosuna en çok yeni oyuncu alan takım.",
-      after: after(sortDesc(facts.transfers), data, (e) => String(e.value)),
+      after: after(sortDesc(facts.transfers), data, (e) => `${e.value} transfer`),
     });
   }
 
@@ -816,7 +919,178 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
     });
   }
 
+  // Son dakika golü
+  if (facts.closestWeek && T(facts.closestWeek.userId)) {
+    const c = facts.closestWeek;
+    const t = T(c.userId)!;
+    add({
+      id: "closest",
+      kicker: "Son dakika golü",
+      team: t,
+      headline: pick<Part[]>(
+        [
+          [{ text: t.name, hot: true }, { text: ", haftayı sadece " }, { text: `${c.diff} puan`, hot: true }, { text: " farkla kazandı" }],
+          [{ text: "Nefes kesen hafta: " }, { text: t.name, hot: true }, { text: ` ${c.diff} puanla öne geçti` }],
+        ],
+        seed + 10
+      ),
+      deck: `Sezonun en yakın haftalık birincilik yarışı (${c.weekLabel}). İkinci: ${T(c.secondId)?.name ?? "?"} (${c.points} – ${c.secondPoints}).`,
+      bigNumber: String(c.diff),
+      bigLabel: "puan fark",
+    });
+  }
+
+  // Pes etmeyen
+  if (facts.comeback && T(facts.comeback.userId)) {
+    const c = facts.comeback;
+    const t = T(c.userId)!;
+    add({
+      id: "comeback",
+      kicker: "Pes etmeyen",
+      team: t,
+      headline: pick<Part[]>(
+        [
+          [{ text: t.name, hot: true }, { text: " bir haftada " }, { text: `+${c.gain} puan`, hot: true }, { text: " artırdı" }],
+          [{ text: "Küllerinden doğdu: " }, { text: t.name, hot: true }, { text: ` ${c.from}’den ${c.to}’e çıktı` }],
+        ],
+        seed + 11
+      ),
+      deck: `${c.weekLabel}da bir önceki haftaya göre en büyük puan yükselişi: ${c.from}’den ${c.to}’e.`,
+      bigNumber: `+${c.gain}`,
+      bigLabel: "puan",
+      after: after(facts.comebackRunners, data, (e) => `+${e.value}`, 0),
+    });
+  }
+
+  // Kötü hafta
+  if (facts.worstWeek && T(facts.worstWeek.userId)) {
+    const c = facts.worstWeek;
+    const t = T(c.userId)!;
+    add({
+      id: "worst",
+      kicker: "Kötü hafta",
+      team: t,
+      headline: pick<Part[]>(
+        [
+          [{ text: t.name, hot: true }, { text: "’in " }, { text: c.weekLabel, hot: true }, { text: ` bir türlü olmadı: ${c.points} puan` }],
+          [{ text: "Unutulması gereken hafta: " }, { text: t.name, hot: true }, { text: ` ${c.points} puanda kaldı` }],
+        ],
+        seed + 12
+      ),
+      deck: `Sezonun en düşük haftalık puanı. O haftanın ortalaması ${c.avg} idi.`,
+      bigNumber: String(c.points),
+      bigLabel: "puan · sezonun en düşüğü",
+    });
+  }
+
+  // Zirve yarışı
+  if (facts.race.length >= 2) {
+    const top = facts.race[0].total;
+    const trend =
+      facts.gapBefore === null
+        ? ""
+        : facts.gapNow < facts.gapBefore
+        ? ` Fark 3 hafta önce ${facts.gapBefore} puandı, kapanıyor.`
+        : facts.gapNow > facts.gapBefore
+        ? ` Fark 3 hafta önce ${facts.gapBefore} puandı, açılıyor.`
+        : ` Fark 3 haftadır aynı.`;
+    const leader = T(facts.race[0].userId);
+    if (leader) {
+      add({
+        id: "race",
+        kicker: "Zirve yarışı",
+        headline: [
+          { text: "Liderle ikinci arasında " },
+          { text: facts.gapNow === 0 ? "hiç fark" : `${facts.gapNow} puan`, hot: true },
+          { text: facts.gapNow === 0 ? " yok" : " var" },
+        ],
+        deck: trend.trim() || "Genel sıralamada ilk üç takım.",
+        race: facts.race
+          .map((r) => ({ team: T(r.userId)!, points: r.total, pct: Math.round((r.total / top) * 100) }))
+          .filter((r) => r.team),
+      });
+    }
+  }
+
+  // Kaptan değiştiren
+  const cc = sortDesc(facts.captainChangers);
+  if (cc[0] && T(cc[0].userId) && cc[0].value > 1) {
+    const t = T(cc[0].userId)!;
+    const least = sortAsc(facts.captainChangers)[0];
+    add({
+      id: "captainchanger",
+      kicker: "Kaptan değiştiren",
+      team: t,
+      headline: pick<Part[]>(
+        [
+          [{ text: t.name, hot: true }, { text: ` ${W.length} haftada ` }, { text: `${cc[0].value} farklı kaptan`, hot: true }, { text: " denedi" }],
+          [{ text: "Kaptan bandı el değiştirdi: " }, { text: t.name, hot: true }, { text: ` ${cc[0].value} farklı isim` }],
+        ],
+        seed + 13
+      ),
+      deck: "Kaptanlığı en çok farklı oyuncuya veren takım.",
+      bigNumber: String(cc[0].value),
+      bigLabel: "farklı kaptan",
+      after:
+        least && T(least.userId) && least.userId !== cc[0].userId
+          ? `En sadık: ${T(least.userId)!.name} (${least.value} kaptan)`
+          : undefined,
+    });
+  }
+
+  // Rekorlar tablosu
+  {
+    const rows: { team: GazeteTeam; label: string; value: string }[] = [];
+    const addRow = (uid: string | undefined, label: string, value: string) => {
+      const team = uid ? T(uid) : undefined;
+      if (team) rows.push({ team, label, value });
+    };
+    addRow(facts.bestWeek?.userId, "En yüksek hafta", facts.bestWeek ? `${facts.bestWeek.value} · ${facts.bestWeek.weekLabel}` : "");
+    addRow(facts.worstWeek?.userId, "En düşük hafta", facts.worstWeek ? `${facts.worstWeek.points} · ${facts.worstWeek.weekLabel}` : "");
+    addRow(facts.collector[0]?.userId, "En çok farklı oyuncu", String(facts.collector[0]?.value ?? ""));
+    addRow(sortDesc(facts.transfers)[0]?.userId, "En çok transfer", String(sortDesc(facts.transfers)[0]?.value ?? ""));
+    addRow(facts.champions[0]?.userId, "En çok hafta birinciliği", `${facts.champions[0]?.value ?? ""} hafta`);
+    addRow(facts.comeback?.userId, "En büyük yükseliş", facts.comeback ? `+${facts.comeback.gain} puan` : "");
+    addRow(facts.closestWeek?.userId, "En yakın hafta", facts.closestWeek ? `${facts.closestWeek.diff} puan · ${facts.closestWeek.weekLabel}` : "");
+    if (rows.length > 0)
+      add({ id: "records", kicker: "Rekorlar tablosu", headline: [{ text: "Sezonun rekorları bir arada" }], rows, full: true });
+  }
+
   return out;
+}
+
+// Haftanın sözü: son haftanın verisinden seçilen tek satırlık not.
+function buildQuote(data: GazeteData, W: WeekInfo[], facts: Facts, seed: number): Story | null {
+  const T = (id: string) => data.teams.get(id);
+  const options: Part[][] = [];
+  const ww = facts.weekWinner;
+  if (ww && T(ww.userId) && facts.weekAvg > 0 && ww.points > facts.weekAvg) {
+    options.push([
+      { text: "Bu hafta " }, { text: T(ww.userId)!.name, hot: true },
+      { text: ` ${ww.points} puanla lig ortalamasının ` }, { text: `${ww.points - facts.weekAvg} puan`, hot: true }, { text: " üstüne çıktı." },
+    ]);
+  }
+  const cs = facts.latestCaptainStar;
+  if (cs && T(cs.userId) && cs.points > 0) {
+    options.push([
+      { text: T(cs.userId)!.name, hot: true }, { text: "’in kaptanı " }, { text: cs.player, hot: true },
+      { text: ` bu hafta tek başına ${cs.points} puan getirdi.` },
+    ]);
+  }
+  if (facts.race.length >= 2 && T(facts.race[0].userId) && T(facts.race[1].userId)) {
+    options.push([
+      { text: T(facts.race[0].userId)!.name, hot: true }, { text: " zirvede; kovalayan " },
+      { text: T(facts.race[1].userId)!.name, hot: true }, { text: ` sadece ${facts.gapNow} puan geride.` },
+    ]);
+  }
+  if (options.length === 0) return null;
+  return {
+    id: "quote",
+    kicker: "Haftanın sözü",
+    headline: [],
+    quote: pick(options, seed),
+    full: true,
+  };
 }
 
 // weekNumber'a kadar olan tüm veriyle "o günkü" gazeteyi üretir — eski sayılar
@@ -828,6 +1102,8 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
 
   const facts = computeFacts(data, W);
   const stories = buildStories(data, W, facts, latest.weekNumber);
+  const quote = buildQuote(data, W, facts, latest.weekNumber);
+  if (quote) stories.quote = quote;
 
   // Manşet: o haftanın en büyük olayı.
   let hero: Story | null = null;
@@ -874,10 +1150,12 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
   }
 
   const layout: [string, string[]][] = [
+    ["Haftanın Sözü", ["quote"]],
     ["Kadro Servisi", ["collector", "loyal", "transfers"]],
-    ["Puan Durumu", ["bestweek", "stable", "champion", "riser"]],
-    ["Kaptan Köşesi", ["captainhit", "captaingain", "crowd", "differential"]],
+    ["Puan Durumu", ["bestweek", "closest", "comeback", "worst", "stable", "champion", "riser", "race"]],
+    ["Kaptan Köşesi", ["captainhit", "captaingain", "captainchanger", "crowd", "differential"]],
     ["Tribün Magazin", ["motm", "gentle", "fan"]],
+    ["Sezon Rekorları", ["records"]],
   ];
 
   const sections: Section[] = [];
