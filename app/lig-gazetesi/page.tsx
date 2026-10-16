@@ -7,6 +7,7 @@ import { TeamEmblem } from "@/components/TeamEmblem";
 import { PressConference } from "@/components/PressConference";
 import { useSession } from "@/lib/useSession";
 import { loadGazeteData, buildIssue, GazeteData, Part, Story } from "@/lib/gazete";
+import { REACTIONS, ReactionId, ReactionState, fetchReactions, setReaction } from "@/lib/gazeteReactions";
 
 function Headline({ parts }: { parts: Part[] }) {
   return (
@@ -24,7 +25,58 @@ function Headline({ parts }: { parts: Part[] }) {
   );
 }
 
-function StoryCard({ story, meId }: { story: Story; meId?: string }) {
+function ReactionBar({
+  storyId,
+  state,
+  canReact,
+  onReact,
+}: {
+  storyId: string;
+  state: ReactionState;
+  canReact: boolean;
+  onReact: (storyId: string, r: ReactionId) => void;
+}) {
+  const counts = state.counts[storyId] ?? {};
+  const mine = state.mine[storyId];
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-charcoal/10 pt-2">
+      {REACTIONS.map((r) => {
+        const n = counts[r.id] ?? 0;
+        const active = mine === r.id;
+        return (
+          <button
+            key={r.id}
+            type="button"
+            disabled={!canReact}
+            onClick={() => onReact(storyId, r.id)}
+            aria-label={r.label}
+            aria-pressed={active}
+            className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
+              active
+                ? "border-red-700 bg-red-700/10 text-red-700"
+                : "border-charcoal/20 bg-white/50 text-charcoal/70"
+            } ${canReact ? "hover:border-charcoal/50" : "cursor-default opacity-80"}`}
+          >
+            <span>{r.emoji}</span>
+            {n > 0 && <span className="font-semibold">{n}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function StoryCard({
+  story,
+  meId,
+  reactions,
+  onReact,
+}: {
+  story: Story;
+  meId?: string;
+  reactions: ReactionState;
+  onReact: (storyId: string, r: ReactionId) => void;
+}) {
   const t = story.team;
   const body = (
     <div className="flex h-full flex-col gap-2">
@@ -90,6 +142,33 @@ function StoryCard({ story, meId }: { story: Story; meId?: string }) {
                   </Link>
                 </td>
                 <td className="whitespace-nowrap py-1.5 text-right font-serif font-bold">{r.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {story.table && (
+        <table className="w-full text-[12px]">
+          <thead>
+            <tr className="text-[10.5px] font-semibold text-charcoal/60">
+              {story.table.head.map((h, i) => (
+                <th key={h} className={`py-1 ${i === 0 ? "text-left" : "text-center"}`}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {story.table.rows.map((row, ri) => (
+              <tr key={ri} className="border-b border-charcoal/10 last:border-0">
+                {row.map((c, i) => (
+                  <td
+                    key={i}
+                    className={`py-1.5 ${i === 0 ? "pr-2" : "text-center font-serif font-bold"} ${
+                      i === row.length - 1 && c === "3" ? "text-red-700" : ""
+                    }`}
+                  >
+                    {c}
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
@@ -167,21 +246,29 @@ function StoryCard({ story, meId }: { story: Story; meId?: string }) {
       )}
     </div>
   );
-  const cls = `rounded-sm border border-charcoal/20 bg-white/60 p-3 ${story.full ? "sm:col-span-2" : ""}`;
-  if (t) {
-    return (
-      <Link href={t.userId === meId ? "/kadro" : `/takim/${t.userId}`} className={`${cls} block`}>
-        {body}
-      </Link>
-    );
-  }
-  return <div className={cls}>{body}</div>;
+  const cls = `flex flex-col rounded-sm border border-charcoal/20 bg-white/60 p-3 ${story.full ? "sm:col-span-2" : ""}`;
+  return (
+    <div className={cls}>
+      <div className="flex-1">
+        {t ? (
+          <Link href={t.userId === meId ? "/kadro" : `/takim/${t.userId}`} className="block h-full">
+            {body}
+          </Link>
+        ) : (
+          body
+        )}
+      </div>
+      <ReactionBar storyId={story.id} state={reactions} canReact={!!meId} onReact={onReact} />
+    </div>
+  );
 }
 
 export default function LigGazetesiPage() {
   const { session } = useSession();
   const [data, setData] = useState<GazeteData | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
+  const [reactions, setReactions] = useState<ReactionState>({ counts: {}, mine: {} });
+  const [reactionError, setReactionError] = useState<string | null>(null);
 
   useEffect(() => {
     loadGazeteData().then((d) => {
@@ -194,6 +281,43 @@ export default function LigGazetesiPage() {
     () => (data && selected !== null ? buildIssue(data, selected) : null),
     [data, selected]
   );
+
+  const meId = session?.user.id;
+
+  // Seçili sayının tepkilerini yükle.
+  useEffect(() => {
+    if (selected === null) return;
+    let cancelled = false;
+    fetchReactions(selected, meId).then((r) => {
+      if (!cancelled) setReactions(r);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selected, meId]);
+
+  async function handleReact(storyId: string, r: ReactionId) {
+    if (!meId || selected === null) return;
+    const prev = reactions;
+    const current = prev.mine[storyId];
+    const next: ReactionState = { counts: { ...prev.counts }, mine: { ...prev.mine } };
+    const c = { ...(next.counts[storyId] ?? {}) };
+    if (current) c[current] = Math.max(0, (c[current] ?? 1) - 1);
+    if (current === r) {
+      delete next.mine[storyId];
+    } else {
+      c[r] = (c[r] ?? 0) + 1;
+      next.mine[storyId] = r;
+    }
+    next.counts[storyId] = c;
+    setReactions(next); // anında göster, hata olursa geri al
+    setReactionError(null);
+    const err = await setReaction(meId, selected, storyId, current === r ? null : r);
+    if (err) {
+      setReactions(prev);
+      setReactionError("Tepki kaydedilemedi, tekrar dene.");
+    }
+  }
 
   return (
     <>
@@ -265,7 +389,13 @@ export default function LigGazetesiPage() {
                   </div>
                 )}
               </div>
+              <ReactionBar storyId={issue.hero.id} state={reactions} canReact={!!meId} onReact={handleReact} />
             </div>
+          )}
+
+          {reactionError && <p className="mt-2 text-center text-xs text-red-700">{reactionError}</p>}
+          {data && !meId && data.weeks.length > 0 && (
+            <p className="mt-2 text-center text-[11px] text-charcoal/60">Habere tepki vermek için giriş yap.</p>
           )}
 
           {issue?.sections.map((sec) => (
@@ -276,7 +406,7 @@ export default function LigGazetesiPage() {
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {sec.stories.map((s) => (
-                  <StoryCard key={s.id} story={s} meId={session?.user.id} />
+                  <StoryCard key={s.id} story={s} meId={meId} reactions={reactions} onReact={handleReact} />
                 ))}
               </div>
             </section>
