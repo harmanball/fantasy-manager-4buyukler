@@ -1,12 +1,13 @@
 import { supabase } from "./supabase";
 
-export type ReactionId = "alkis" | "ates" | "gulen" | "saskin";
+export type ReactionId = "alkis" | "ates" | "gulen" | "saskin" | "begenmedi";
 
 export const REACTIONS: { id: ReactionId; emoji: string; label: string }[] = [
   { id: "alkis", emoji: "👏", label: "Alkış" },
   { id: "ates", emoji: "🔥", label: "Ateş" },
   { id: "gulen", emoji: "😂", label: "Güldü" },
   { id: "saskin", emoji: "😮", label: "Şaşırdı" },
+  { id: "begenmedi", emoji: "👎", label: "Beğenmedi" },
 ];
 
 export interface ReactionState {
