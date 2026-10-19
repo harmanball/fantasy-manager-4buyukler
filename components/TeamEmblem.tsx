@@ -1,4 +1,6 @@
 import { EmblemId } from "@/lib/emblems";
+import { parseLetterEmblem } from "@/lib/letterEmblem";
+import { LetterEmblem } from "@/components/LetterEmblem";
 
 function renderShape(emblem: EmblemId, a: string, b: string) {
   switch (emblem) {
@@ -206,6 +208,11 @@ export function TeamEmblem({
   color2: string;
   size?: number;
 }) {
+  // Harfli amblem ("harf:altigen:SB") — mevcut amblemlerden bağımsız, isteğe bağlı seçenek.
+  const letter = parseLetterEmblem(emblem);
+  if (letter) {
+    return <LetterEmblem shape={letter.shape} text={letter.text} color1={color1} color2={color2} size={size} />;
+  }
   return (
     <svg
       width={size}
