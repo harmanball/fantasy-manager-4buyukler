@@ -27,8 +27,10 @@ export function isLetterEmblem(id: string | null | undefined): boolean {
   return !!id && id.startsWith(PREFIX);
 }
 
-export function buildLetterEmblem(shape: LetterShape, text: string): string {
-  return `${PREFIX}${shape}:${cleanLetterText(text) || "?"}`;
+export type LetterEmblemId = `harf:${LetterShape}:${string}`;
+
+export function buildLetterEmblem(shape: LetterShape, text: string): LetterEmblemId {
+  return `${PREFIX}${shape}:${cleanLetterText(text) || "?"}` as LetterEmblemId;
 }
 
 export function parseLetterEmblem(id: string | null | undefined): { shape: LetterShape; text: string } | null {
