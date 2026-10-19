@@ -30,16 +30,20 @@ function ReactionBar({
   state,
   canReact,
   onReact,
+  nameOf,
 }: {
   storyId: string;
   state: ReactionState;
   canReact: boolean;
   onReact: (storyId: string, r: ReactionId) => void;
+  nameOf: (userId: string) => string;
 }) {
   const counts = state.counts[storyId] ?? {};
   const mine = state.mine[storyId];
+  const who = state.who[storyId] ?? [];
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-charcoal/10 pt-2">
+    <div className="mt-2 border-t border-charcoal/10 pt-2">
+    <div className="flex flex-wrap items-center gap-1.5">
       {REACTIONS.map((r) => {
         const n = counts[r.id] ?? 0;
         const active = mine === r.id;
@@ -63,6 +67,21 @@ function ReactionBar({
         );
       })}
     </div>
+    {who.length > 0 && (
+      <ul className="mt-1.5 space-y-0.5 text-[10px] leading-snug text-charcoal/70">
+        {REACTIONS.map((r) => {
+          const names = who.filter((x) => x.reaction === r.id).map((x) => nameOf(x.userId).toLocaleUpperCase("tr"));
+          if (names.length === 0) return null;
+          const shown = names.slice(0, 3).join(", ") + (names.length > 3 ? ` +${names.length - 3} KİŞİ` : "");
+          return (
+            <li key={r.id}>
+              <span>{r.emoji}</span> <span className="font-bold">{shown}</span> {r.verb.toLocaleUpperCase("tr")}
+            </li>
+          );
+        })}
+      </ul>
+    )}
+    </div>
   );
 }
 
@@ -71,11 +90,13 @@ function StoryCard({
   meId,
   reactions,
   onReact,
+  nameOf,
 }: {
   story: Story;
   meId?: string;
   reactions: ReactionState;
   onReact: (storyId: string, r: ReactionId) => void;
+  nameOf: (userId: string) => string;
 }) {
   const t = story.team;
   const body = (
@@ -258,7 +279,7 @@ function StoryCard({
           body
         )}
       </div>
-      <ReactionBar storyId={story.id} state={reactions} canReact={!!meId} onReact={onReact} />
+      <ReactionBar storyId={story.id} state={reactions} canReact={!!meId} onReact={onReact} nameOf={nameOf} />
     </div>
   );
 }
@@ -267,7 +288,7 @@ export default function LigGazetesiPage() {
   const { session } = useSession();
   const [data, setData] = useState<GazeteData | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
-  const [reactions, setReactions] = useState<ReactionState>({ counts: {}, mine: {} });
+  const [reactions, setReactions] = useState<ReactionState>({ counts: {}, mine: {}, who: {} });
   const [reactionError, setReactionError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -283,6 +304,7 @@ export default function LigGazetesiPage() {
   );
 
   const meId = session?.user.id;
+  const nameOf = (userId: string) => data?.teams.get(userId)?.name ?? "Bir takım";
 
   // Seçili sayının tepkilerini yükle.
   useEffect(() => {
@@ -300,7 +322,7 @@ export default function LigGazetesiPage() {
     if (!meId || selected === null) return;
     const prev = reactions;
     const current = prev.mine[storyId];
-    const next: ReactionState = { counts: { ...prev.counts }, mine: { ...prev.mine } };
+    const next: ReactionState = { counts: { ...prev.counts }, mine: { ...prev.mine }, who: { ...prev.who } };
     const c = { ...(next.counts[storyId] ?? {}) };
     if (current) c[current] = Math.max(0, (c[current] ?? 1) - 1);
     if (current === r) {
@@ -310,6 +332,10 @@ export default function LigGazetesiPage() {
       next.mine[storyId] = r;
     }
     next.counts[storyId] = c;
+    next.who[storyId] = [
+      ...(prev.who[storyId] ?? []).filter((x) => x.userId !== meId),
+      ...(current === r ? [] : [{ userId: meId, reaction: r }]),
+    ];
     setReactions(next); // anında göster, hata olursa geri al
     setReactionError(null);
     const err = await setReaction(meId, selected, storyId, current === r ? null : r);
@@ -389,7 +415,7 @@ export default function LigGazetesiPage() {
                   </div>
                 )}
               </div>
-              <ReactionBar storyId={issue.hero.id} state={reactions} canReact={!!meId} onReact={handleReact} />
+              <ReactionBar storyId={issue.hero.id} state={reactions} canReact={!!meId} onReact={handleReact} nameOf={nameOf} />
             </div>
           )}
 
@@ -406,7 +432,7 @@ export default function LigGazetesiPage() {
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {sec.stories.map((s) => (
-                  <StoryCard key={s.id} story={s} meId={meId} reactions={reactions} onReact={handleReact} />
+                  <StoryCard key={s.id} story={s} meId={meId} reactions={reactions} onReact={handleReact} nameOf={nameOf} />
                 ))}
               </div>
             </section>
