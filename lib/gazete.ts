@@ -1637,7 +1637,7 @@ function buildHalfHitStory(data: GazeteData, weekId: number): Story | null {
   if (rows.length === 0) return null;
   return {
     id: "halfhit",
-    kicker: "Yarım isabet",
+    kicker: "Kahin",
     headline: [{ text: `${people.size} kişi `, hot: true }, { text: "skoru tutturamadı ama golü bildi" }],
     deck: "Skoru birebir bilemeyip bir takımın attığı gol sayısını doğru tahmin edenler.",
     rows: rows.slice(0, 8),
@@ -1862,7 +1862,7 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
     ["Kaptan Köşesi", ["captainhit", "captaingain", "captainchanger", "crowd", "differential"]],
     ["Diziliş Servisi", ["formchanger", "formloyal", "formattack", "formdefence", "formdist", "formpoints", "formmatrix"]],
     ["Tribün Magazin", ["motm", "gentle"]],
-    ["Tahmin Köşesi", ["predreport", "kahin", "exact", "halfhit", "kahinseason"]],
+    ["Tahmin Köşesi", ["exact", "halfhit"]],
     [`Kadrolar Açıldı · ${pickLabel}`, ["pickcaptain", "picksolo", "picktwins"]],
     ["Sezon Rekorları", ["records"]],
   ];
