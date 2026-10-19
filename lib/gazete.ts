@@ -1603,9 +1603,9 @@ function buildPredictionReport(data: GazeteData): Story | null {
   if (rows.length === 0) return null;
   return {
     id: "predreport",
-    kicker: "Tahmin raporu",
-    headline: [{ text: `${participants.size} kişi `, hot: true }, { text: `${cw.weekNumber}. hafta maçlarını tahmin etti` }],
-    deck: "Lig ne düşünüyor? Her maçta en çok yazılan skor ve sonuç dağılımı (1: ev sahibi, 0: beraberlik, 2: deplasman).",
+    kicker: `Sıradaki hafta · ${cw.weekNumber}. hafta tahminleri`,
+    headline: [{ text: `${participants.size} kişi `, hot: true }, { text: `sıradaki ${cw.weekNumber}. hafta maçlarını şimdiden tahmin etti` }],
+    deck: `Bu sayı ${cw.weekNumber - 1}. haftayı anlatıyor; bu kutu ise henüz oynanmamış ${cw.weekNumber}. hafta için ligin ne düşündüğünü gösteriyor. Her maçta en çok yazılan skor ve sonuç dağılımı (1: ev sahibi, 0: beraberlik, 2: deplasman).`,
     table: { head: ["Maç", "En çok tahmin", "Dağılım"], rows },
     after: bold && T(bold.userId) ? `En iddialı tahmin: ${T(bold.userId)!.name} — ${bold.match}` : undefined,
     full: true,
