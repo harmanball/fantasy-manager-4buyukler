@@ -30,6 +30,7 @@ import { fetchIsTransferWindowOpen, fetchOpenGameweekDeadline } from "@/lib/tran
 import { WeeklyFixtures } from "@/components/WeeklyFixtures";
 import { UpdateNotesModal } from "@/components/UpdateNotesModal";
 import { TeamEmblem } from "@/components/TeamEmblem";
+import { GazeteBanner } from "@/components/GazeteBanner";
 import { EmblemId, DEFAULT_EMBLEM, DEFAULT_COLOR1, DEFAULT_COLOR2 } from "@/lib/emblems";
 
 // Gerçek deadline'ı ("4 Eylül Cuma 17:00" gibi) okunaklı Türkçe metne
@@ -397,18 +398,7 @@ export default function KadroPage() {
         </div>
       )}
 
-      {lastWeekTotal !== null && (
-        <button
-          onClick={() =>
-            shareText(
-              `Fantasy Manager: 4 Büyükler'de ${lastWeekName ?? "bu hafta"} ${lastWeekTotal} puan aldım! ${getSiteUrl()}`
-            )
-          }
-          className="rounded-lg border border-charcoal/15 py-2.5 text-sm font-medium text-foreground hover:bg-charcoal/5"
-        >
-          Sonucunu paylaş
-        </button>
-      )}
+      <GazeteBanner />
 
       {!gameweek && !playersLoading && (
         <p className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-charcoal">
@@ -574,6 +564,19 @@ export default function KadroPage() {
           className="rounded-lg border-2 border-red-600 py-3 text-sm font-medium text-red-600"
         >
           KADROYU SIFIRLA
+        </button>
+      )}
+
+      {lastWeekTotal !== null && (
+        <button
+          onClick={() =>
+            shareText(
+              `Fantasy Manager: 4 Büyükler'de ${lastWeekName ?? "bu hafta"} ${lastWeekTotal} puan aldım! ${getSiteUrl()}`
+            )
+          }
+          className="rounded-lg border border-charcoal/15 py-2.5 text-sm font-medium text-foreground hover:bg-charcoal/5"
+        >
+          Sonucunu paylaş
         </button>
       )}
 
