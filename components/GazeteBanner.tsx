@@ -39,16 +39,16 @@ export function GazeteBanner() {
     >
       <style>{`
         .gz-banner{height:116px;font-family:Georgia,serif}
-        .gz-bg{position:absolute;inset:0;background:linear-gradient(110deg,#b91c1c,#ea580c,#d97706,#be185d,#b91c1c);background-size:300% 100%;animation:gz-bg 9s linear infinite}
+        .gz-bg{position:absolute;inset:0;background:linear-gradient(110deg,#0b1f4d,#1d4ed8,#0e7490,#312e81,#0b1f4d);background-size:300% 100%;animation:gz-bg 9s linear infinite}
         .gz-paper{position:absolute;left:14px;top:14px;width:54px;height:68px;background:#f6efd8;border-radius:4px;box-shadow:0 5px 10px #0006;padding:6px;color:#222;transform-origin:50% 100%;animation:gz-sway 2.4s ease-in-out infinite}
         .gz-paper b{display:block;font:900 8px Georgia,serif;letter-spacing:.5px;border-bottom:2px solid #b91c1c;padding-bottom:1px}
         .gz-paper u{display:block;height:15px;background:#b91c1c;margin-top:3px;border-radius:2px}
         .gz-paper i{display:block;height:3px;background:#555;opacity:.7;margin:3px 0;border-radius:2px}
         .gz-txt{position:absolute;left:84px;right:84px;top:10px}
         .gz-sub{font:700 9px system-ui,sans-serif;letter-spacing:.18em;opacity:.9}
-        .gz-h{margin:1px 0 0;font:900 clamp(20px,6.4vw,30px)/1 Georgia,serif;text-shadow:0 2px 0 #7f1d1d;white-space:nowrap}
-        .gz-badge{display:inline-block;margin-top:7px;background:#facc15;color:#7f1d1d;font:800 11px system-ui,sans-serif;padding:3px 9px;border-radius:99px;letter-spacing:.03em;transform-origin:left center;animation:gz-pulse 1.4s ease-in-out infinite;white-space:nowrap}
-        .gz-cta{position:absolute;right:12px;top:34px;background:#fff;color:#b91c1c;font:800 12px system-ui,sans-serif;padding:8px 11px;border-radius:9px;box-shadow:0 3px 0 #7f1d1d;animation:gz-nudge 1.2s ease-in-out infinite}
+        .gz-h{margin:1px 0 0;font:900 clamp(20px,6.4vw,30px)/1 Georgia,serif;text-shadow:0 2px 0 #0b1f4d;white-space:nowrap}
+        .gz-badge{display:inline-block;margin-top:7px;background:#facc15;color:#1e3a8a;font:800 11px system-ui,sans-serif;padding:3px 9px;border-radius:99px;letter-spacing:.03em;transform-origin:left center;animation:gz-pulse 1.4s ease-in-out infinite;white-space:nowrap}
+        .gz-cta{position:absolute;right:12px;top:34px;background:#fff;color:#0b1f4d;font:800 12px system-ui,sans-serif;padding:8px 11px;border-radius:9px;box-shadow:0 3px 0 #0b1f4d;animation:gz-nudge 1.2s ease-in-out infinite}
         .gz-star{position:absolute;color:#fde68a;font-size:14px;animation:gz-twinkle 1.6s ease-in-out infinite}
         .gz-bar{position:absolute;left:0;right:0;bottom:0;height:24px;background:rgba(0,0,0,.6);overflow:hidden;font:600 11px system-ui,sans-serif;white-space:nowrap}
         .gz-tick{position:absolute;top:5px;left:0;display:flex;animation:gz-tick 8s linear infinite;will-change:transform}
