@@ -6,6 +6,8 @@ import { AppHeader } from "@/components/AppHeader";
 import { TeamEmblem } from "@/components/TeamEmblem";
 import { PressConference } from "@/components/PressConference";
 import { GazeteArena } from "@/components/GazeteArena";
+import { GazeteInbox } from "@/components/GazeteInbox";
+import { GAZETE_SCROLL } from "@/lib/gazeteBildirim";
 import { Pirata_One } from "next/font/google";
 import { useSession } from "@/lib/useSession";
 import { loadGazeteData, buildIssue, GazeteData, Part, Story } from "@/lib/gazete";
@@ -433,6 +435,30 @@ export default function LigGazetesiPage() {
     });
   }, []);
 
+  // Zil / "Sana özel" kutusundan gelen yönlendirme: ilgili alana kaydır (bölüm geç yüklenebilir, kısa süre dener).
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | undefined;
+    function scrollTo(id: string) {
+      if (timer) clearInterval(timer);
+      let tries = 0;
+      timer = setInterval(() => {
+        const el = document.getElementById(id);
+        tries += 1;
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+          clearInterval(timer);
+        } else if (tries > 25) clearInterval(timer);
+      }, 150);
+    }
+    const onEvent = (e: Event) => scrollTo((e as CustomEvent<string>).detail);
+    window.addEventListener(GAZETE_SCROLL, onEvent);
+    if (data && window.location.hash.startsWith("#arena-")) scrollTo(window.location.hash.slice(1));
+    return () => {
+      window.removeEventListener(GAZETE_SCROLL, onEvent);
+      if (timer) clearInterval(timer);
+    };
+  }, [data]);
+
   const issue = useMemo(
     () => (data && selected !== null ? buildIssue(data, selected) : null),
     [data, selected]
@@ -568,6 +594,8 @@ export default function LigGazetesiPage() {
           {data && !meId && data.weeks.length > 0 && (
             <p className="mt-2 text-center text-[11px] text-charcoal/60">Habere tepki vermek için giriş yap.</p>
           )}
+
+          {data && meId && <GazeteInbox meId={meId} />}
 
           {issue?.sections.map((sec) => (
             <section key={sec.title} className="mt-5">
