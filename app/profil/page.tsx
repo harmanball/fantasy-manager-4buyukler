@@ -124,7 +124,7 @@ export default function ProfilPage() {
   // Harfli amblem (isteğe bağlı): şekil seçilince amblem "harf:<şekil>:<yazı>" olur.
   const letter = parseLetterEmblem(emblem);
   function pickLetterShape(shape: LetterShape) {
-    const fallback = cleanLetterText(squadName).slice(0, 2) || "A";
+    const fallback = cleanLetterText(squadName).slice(0, 3) || "A";
     const text = letterText || fallback;
     setLetterText(text);
     setEmblem(buildLetterEmblem(shape, text));
@@ -271,7 +271,7 @@ export default function ProfilPage() {
           <div>
             <p className="mb-0.5 text-xs text-foreground/60">Harfli amblem (isteğe bağlı)</p>
             <p className="mb-1.5 text-[11px] text-foreground/45">
-              Bir şekil seç, en fazla 2 harf ya da rakam yaz. Zemin rengi “Ana”, yazı rengi “Vurgu” renginden gelir.
+              Bir şekil seç, en fazla 3 harf ya da rakam yaz. Zemin rengi “Ana”, yazı rengi “Vurgu” renginden gelir.
             </p>
             <div className="grid grid-cols-4 gap-2">
               {LETTER_SHAPES.map((shape) => (
@@ -298,7 +298,7 @@ export default function ProfilPage() {
               value={letterText}
               onChange={(e) => changeLetterText(e.target.value)}
               maxLength={4}
-              placeholder="Örn. SB veya S8"
+              placeholder="Örn. SB, S8 veya SNN"
               className="mt-2 h-10 w-full rounded-lg border border-charcoal/15 px-3 text-sm font-semibold uppercase tracking-widest outline-none focus:border-pitch"
             />
           </div>
