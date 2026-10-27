@@ -58,6 +58,9 @@ export interface GazeteData {
   teamsOfWeek: Map<number, TeamOfWeekResult>;
   // Slogan değişiklikleri (hafta id -> değişenler); profile_slogan_log tablosundan
   sloganChanges: Map<number, { userId: string; oldSlogan: string | null; newSlogan: string }[]>;
+  // Meydan okumalar (tüm haftalar) ve cevaplanan basın toplantısı soruları (hafta id -> sorular)
+  challenges: { challengerId: string; rivalId: string; weekId: number }[];
+  pressQA: Map<number, { askerId: string; targetId: string; question: string; answer: string }[]>;
 }
 
 interface FixtureResult {
@@ -117,6 +120,8 @@ export async function loadGazeteData(): Promise<GazeteData> {
     currentWeek: null,
     teamsOfWeek: new Map(),
     sloganChanges: new Map(),
+    challenges: [],
+    pressQA: new Map(),
   };
   if (weeks.length === 0) return empty;
 
@@ -337,7 +342,24 @@ export async function loadGazeteData(): Promise<GazeteData> {
     /* tablo yok */
   }
 
-  return { weeks, teams, scores, picks, stats, players, captainMult, fixtures, predictions, lockedWeek, currentWeek, teamsOfWeek, sloganChanges };
+  // Meydan okumalar ve basın toplantısı (tablolar yoksa kartlar çıkmaz)
+  const challenges: GazeteData["challenges"] = (
+    await fetchAll("gazete_challenges", "challenger_id, rival_id, gameweek_id", ["gameweek_id", "challenger_id"])
+  ).map((r) => ({
+    challengerId: r.challenger_id as string,
+    rivalId: r.rival_id as string,
+    weekId: r.gameweek_id as number,
+  }));
+  const pressQA: GazeteData["pressQA"] = new Map();
+  for (const r of await fetchAll("gazete_press_questions", "id, asker_id, target_id, gameweek_id, question, answer", ["id"])) {
+    const gw = r.gameweek_id as number | null;
+    const ans = ((r.answer as string | null) ?? "").trim();
+    if (gw === null || gw === undefined || !ans) continue;
+    if (!pressQA.has(gw)) pressQA.set(gw, []);
+    pressQA.get(gw)!.push({ askerId: r.asker_id as string, targetId: r.target_id as string, question: r.question as string, answer: ans });
+  }
+
+  return { weeks, teams, scores, picks, stats, players, captainMult, fixtures, predictions, lockedWeek, currentWeek, teamsOfWeek, sloganChanges, challenges, pressQA };
 }
 
 // ───────────────────────── Gazete içeriği ─────────────────────────
@@ -369,6 +391,7 @@ export interface Story {
   twoCol?: { title: string; tone: "up" | "down"; rows: { team: GazeteTeam; value: string }[] }[];
   ptable?: { head: string[]; rows: { cells: { text: string; pts?: number }[]; total?: boolean }[] };
   slogans?: { team: GazeteTeam; old: string | null; now: string }[];
+  qa?: { asker: GazeteTeam; target: GazeteTeam; question: string; answer: string }[];
   pitch?: { tag: string; name: string; value: string; cap?: boolean }[][];
   full?: boolean;
 }
@@ -2190,6 +2213,90 @@ function buildTeamOfWeekStory(data: GazeteData, W: WeekInfo[]): Story | null {
   };
 }
 
+
+// Meydan okuma sonuçları: bu haftanın meydan okumaları, kim kimi yendi.
+function buildChallengeResults(data: GazeteData, W: WeekInfo[]): Story | null {
+  const T = (id: string) => data.teams.get(id);
+  const latest = W[W.length - 1];
+  const scoreOf = (u: string, weekId: number) => data.scores.get(u)?.get(weekId);
+  type Duel = { c: string; r: string; cs: number; rs: number };
+  const duelsOf = (weekId: number): Duel[] => {
+    const out: Duel[] = [];
+    for (const ch of data.challenges) {
+      if (ch.weekId !== weekId || !T(ch.challengerId) || !T(ch.rivalId)) continue;
+      const cs = scoreOf(ch.challengerId, weekId);
+      const rs = scoreOf(ch.rivalId, weekId);
+      if (cs === undefined || rs === undefined) continue;
+      out.push({ c: ch.challengerId, r: ch.rivalId, cs, rs });
+    }
+    return out;
+  };
+  const duels = duelsOf(latest.id);
+  if (duels.length === 0) return null;
+
+  const rows = duels.map((d) => [
+    T(d.c)!.name,
+    T(d.r)!.name,
+    `${d.cs} – ${d.rs}`,
+    d.cs === d.rs ? "Berabere" : T(d.cs > d.rs ? d.c : d.r)!.name,
+  ]);
+  const big = [...duels].sort((a, b) => Math.abs(b.cs - b.rs) - Math.abs(a.cs - a.rs))[0];
+  const margin = Math.abs(big.cs - big.rs);
+  const cn = T(big.c)!.name;
+  const rn = T(big.r)!.name;
+  let headline: Part[];
+  if (big.cs === big.rs) {
+    headline = [{ text: cn, hot: true }, { text: " – " }, { text: rn, hot: true }, { text: " meydan okumasında puanlar eşit!" }];
+  } else if (big.cs > big.rs) {
+    headline = [{ text: cn, hot: true }, { text: " meydan okudu, " }, { text: `${margin} puan farkla`, hot: true }, { text: " kazandı!" }];
+  } else {
+    headline = [{ text: cn, hot: true }, { text: " meydan okudu, " }, { text: rn, hot: true }, { text: ` ${margin} puan farkla cevabı verdi!` }];
+  }
+
+  // Sezon boyunca meydan okuma galibiyetleri (meydan okuyan ya da rakip olarak)
+  const wins = new Map<string, number>();
+  for (const w of W)
+    for (const d of duelsOf(w.id)) {
+      if (d.cs === d.rs) continue;
+      const winner = d.cs > d.rs ? d.c : d.r;
+      wins.set(winner, (wins.get(winner) ?? 0) + 1);
+    }
+  const leader = [...wins.entries()].sort((a, b) => b[1] - a[1])[0];
+  const challengerWon = duels.filter((d) => d.cs > d.rs).length;
+  const deck =
+    `${duels.length} meydan okumadan ${challengerWon} tanesini meydan okuyan taraf kazandı.` +
+    (leader ? ` Sezon boyu meydan okuma lideri: ${T(leader[0])!.name} (${leader[1]} galibiyet).` : "");
+  return {
+    id: "challengeresults",
+    kicker: "Meydan okuma sonuçları",
+    headline,
+    deck,
+    table: { head: ["Meydan okuyan", "Rakip", "Puanlar", "Kazanan"], rows },
+    full: true,
+  };
+}
+
+// Basın toplantısı: o haftanın cevaplanan soruları.
+function buildPressStory(data: GazeteData, W: WeekInfo[]): Story | null {
+  const latest = W[W.length - 1];
+  const qa = (data.pressQA.get(latest.id) ?? [])
+    .filter((x) => data.teams.has(x.askerId) && data.teams.has(x.targetId))
+    .map((x) => ({ asker: data.teams.get(x.askerId)!, target: data.teams.get(x.targetId)!, question: x.question, answer: x.answer }));
+  if (qa.length === 0) return null;
+  const n = qa.length;
+  return {
+    id: "press",
+    kicker: "Basın toplantısı",
+    headline:
+      n === 1
+        ? [{ text: "Basın toplantısında " }, { text: "1 soru, 1 cevap", hot: true }]
+        : [{ text: "Basın toplantısı kızıştı: " }, { text: `${n} soru, ${n} cevap`, hot: true }],
+    qa,
+    after: "Sorular takımlardan, cevaplar takım sahiplerinden.",
+    full: true,
+  };
+}
+
 // weekNumber'a kadar olan tüm veriyle "o günkü" gazeteyi üretir — eski sayılar
 // arşivde ayrıca saklanmaz, her seferinde o haftaya kadarki veriden yeniden çıkarılır.
 export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
@@ -2218,6 +2325,10 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
   if (slg) stories.slogans = slg;
   const tow = buildTeamOfWeekStory(data, W);
   if (tow) stories.teamofweek = tow;
+  const cres = buildChallengeResults(data, W);
+  if (cres) stories.challengeresults = cres;
+  const press = buildPressStory(data, W);
+  if (press) stories.press = press;
 
   // Kadrolar açıldı: en yeni sayıda, pencere kapandıysa şu an oynanan haftanın kadroları;
   // aksi halde (ve eski sayılarda) o sayının kendi haftasının kadroları.
@@ -2253,6 +2364,8 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
     ["Diziliş Servisi", ["formloyal", "formattack", "formdefence", "formdist", "formpoints", "formmatrix"]],
     ["Tribün Magazin", ["motm", "gentle"]],
     ["Tahmin Köşesi", ["predresults", "exact", "halfhit"]],
+    ["Meydan Okuma", ["challengeresults"]],
+    ["Basın Toplantısı", ["press"]],
     ["Tribün Sloganları", ["slogans"]],
     ["Haftanın Takımı", ["teamofweek"]],
     [`Kadrolar Açıldı · ${pickLabel}`, ["pickcaptain", "picksolo", "picktwins"]],
