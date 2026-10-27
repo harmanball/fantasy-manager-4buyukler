@@ -1,15 +1,15 @@
-import { Oswald } from "next/font/google";
+import { Teko } from "next/font/google";
 import { LetterShape } from "@/lib/letterEmblem";
 
-const emblemFont = Oswald({ subsets: ["latin", "latin-ext"], weight: "700", display: "swap" });
+const emblemFont = Teko({ subsets: ["latin", "latin-ext"], weight: "700", display: "swap" });
 
 const GLYPH_W: Record<string, number> = {
-  "0": 55, "1": 38, "2": 51, "3": 51, "4": 52, "5": 51, "6": 54, "7": 44, "8": 52, "9": 54,
-  A: 55, B: 59, C: 56, D: 59, E: 45, F: 43, G: 58, H: 61, I: 30, J: 35, K: 57, L: 44, M: 70,
-  N: 56, O: 59, P: 57, Q: 59, R: 60, S: 51, T: 44, U: 59, V: 53, W: 70, X: 51, Y: 49, Z: 43,
-  Ç: 56, Ğ: 58, İ: 30, Ö: 59, Ş: 51, Ü: 59,
+  "0": 50, "1": 32, "2": 47, "3": 48, "4": 51, "5": 50, "6": 49, "7": 42, "8": 50, "9": 49,
+  A: 54, B: 52, C: 49, D: 53, E: 45, F: 44, G: 50, H: 55, I: 25, J: 46, K: 53, L: 41, M: 67,
+  N: 53, O: 52, P: 50, Q: 52, R: 51, S: 49, T: 43, U: 52, V: 53, W: 84, X: 52, Y: 52, Z: 46,
+  Ç: 49, Ğ: 50, İ: 25, Ö: 50, Ş: 49, Ü: 52,
 };
-const CAP_H = 0.81; // Oswald büyük harf yüksekliği (yazı boyuna oranla)
+const CAP_H = 0.65; // Teko büyük harf yüksekliği (yazı boyuna oranla)
 function textWidth(t: string): number {
   return [...t].reduce((sum, ch) => sum + (GLYPH_W[ch] ?? 50), 0) + (t.length - 1) * 1;
 }
@@ -22,17 +22,18 @@ interface Props {
   size?: number;
 }
 
-// Yuvarlak / kalkan / şerit / altıgen zemin + 1-3 karakter (Oswald Bold yazı tipi). Sadece iki renk kullanır.
+// Yuvarlak / kalkan / şerit / altıgen zemin + 1-3 karakter (Teko Bold yazı tipi). Sadece iki renk kullanır.
 export function LetterEmblem({ shape, text, color1, color2, size = 40 }: Props) {
   const ink = color2;
   const fill = color1;
   const ringed = shape !== "serit";
-  // Oswald Bold'da harf genişlikleri (100 birimlik yazı boyuna göre). Geniş harfler (M, W) yazıyı küçültür,
+  // Teko Bold'da harf genişlikleri (100 birimlik yazı boyuna göre). Geniş harfler (M, W) yazıyı küçültür,
   // dar harfler (I, 1) büyük kalır; böylece yazı hiçbir zaman çerçeveden taşmaz.
   const n = Math.min(text.length, 3);
-  const maxSize = ringed ? [0, 46, 42, 38][n] : 30;
-  const avail = ringed ? 58 : 72;
-  const fontSize = Math.min(maxSize, avail / (textWidth(text) / 100));
+  const accent = /[ÇĞİÖŞÜ]/.test(text); // noktalı/şapkalı harfler yukarı taşar, biraz küçült
+  const availW = ringed ? 60 : 72;
+  const capMax = (ringed ? (n >= 3 ? 36 : 40) : 26) * (accent ? 0.85 : 1);
+  const fontSize = Math.min(availW / (textWidth(text) / 100), capMax / CAP_H);
   // Büyük harflerin görsel ortası: taban çizgisi = merkez + yazı yüksekliğinin yarısı (kalkan biraz aşağıda ortalanır).
   const cy = shape === "kalkan" ? 51 : 50;
 
