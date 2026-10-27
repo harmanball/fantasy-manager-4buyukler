@@ -22,7 +22,7 @@ const NAV_ITEMS: { href: string; label: string; icon: IconName }[] = [
   { href: "/siralama", label: "Lig Sıralaması", icon: "trophy" },
   { href: "/lig-gazetesi", label: "Lig Gazetesi", icon: "trophy" },
   { href: "/futbolcu-puanlari", label: "Futbolcu Puanları", icon: "users" },
-  { href: "/haftanin-takimi", label: "Haftanın Takımı", icon: "star" },
+  { href: "/haftanin-takimi", label: "Haftanın Kadrosu", icon: "star" },
   { href: "/profil", label: "Profil", icon: "user" },
 ];
 
@@ -153,12 +153,6 @@ export function AppHeader() {
                 strokeLinecap="round"
               />
             </svg>
-            {/* Her zaman görünen bildirim noktası — menüyü keşfettirmek için,
-                okunmamış bir şeye bağlı değil, kalıcı bir görsel ipucu. */}
-            <span
-              className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-red-500"
-              aria-hidden="true"
-            />
           </button>
           <Link href="/" className="flex items-center gap-2">
             <PitchLogo />
