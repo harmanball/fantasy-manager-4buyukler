@@ -6,9 +6,12 @@ import { AppHeader } from "@/components/AppHeader";
 import { TeamEmblem } from "@/components/TeamEmblem";
 import { PressConference } from "@/components/PressConference";
 import { GazeteArena } from "@/components/GazeteArena";
+import { Pirata_One } from "next/font/google";
 import { useSession } from "@/lib/useSession";
 import { loadGazeteData, buildIssue, GazeteData, Part, Story } from "@/lib/gazete";
 import { REACTIONS, ReactionId, ReactionState, fetchReactions, setReaction } from "@/lib/gazeteReactions";
+
+const mastheadFont = Pirata_One({ subsets: ["latin"], weight: "400", display: "swap" });
 
 function Headline({ parts }: { parts: Part[] }) {
   return (
@@ -483,7 +486,7 @@ export default function LigGazetesiPage() {
       <main className="mx-auto max-w-3xl px-3 py-4 sm:px-6 sm:py-6">
         <div className="rounded-xl bg-[#f3ecd9] p-4 text-charcoal sm:p-6">
           <div className="border-b-4 border-double border-charcoal pb-2 text-center">
-            <div className="font-serif text-3xl font-black uppercase tracking-wide sm:text-4xl">
+            <div className={`${mastheadFont.className} text-5xl leading-none tracking-[0.01em] sm:text-6xl`}>
               Lig Gazetesi
             </div>
             <div className="mt-1 flex items-center justify-between text-[11px] text-charcoal/70">
