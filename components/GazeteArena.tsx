@@ -105,6 +105,16 @@ export function GazeteArena({ meId, teams }: { meId: string; teams: GazeteTeam[]
       {/* ───── MEYDAN OKUMA ───── */}
       <div id="arena-meydan" className="scroll-mt-28" />
       <SectionTitle>Meydan Okuma</SectionTitle>
+      <div className="mb-3 flex items-center gap-3.5 rounded-sm bg-gradient-to-br from-[#3a0d12] to-[#7a1a24] p-4 text-[#f6e7b4]">
+        <span className="text-4xl">⚔️</span>
+        <div>
+          <div className="font-serif text-xl font-bold uppercase tracking-wide text-[#ffe9a6]">Meydan Okuma</div>
+          <p className="mt-0.5 text-xs text-[#f1cfd2]">
+            Gelecek hafta için bir rakip seç. Hafta sonunda daha çok puan alan kazanır, sonuç gazetede.
+          </p>
+        </div>
+      </div>
+
       <div className={cardCls}>
         <div className={kickerCls}>Gelecek hafta · {week.weekNumber}. hafta</div>
         <h3 className="font-serif text-lg font-bold leading-snug">
