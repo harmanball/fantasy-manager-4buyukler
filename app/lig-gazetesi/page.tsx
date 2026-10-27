@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
 import { TeamEmblem } from "@/components/TeamEmblem";
 import { PressConference } from "@/components/PressConference";
+import { GazeteArena } from "@/components/GazeteArena";
 import { useSession } from "@/lib/useSession";
 import { loadGazeteData, buildIssue, GazeteData, Part, Story } from "@/lib/gazete";
 import { REACTIONS, ReactionId, ReactionState, fetchReactions, setReaction } from "@/lib/gazeteReactions";
@@ -205,6 +206,23 @@ function StoryCard({
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {story.qa && (
+        <div className="flex flex-col gap-3">
+          {story.qa.map((x, i) => (
+            <div key={i} className="flex flex-col gap-1.5 border-l-[3px] border-charcoal pl-3">
+              <div className="text-[13px] leading-relaxed">
+                <b className="font-serif">{x.asker.name}</b> soruyor → <b className="font-serif">{x.target.name}</b>: “{x.question}”
+              </div>
+              <div className="rounded bg-amber-500/15 px-2.5 py-2 font-serif text-sm italic leading-relaxed">
+                <small className="mb-0.5 block font-sans text-[10.5px] font-bold uppercase not-italic tracking-wide text-amber-600">
+                  {x.target.name} cevapladı
+                </small>
+                “{x.answer}”
+              </div>
+            </div>
+          ))}
         </div>
       )}
       {story.slogans && (
@@ -561,6 +579,10 @@ export default function LigGazetesiPage() {
               </div>
             </section>
           ))}
+
+          {data && meId && selected !== null && data.weeks.length > 0 && selected === data.weeks[data.weeks.length - 1].weekNumber && (
+            <GazeteArena meId={meId} teams={[...data.teams.values()]} />
+          )}
         </div>
       </main>
     </>
