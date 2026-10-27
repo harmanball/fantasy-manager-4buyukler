@@ -110,8 +110,8 @@ function StoryCard({
           <Headline parts={story.headline} />
         </h3>
       )}
-      {story.quote && t && <PressConference team={t} />}
-      {(t || story.bigNumber) && !story.quote && (
+      {story.id === "weeknews" && t && <PressConference team={t} />}
+      {(t || story.bigNumber) && story.id !== "weeknews" && (
         <div className="flex items-center gap-3">
           {t && <TeamEmblem emblem={t.emblem} color1={t.color1} color2={t.color2} size={34} />}
           {t && <span className="min-w-0 break-words text-sm font-semibold text-charcoal">{t.name}</span>}
