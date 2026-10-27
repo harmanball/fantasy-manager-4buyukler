@@ -1,4 +1,7 @@
+import { Anton } from "next/font/google";
 import { LetterShape } from "@/lib/letterEmblem";
+
+const emblemFont = Anton({ subsets: ["latin", "latin-ext"], weight: "400", display: "swap" });
 
 interface Props {
   shape: LetterShape;
@@ -8,12 +11,13 @@ interface Props {
   size?: number;
 }
 
-// Yuvarlak / kalkan / şerit / altıgen zemin + 1-2 karakter. Sadece iki renk kullanır.
+// Yuvarlak / kalkan / şerit / altıgen zemin + 1-3 karakter (Anton yazı tipi). Sadece iki renk kullanır.
 export function LetterEmblem({ shape, text, color1, color2, size = 40 }: Props) {
   const ink = color2;
   const fill = color1;
   const ringed = shape !== "serit";
-  const fontSize = ringed ? (text.length <= 1 ? 40 : 31) : text.length <= 1 ? 42 : 40;
+  const n = Math.min(text.length, 3);
+  const fontSize = ringed ? [0, 46, 40, 30][n] : [0, 46, 42, 34][n];
 
   return (
     <svg viewBox="0 0 100 100" width={size} height={size} role="img" aria-label={`Amblem ${text}`}>
@@ -43,11 +47,12 @@ export function LetterEmblem({ shape, text, color1, color2, size = 40 }: Props) 
       )}
       <text
         x="50"
-        y="50"
+        y="53"
         textAnchor="middle"
         dominantBaseline="central"
-        fontFamily="Georgia, serif"
-        fontWeight={900}
+        fontFamily={emblemFont.style.fontFamily}
+        fontWeight={400}
+        letterSpacing={0.5}
         fontSize={fontSize}
         fill={ink}
       >
