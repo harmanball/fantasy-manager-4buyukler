@@ -10,6 +10,7 @@ import { useInstallPrompt } from "@/lib/useInstallPrompt";
 import { useNotificationPermission } from "@/lib/useNotificationPermission";
 import { ADMIN_EMAILS } from "@/lib/adminConfig";
 import { Icon, IconName } from "./Icon";
+import { NotificationBell } from "./NotificationBell";
 
 // Puanlarım ve Lig Sıralaması hem üst barda hem hamburger menüsünde yer alır.
 const NAV_ITEMS: { href: string; label: string; icon: IconName }[] = [
@@ -179,6 +180,8 @@ export function AppHeader() {
               Uyg. Yükle
             </button>
           )}
+
+          {session && <NotificationBell />}
 
           {session ? (
             <Link
