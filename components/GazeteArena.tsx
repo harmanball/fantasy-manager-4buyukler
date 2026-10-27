@@ -103,6 +103,7 @@ export function GazeteArena({ meId, teams }: { meId: string; teams: GazeteTeam[]
   return (
     <div>
       {/* ───── MEYDAN OKUMA ───── */}
+      <div id="arena-meydan" className="scroll-mt-28" />
       <SectionTitle>Meydan Okuma</SectionTitle>
       <div className={cardCls}>
         <div className={kickerCls}>Gelecek hafta · {week.weekNumber}. hafta</div>
@@ -172,6 +173,7 @@ export function GazeteArena({ meId, teams }: { meId: string; teams: GazeteTeam[]
       )}
 
       {/* ───── BASIN TOPLANTISI ───── */}
+      <div id="arena-basin" className="scroll-mt-28" />
       <SectionTitle>Basın Toplantısı Köşesi</SectionTitle>
       <div className="mb-3 flex items-center gap-3.5 rounded-sm bg-gradient-to-br from-[#0d1b3a] to-[#1b2f66] p-4 text-[#f6e7b4]">
         <span className="text-4xl">🎙️</span>
