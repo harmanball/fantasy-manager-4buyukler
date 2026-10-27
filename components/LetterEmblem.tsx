@@ -9,6 +9,7 @@ const GLYPH_W: Record<string, number> = {
   N: 56, O: 59, P: 57, Q: 59, R: 60, S: 51, T: 44, U: 59, V: 53, W: 70, X: 51, Y: 49, Z: 43,
   Ç: 56, Ğ: 58, İ: 30, Ö: 59, Ş: 51, Ü: 59,
 };
+const CAP_H = 0.81; // Oswald büyük harf yüksekliği (yazı boyuna oranla)
 function textWidth(t: string): number {
   return [...t].reduce((sum, ch) => sum + (GLYPH_W[ch] ?? 50), 0) + (t.length - 1) * 1;
 }
@@ -32,6 +33,8 @@ export function LetterEmblem({ shape, text, color1, color2, size = 40 }: Props) 
   const maxSize = ringed ? [0, 46, 42, 38][n] : 30;
   const avail = ringed ? 58 : 72;
   const fontSize = Math.min(maxSize, avail / (textWidth(text) / 100));
+  // Büyük harflerin görsel ortası: taban çizgisi = merkez + yazı yüksekliğinin yarısı (kalkan biraz aşağıda ortalanır).
+  const cy = shape === "kalkan" ? 51 : 50;
 
   return (
     <svg viewBox="0 0 100 100" width={size} height={size} role="img" aria-label={`Amblem ${text}`}>
@@ -61,9 +64,9 @@ export function LetterEmblem({ shape, text, color1, color2, size = 40 }: Props) 
       )}
       <text
         x="50"
-        y="53"
+        y={cy + fontSize * CAP_H / 2}
         textAnchor="middle"
-        dominantBaseline="central"
+        dominantBaseline="alphabetic"
         fontFamily={emblemFont.style.fontFamily}
         fontWeight={700}
         letterSpacing={0.5}
