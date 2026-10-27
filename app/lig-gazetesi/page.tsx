@@ -127,6 +127,120 @@ function StoryCard({
         </div>
       )}
       {story.deck && <p className="text-xs leading-relaxed text-charcoal/75">{story.deck}</p>}
+      {story.stats && (
+        <div className="flex flex-wrap gap-1.5">
+          {story.stats.map((st) => (
+            <span key={st.label} className="rounded-full border border-charcoal/30 bg-white px-2 py-0.5 text-[11px]">
+              {st.label}: <b className="font-serif">{st.value}</b>
+            </span>
+          ))}
+        </div>
+      )}
+      {story.callout && (
+        <div className="flex items-center gap-3 border-l-[3px] border-red-700 bg-red-700/5 px-3 py-2">
+          <div className="min-w-0">
+            <div className="text-[10.5px] font-bold uppercase tracking-wider">{story.callout.label}</div>
+            <div className="text-sm font-bold">{story.callout.title}</div>
+            {story.callout.text && <div className="text-[11.5px] text-charcoal/75">{story.callout.text}</div>}
+          </div>
+          <b className="ml-auto flex-none font-serif text-xl">{story.callout.value}</b>
+        </div>
+      )}
+      {story.twoCol && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {story.twoCol.map((col) => (
+            <div key={col.title}>
+              <div className={`mb-1 text-[11px] font-bold uppercase tracking-wider ${col.tone === "up" ? "text-green-700" : "text-red-700"}`}>
+                {col.title}
+              </div>
+              <table className="w-full text-[12.5px]">
+                <tbody>
+                  {col.rows.map((r) => (
+                    <tr key={r.team.userId} className="border-b border-charcoal/10 last:border-0">
+                      <td className="py-1.5">
+                        <div className="flex items-center gap-2">
+                          <TeamEmblem emblem={r.team.emblem} color1={r.team.color1} color2={r.team.color2} size={22} />
+                          <span className="truncate">{r.team.name}</span>
+                        </div>
+                      </td>
+                      <td className={`whitespace-nowrap py-1.5 text-right font-serif font-bold ${col.tone === "up" ? "text-green-700" : "text-red-700"}`}>
+                        {r.value}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+      )}
+      {story.ptable && (
+        <div className="-mx-1 overflow-x-auto">
+          <table className="w-full min-w-[420px] text-[12px]">
+            <thead>
+              <tr className="text-[10.5px] font-semibold uppercase tracking-wide text-charcoal/60">
+                {story.ptable.head.map((h, i) => (
+                  <th key={`${h}-${i}`} className={`py-1 ${i === 0 ? "text-left" : "text-right"}`}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {story.ptable.rows.map((row, ri) => (
+                <tr key={ri} className={`border-b border-charcoal/10 last:border-0 ${row.total ? "font-bold" : ""}`}>
+                  {row.cells.map((c, i) => (
+                    <td key={i} className={`py-1.5 ${i === 0 ? "pr-2" : "text-right font-serif"} ${i === 1 && !row.total ? "font-bold" : ""}`}>
+                      {c.text}
+                      {c.pts !== undefined && (
+                        <span
+                          className={`ml-1 inline-block min-w-[22px] rounded-sm px-1 text-center font-serif text-[11px] font-bold ${
+                            c.pts === 3 ? "bg-green-700 text-white" : c.pts === 1 ? "bg-amber-300 text-amber-950" : "bg-charcoal/15 text-charcoal/60"
+                          }`}
+                        >
+                          {c.pts}
+                        </span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {story.slogans && (
+        <div className="flex flex-col">
+          {story.slogans.map((sl) => (
+            <div key={sl.team.userId} className="flex flex-col gap-0.5 border-b border-charcoal/10 py-2 last:border-0">
+              <div className="flex items-center gap-2">
+                <TeamEmblem emblem={sl.team.emblem} color1={sl.team.color1} color2={sl.team.color2} size={22} />
+                <b className="text-[13px]">{sl.team.name}</b>
+              </div>
+              {sl.old && <div className="text-xs italic text-charcoal/50 line-through">“{sl.old}”</div>}
+              <div className="font-serif text-[15px] italic">“{sl.now}”</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {story.pitch && (
+        <div className="flex flex-col gap-2">
+          {story.pitch.map((line, li) => (
+            <div key={li} className="flex flex-wrap justify-center gap-1.5">
+              {line.map((pl) => (
+                <div
+                  key={`${pl.tag}-${pl.name}`}
+                  className={`min-w-[88px] rounded border px-2 py-1 text-center text-xs ${
+                    pl.cap ? "border-red-700 bg-red-700/5" : "border-charcoal/20 bg-white"
+                  }`}
+                >
+                  <small className="block text-[10px] text-charcoal/60">{pl.tag}</small>
+                  {pl.name}
+                  <b className="block font-serif text-[15px]">{pl.value}</b>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
       {story.quote && (
         <p className="px-2 py-1 text-center font-serif text-lg italic leading-snug text-charcoal sm:text-xl">
           “<Headline parts={story.quote} />”
@@ -415,6 +529,16 @@ export default function LigGazetesiPage() {
                   </div>
                 )}
               </div>
+              {issue.hero.stats && (
+                <div className="mt-3 grid grid-cols-2 border-y border-charcoal sm:grid-cols-4">
+                  {issue.hero.stats.map((st) => (
+                    <div key={st.label} className="border-r border-charcoal/20 px-1.5 py-2 text-center last:border-r-0">
+                      <b className="block font-serif text-2xl leading-tight">{st.value}</b>
+                      <small className="text-[10px] uppercase tracking-wide text-charcoal/65">{st.label}</small>
+                    </div>
+                  ))}
+                </div>
+              )}
               <ReactionBar storyId={issue.hero.id} state={reactions} canReact={!!meId} onReact={handleReact} nameOf={nameOf} />
             </div>
           )}
