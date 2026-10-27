@@ -15,12 +15,12 @@ export const LETTER_SHAPE_LABELS: Record<LetterShape, string> = {
 
 const PREFIX = "harf:";
 
-// Yazıyı temizler: büyük harf (Türkçe), sadece harf/rakam, en fazla 2 karakter.
+// Yazıyı temizler: büyük harf (Türkçe), sadece harf/rakam, en fazla 3 karakter.
 export function cleanLetterText(raw: string): string {
   return raw
     .toLocaleUpperCase("tr")
     .replace(/[^0-9A-ZÇĞİÖŞÜ]/g, "")
-    .slice(0, 2);
+    .slice(0, 3);
 }
 
 export function isLetterEmblem(id: string | null | undefined): boolean {
