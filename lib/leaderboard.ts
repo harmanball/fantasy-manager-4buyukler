@@ -102,7 +102,7 @@ export async function fetchGameweekLeaderboard(
     return [];
   }
 
-  return (data ?? []).map((row) => {
+  const mapped = (data ?? []).map((row) => {
     const profileRel = row.profiles as unknown as
       | {
           username: string;
@@ -132,6 +132,16 @@ export async function fetchGameweekLeaderboard(
       total_points: row.points as number,
     };
   });
+
+  // Haftalık puan eşitse genel sıralamadaki sıraya göre ayır (genel sıralamada üstte olan önde).
+  const overall = await fetchLeaderboard();
+  const overallOrder = new Map(overall.map((r, i) => [r.user_id, i]));
+  return mapped.sort(
+    (x, y) =>
+      y.total_points - x.total_points ||
+      (overallOrder.get(x.user_id) ?? Number.MAX_SAFE_INTEGER) -
+        (overallOrder.get(y.user_id) ?? Number.MAX_SAFE_INTEGER)
+  );
 }
 
 // Kadro ekranındaki "Genel Lig Sıralaman" / "Genel Toplam Puanın" için
