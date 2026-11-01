@@ -144,6 +144,21 @@ export async function fetchGameweekLeaderboard(
   );
 }
 
+// "Haftanın Takımı / Futbolcusu" gibi vitrinler için: admin tarafından KAPATILMIŞ
+// (status = 'finished') en son hafta. Haftaya veri girilmeye başlansa bile hafta
+// kapanana kadar bir önceki kapanmış hafta gösterilir.
+export async function fetchLastClosedGameweek(): Promise<{ id: number; week_number: number } | null> {
+  const { data, error } = await supabase
+    .from("gameweeks")
+    .select("id, week_number")
+    .eq("status", "finished")
+    .order("week_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  return { id: data.id as number, week_number: data.week_number as number };
+}
+
 // Kadro ekranındaki "Genel Lig Sıralaman" / "Genel Toplam Puanın" için
 export async function fetchUserOverallRank(
   userId: string
