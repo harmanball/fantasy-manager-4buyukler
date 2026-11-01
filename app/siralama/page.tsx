@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   fetchLeaderboardWithTrend,
   fetchGameweekLeaderboard,
+  fetchLastClosedGameweek,
   LeaderboardRowWithTrend,
 } from "@/lib/leaderboard";
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
@@ -95,11 +96,13 @@ export default function SiralamaPage() {
     });
   }, [weeks]);
 
-  // En son biten haftanın 1.si ("Haftanın Takımı") ve o haftanın en
+  // En son KAPANAN haftanın 1.si ("Haftanın Takımı") ve o haftanın en
   // yüksek puanlı gerçek futbolcusu ("Haftanın Futbolcusu").
   async function loadHighlights(): Promise<WeeklyHighlights> {
-    if (weeks.length === 0) return { teamOfWeek: null, playerOfWeek: null };
-    const lastWeek = weeks[0];
+    // Sadece admin tarafından KAPATILMIŞ haftalar sergilenir; hafta kapanmadan
+    // (ör. sadece bir maç oynandıysa) bir önceki kapanmış hafta görünür.
+    const lastWeek = await fetchLastClosedGameweek();
+    if (!lastWeek) return { teamOfWeek: null, playerOfWeek: null };
 
     const weekRows = await fetchGameweekLeaderboard(lastWeek.id);
     const teamOfWeek = weekRows.length > 0 ? weekRows[0] : null;
