@@ -531,22 +531,20 @@ export default function LigGazetesiPage() {
           )}
 
           {data && data.weeks.length > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            <label className="mt-3 flex items-center gap-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-charcoal/60">Arşiv</span>
-              {[...data.weeks].reverse().map((w) => (
-                <button
-                  key={w.id}
-                  onClick={() => setSelected(w.weekNumber)}
-                  className={`rounded-full border px-3 py-1 text-xs ${
-                    selected === w.weekNumber
-                      ? "border-charcoal bg-charcoal text-[#f3ecd9]"
-                      : "border-charcoal/30 bg-white/50"
-                  }`}
-                >
-                  {w.weekNumber}. sayı
-                </button>
-              ))}
-            </div>
+              <select
+                value={selected ?? ""}
+                onChange={(e) => setSelected(Number(e.target.value))}
+                className="min-w-[9rem] rounded-md border border-charcoal/40 bg-white/70 px-3 py-1.5 text-sm font-semibold text-charcoal outline-none focus:border-charcoal"
+              >
+                {[...data.weeks].reverse().map((w, i) => (
+                  <option key={w.id} value={w.weekNumber}>
+                    {w.weekNumber}. sayı{i === 0 ? " (güncel)" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
           )}
 
           {issue?.hero && (
