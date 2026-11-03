@@ -95,7 +95,10 @@ export function GazeteArena({ meId, teams }: { meId: string; teams: GazeteTeam[]
   const week = arena.week;
   const locked = !arena.windowOpen;
   const myChallenge = arena.challenges.find((c) => c.challengerId === meId);
-  const published = arena.questions.filter((q) => q.answer && q.gameweekId === week.id);
+  // Bu haftanın yayınlananları + hafta değişmiş olsa bile benim sorduğum/cevapladığım cevaplı sorular (cevap kaybolmasın).
+  const published = arena.questions.filter(
+    (q) => q.answer && (q.gameweekId === week.id || q.askerId === meId || q.targetId === meId),
+  );
   const toMe = arena.questions.filter((q) => q.targetId === meId && !q.answer);
   const mineWaiting = arena.questions.filter((q) => q.askerId === meId && !q.answer);
   const leftToAsk = Math.max(0, MAX_QUESTIONS_PER_WEEK - arena.askedThisWeek);
@@ -268,7 +271,12 @@ export function GazeteArena({ meId, teams }: { meId: string; teams: GazeteTeam[]
         <div className={cardCls}>
           <div className={kickerCls}>Bu haftanın basın toplantısı</div>
           {published.map((q) => (
-            <div key={q.id} className="flex flex-col gap-1.5 border-l-[3px] border-charcoal pl-3">
+            <div key={q.id} className={`flex flex-col gap-1.5 border-l-[3px] pl-3 ${q.askerId === meId ? "border-red-700" : "border-charcoal"}`}>
+              {q.askerId === meId && (
+                <span className="self-start rounded-sm bg-red-700 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                  Sorun cevaplandı
+                </span>
+              )}
               <div className="text-[13px] leading-relaxed">
                 <b className="font-serif">{nameOf(q.askerId)}</b> soruyor → <b className="font-serif">{nameOf(q.targetId)}</b>: “{q.question}”
               </div>
