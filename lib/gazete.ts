@@ -2260,10 +2260,20 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
 
   const facts = computeFacts(data, W);
   const stories = buildStories(data, W, facts, latest.weekNumber);
-  Object.assign(stories, buildPredictionStories(data, W, latest.weekNumber));
-  const rep = buildPredictionReport(data, latest.id, latest.weekNumber);
+  // Tahmin Köşesi: sayının haftasında henüz skor girilmiş tahminli maç yoksa (hafta yeni başladı),
+  // bir önceki haftanın tahmin sonuçları gösterilir.
+  const hasScoredPred = (wid: number) =>
+    (data.fixtures.get(wid) ?? []).some(
+      (f) => f.ts !== null && f.os !== null && [...data.predictions.values()].some((bw) => bw.get(wid)?.has(f.team))
+    );
+  let predW = W;
+  if (!hasScoredPred(latest.id) && W.length > 1 && hasScoredPred(W[W.length - 2].id)) predW = W.slice(0, -1);
+  const predLatest = predW[predW.length - 1];
+  const predFallback = predLatest.id !== latest.id;
+  Object.assign(stories, buildPredictionStories(data, predW, predLatest.weekNumber));
+  const rep = buildPredictionReport(data, predLatest.id, predLatest.weekNumber);
   if (rep) stories.predreport = rep;
-  const half = buildHalfHitStory(data, latest.id);
+  const half = buildHalfHitStory(data, predLatest.id);
   if (half) stories.halfhit = half;
   const news = buildWeekNews(data, W, latest.weekNumber);
   if (news) stories.weeknews = news;
@@ -2271,7 +2281,7 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
   if (rm) stories.rankmove = rm;
   const ws = buildWeekStar(data, W);
   if (ws) stories.weekstar = ws;
-  const pres = buildPredResults(data, W);
+  const pres = buildPredResults(data, predW);
   if (pres) stories.predresults = pres;
   const slg = buildSloganStory(data, W);
   if (slg) stories.slogans = slg;
@@ -2315,7 +2325,7 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
     ["Kaptan Köşesi", ["captaingain", "crowd", "differential"]],
     ["Diziliş Servisi", ["formloyal", "formattack", "formdefence", "formdist", "formpoints", "formmatrix"]],
     ["Tribün Magazin", ["motm", "gentle"]],
-    ["Tahmin Köşesi", ["predresults", "exact", "halfhit"]],
+    [predFallback ? `Tahmin Köşesi · ${predLatest.weekNumber}. hafta` : "Tahmin Köşesi", ["predresults", "kahin", "predreport", "exact", "halfhit", "kahinseason"]],
     ["Meydan Okuma", ["challengeresults"]],
     ["Basın Toplantısı", ["press"]],
     ["Tribün Sloganları", ["slogans"]],
