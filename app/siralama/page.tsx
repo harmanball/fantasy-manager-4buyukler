@@ -308,7 +308,6 @@ export default function SiralamaPage() {
             [
               ["total", "Genel Sıralama"],
               ["last", "Son Hafta"],
-              ["weekly_wins", "Haf. Birincilik"],
             ] as [FilterValue, string][]
           ).map(([value, label]) => (
             <button
@@ -350,6 +349,17 @@ export default function SiralamaPage() {
               ▾
             </span>
           </div>
+          <button
+            type="button"
+            onClick={() => setSelectedFilter("weekly_wins")}
+            className={`rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold ${
+              selectedFilter === "weekly_wins"
+                ? "border-pitch bg-pitch text-ivory"
+                : "border-charcoal/20 bg-white text-charcoal"
+            }`}
+          >
+            Haf. Birincilik
+          </button>
         </div>
 
         {selectedFilter === "last" && (
