@@ -6,6 +6,7 @@ import {
   fetchLeaderboardWithTrend,
   fetchGameweekLeaderboard,
   fetchLastClosedGameweek,
+  fetchHalfLeaderboard,
   LeaderboardRowWithTrend,
 } from "@/lib/leaderboard";
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
@@ -67,7 +68,7 @@ interface WeeklyHighlights {
   } | null;
 }
 
-type FilterValue = "total" | "weekly_wins" | "last" | number;
+type FilterValue = "total" | "weekly_wins" | "last" | "half1" | "half2" | number;
 
 export default function SiralamaPage() {
   const { session } = useSession();
@@ -186,6 +187,11 @@ export default function SiralamaPage() {
       const r =
         selectedFilter === "total"
           ? await fetchLeaderboardWithTrend()
+          : selectedFilter === "half1" || selectedFilter === "half2"
+          ? (await fetchHalfLeaderboard(selectedFilter === "half1" ? 1 : 2)).map((row) => ({
+              ...row,
+              rankChange: null,
+            }))
           : (await fetchGameweekLeaderboard(weekId as number)).map((row) => ({
               ...row,
               rankChange: null,
@@ -234,6 +240,10 @@ export default function SiralamaPage() {
     const scopeText =
       selectedFilter === "total"
         ? "genel toplamda"
+        : selectedFilter === "half1"
+        ? "sezonun 1. yarısında"
+        : selectedFilter === "half2"
+        ? "sezonun 2. yarısında"
         : weeks.find((w) => w.id === scopeWeekId)?.name ||
           `${weeks.find((w) => w.id === scopeWeekId)?.week_number ?? lastClosed?.week_number ?? ""}. haftada`;
 
@@ -306,6 +316,8 @@ export default function SiralamaPage() {
         <div className="flex flex-wrap items-center gap-1.5">
           {(
             [
+              ["half1", "Sezon 1. Yarı"],
+              ["half2", "Sezon 2. Yarı"],
               ["total", "Genel Sıralama"],
               ["last", "Son Hafta"],
             ] as [FilterValue, string][]
@@ -362,6 +374,13 @@ export default function SiralamaPage() {
           </button>
         </div>
 
+        {(selectedFilter === "half1" || selectedFilter === "half2") && (
+          <p className="text-center text-[11px] text-foreground/45">
+            {selectedFilter === "half1"
+              ? "Sezon 1. yarı sıralaması (1-17. haftalar)"
+              : "Sezon 2. yarı sıralaması (18-34. haftalar)"}
+          </p>
+        )}
         {selectedFilter === "last" && (
           <p className="text-center text-[11px] text-foreground/45">
             {lastClosed
