@@ -216,6 +216,16 @@ export function WeeklyFixtures({
             Transfer penceresi kapandı, tahminler kilitlendi.
           </p>
         )}
+        <div className="mt-3 flex justify-center">
+          <a
+            href="https://sakat-ve-cezali.com/turkiye-super-lig.php"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full border border-gold/50 px-3.5 py-1.5 text-[11px] font-medium text-gold hover:bg-gold/10"
+          >
+            Sakat ve Cezalılar Listesi ↗
+          </a>
+        </div>
       </div>
 
       {openTeam && (
