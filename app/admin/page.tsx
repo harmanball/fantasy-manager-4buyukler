@@ -10,6 +10,7 @@ import { parseStatsBlock, ParsedStatRow } from "@/lib/statsParser";
 import { parseScoreLines, ParsedScoreLine } from "@/lib/scoreParser";
 import { fetchTransferWindowOverride, TransferWindowOverride } from "@/lib/transferWindow";
 import { AppHeader } from "@/components/AppHeader";
+import { PendingApprovals } from "@/components/PendingApprovals";
 
 interface GameweekRow {
   id: number;
@@ -256,6 +257,8 @@ export default function AdminPage() {
         <h1 className="font-display text-lg font-semibold sm:text-xl">
           Yönetici Paneli
         </h1>
+
+        <PendingApprovals />
 
         <section className="rounded-lg border border-charcoal/10 bg-white p-4">
           <h2 className="mb-1 text-sm font-semibold">Transfer Penceresi</h2>
