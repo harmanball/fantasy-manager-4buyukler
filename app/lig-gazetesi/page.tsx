@@ -199,7 +199,7 @@ function StoryCard({
                       {c.pts !== undefined && (
                         <span
                           className={`ml-1 inline-block min-w-[22px] rounded-sm px-1 text-center font-serif text-[11px] font-bold ${
-                            c.pts === 3 ? "bg-green-700 text-white" : c.pts === 1 ? "bg-amber-300 text-amber-950" : "bg-charcoal/15 text-charcoal/60"
+                            c.pts >= 5 ? "bg-green-800 text-white" : c.pts === 3 ? "bg-green-600 text-white" : c.pts === 2 ? "bg-amber-400 text-amber-950" : c.pts === 1 ? "bg-amber-200 text-amber-950" : "bg-charcoal/15 text-charcoal/60"
                           }`}
                         >
                           {c.pts}
