@@ -32,6 +32,7 @@ export function PlayerPointsModal({
   player,
   gameweekId,
   extraHeader,
+  totalPoints,
   isCaptain,
   onMakeCaptain,
   onRemove,
@@ -40,6 +41,8 @@ export function PlayerPointsModal({
   player: ModalPlayerInfo;
   gameweekId: number | null;
   extraHeader?: React.ReactNode;
+  // Oyuncunun sezon boyunca (tüm haftalarda) kazandırdığı toplam puan.
+  totalPoints?: number;
   isCaptain?: boolean;
   onMakeCaptain?: () => void;
   onRemove?: () => void;
@@ -105,6 +108,10 @@ export function PlayerPointsModal({
           </button>
         </div>
 
+        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-foreground/50">
+          Son hafta puanları
+        </p>
+
         {data === undefined ? (
           <p className="py-4 text-center text-sm text-foreground/50">
             Puan detayı yükleniyor…
@@ -154,6 +161,18 @@ export function PlayerPointsModal({
               </a>{" "}
               referans alınır.
             </p>
+          </div>
+        )}
+
+        {totalPoints !== undefined && (
+          <div className="mt-4 border-t border-charcoal/10 pt-3">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-foreground/50">
+              Oyuncunun şimdiye kadar kazandırdığı puan
+            </p>
+            <div className="flex items-center justify-between rounded-md bg-pitch px-2 py-2 text-sm">
+              <span className="font-medium text-ivory">Tüm haftalar toplamı</span>
+              <span className="font-display font-semibold text-ivory">{totalPoints}</span>
+            </div>
           </div>
         )}
 
