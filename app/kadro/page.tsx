@@ -28,6 +28,8 @@ import { Skeleton } from "@/components/Skeleton";
 import { shareText, getSiteUrl } from "@/lib/share";
 import { fetchIsTransferWindowOpen, fetchOpenGameweekDeadline } from "@/lib/transferWindow";
 import { WeeklyFixtures } from "@/components/WeeklyFixtures";
+import { fetchUpcomingFixtures } from "@/lib/fixtures";
+import { dedupeFixtures, fetchUserPredictions } from "@/lib/predictions";
 import { UpdateNotesModal } from "@/components/UpdateNotesModal";
 import { TeamEmblem } from "@/components/TeamEmblem";
 import { GazeteBanner } from "@/components/GazeteBanner";
@@ -52,6 +54,13 @@ function formatDeadline(deadline: Date): string {
   });
   return `${dateStr} ${timeStr}`;
 }
+
+const TEAM_NAMES: Record<string, string> = {
+  GS: "Galatasaray",
+  FB: "Fenerbahçe",
+  BJK: "Beşiktaş",
+  TS: "Trabzonspor",
+};
 
 export default function KadroPage() {
   const { session, loading: sessionLoading } = useSession();
@@ -310,17 +319,56 @@ export default function KadroPage() {
   const captainName =
     slots.find((s) => s.player?.id === captainId)?.player?.name ?? null;
 
-  const canSave =
-    filledCount === SQUAD_SIZE &&
-    !Object.values(teamCounts).some((c) => c > TEAM_LIMIT) &&
-    !!captainId &&
-    !!gameweek &&
-    !!session;
+  const overLimit = Object.values(teamCounts).some((c) => c > TEAM_LIMIT);
+
+  // 4 büyüklerin bu haftaki maçlarından tahmini girilmemiş olanların adları.
+  async function missingPredictionNames(userId: string): Promise<string[]> {
+    const fixtures = dedupeFixtures(await fetchUpcomingFixtures());
+    if (fixtures.length === 0) return [];
+    const preds = await fetchUserPredictions(userId, fixtures[0].gameweekId);
+    return fixtures
+      .filter((f) => !preds[f.team])
+      .map((f) => (f.isHome ? `${TEAM_NAMES[f.team]} - ${f.opponent}` : `${f.opponent} - ${TEAM_NAMES[f.team]}`));
+  }
 
   async function handleSave() {
-    if (!session || !gameweek) return;
-    setSaving(true);
+    if (!session || !gameweek || saving) return;
     setSaveMessage(null);
+
+    if (filledCount < SQUAD_SIZE) {
+      setSaveMessage(`Uyarı: Kadronu tamamla (${filledCount}/${SQUAD_SIZE} oyuncu seçili).`);
+      return;
+    }
+    if (overLimit) {
+      setSaveMessage(`Uyarı: Aynı takımdan en fazla ${TEAM_LIMIT} oyuncu seçebilirsin.`);
+      return;
+    }
+    if (!captainId) {
+      setSaveMessage("Uyarı: Kaptan seçiniz.");
+      return;
+    }
+
+    setSaving(true);
+    // Tahmin kutuları yazıldıktan ~0,6 sn sonra otomatik kaydedilir; bu yüzden
+    // eksik görünürse kısa bir süre bekleyip bir kez daha kontrol ediyoruz.
+    let missing: string[] = [];
+    try {
+      missing = await missingPredictionNames(session.user.id);
+      if (missing.length > 0) {
+        await new Promise((r) => setTimeout(r, 900));
+        missing = await missingPredictionNames(session.user.id);
+      }
+    } catch {
+      missing = [];
+    }
+    if (missing.length > 0) {
+      setSaving(false);
+      setSaveMessage(
+        `Uyarı: Tahmin yapmadan kadro kaydedilemez. Şu maçlara skor tahmini gir: ${missing.join(", ")}.`
+      );
+      return;
+    }
+
     const picks = slots
       .filter((s) => s.player)
       .map((s) => ({
@@ -550,7 +598,7 @@ export default function KadroPage() {
 
       {showEditor && (
         <button
-          disabled={!canSave || saving}
+          disabled={saving || !gameweek}
           onClick={handleSave}
           className="rounded-lg bg-pitch py-3 text-sm font-medium text-ivory disabled:cursor-not-allowed disabled:opacity-30"
         >
@@ -621,13 +669,22 @@ export default function KadroPage() {
             className="mx-4 rounded-2xl bg-background px-6 py-8 text-center shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            <p
-              className={`font-display text-lg font-semibold ${
-                saveMessage.startsWith("Hata") ? "text-red-600" : "text-pitch"
-              }`}
-            >
-              {saveMessage}
-            </p>
+            {saveMessage.startsWith("Uyarı: ") ? (
+              <>
+                <p className="font-display text-lg font-semibold text-red-600">Uyarı</p>
+                <p className="mt-2 max-w-[280px] text-sm text-foreground/80">
+                  {saveMessage.slice("Uyarı: ".length)}
+                </p>
+              </>
+            ) : (
+              <p
+                className={`font-display text-lg font-semibold ${
+                  saveMessage.startsWith("Hata") ? "text-red-600" : "text-pitch"
+                }`}
+              >
+                {saveMessage}
+              </p>
+            )}
             <button
               onClick={() => setSaveMessage(null)}
               className="mt-4 rounded-lg bg-pitch px-6 py-2 text-sm font-medium text-ivory"
