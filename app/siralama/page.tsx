@@ -318,8 +318,8 @@ export default function SiralamaPage() {
             [
               ["half1", "Sezon 1. Yarı"],
               ["half2", "Sezon 2. Yarı"],
-              ["total", "Genel Sıralama"],
               ["last", "Son Hafta"],
+              ["total", "Genel Sıralama"],
             ] as [FilterValue, string][]
           ).map(([value, label]) => (
             <button
