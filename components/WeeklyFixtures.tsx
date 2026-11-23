@@ -102,7 +102,19 @@ export function WeeklyFixtures({
         flash(err ? "Kaydedilemedi" : "Kaydedildi ✓");
       } else if (next.l === "" && next.r === "") {
         const err = await deletePrediction(userId, f.gameweekId, f.team);
-        flash(err ? "Kaydedilemedi" : "Kaydedildi ✓");
+        if (err) {
+          // Kadro kaydedildiyse tahmin silinemez (sunucu reddeder): eski skoru geri getir.
+          flash("Kayıtlı tahmin silinemez, değiştirebilirsin");
+          const preds = await fetchUserPredictions(userId, f.gameweekId);
+          const p = preds[f.team];
+          if (p) {
+            const home = f.isHome ? p.teamGoals : p.opponentGoals;
+            const away = f.isHome ? p.opponentGoals : p.teamGoals;
+            setBoxes((prev) => ({ ...prev, [f.team]: { l: String(home), r: String(away) } }));
+          }
+        } else {
+          flash("Kaydedildi ✓");
+        }
       }
     }, 600);
   }
