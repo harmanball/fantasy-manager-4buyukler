@@ -228,7 +228,15 @@ export function WeeklyFixtures({
             Transfer penceresi kapandı, tahminler kilitlendi.
           </p>
         )}
-        <div className="mt-3 flex justify-center">
+        <div className="mt-3 flex flex-col items-center gap-2">
+          <a
+            href="https://www.fotmob.com/tr/leagues/71/table/super-lig"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full border border-gold/50 px-3.5 py-1.5 text-[11px] font-medium text-gold hover:bg-gold/10"
+          >
+            Lig Tablosu ↗
+          </a>
           <a
             href="https://sakat-ve-cezali.com/turkiye-super-lig.php"
             target="_blank"
