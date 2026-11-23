@@ -2327,7 +2327,15 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
       (f) => f.ts !== null && f.os !== null && [...data.predictions.values()].some((bw) => bw.get(wid)?.has(f.team))
     );
   let predW = W;
-  if (!hasScoredPred(latest.id) && W.length > 1 && hasScoredPred(W[W.length - 2].id)) predW = W.slice(0, -1);
+  if (!hasScoredPred(latest.id)) {
+    // Skoru girilmiş tahminli en yakın önceki haftaya kadar geri git.
+    for (let i = W.length - 2; i >= 0; i--) {
+      if (hasScoredPred(W[i].id)) {
+        predW = W.slice(0, i + 1);
+        break;
+      }
+    }
+  }
   const predLatest = predW[predW.length - 1];
   const predFallback = predLatest.id !== latest.id;
   Object.assign(stories, buildPredictionStories(data, predW, predLatest.weekNumber));
