@@ -75,7 +75,7 @@ export default function SiralamaPage() {
   const [rows, setRows] = useState<LeaderboardRowWithTrend[]>([]);
   const [weeklyWinRows, setWeeklyWinRows] = useState<WeeklyWinRow[]>([]);
   const [weeks, setWeeks] = useState<FinishedGameweek[]>([]);
-  const [selectedFilter, setSelectedFilter] = useState<FilterValue>("total");
+  const [selectedFilter, setSelectedFilter] = useState<FilterValue>("half1");
   // Kapatılmış (status=finished) son hafta. undefined: henüz yüklenmedi, null: yok.
   const [lastClosed, setLastClosed] = useState<{ id: number; week_number: number } | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
