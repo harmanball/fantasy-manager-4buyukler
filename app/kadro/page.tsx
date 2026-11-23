@@ -77,6 +77,10 @@ export default function KadroPage() {
   const [squadName, setSquadName] = useState<string | null>(null);
   const [emblem, setEmblem] = useState<EmblemId>(DEFAULT_EMBLEM);
   const [slogan, setSlogan] = useState<string | null>(null);
+  const [editingSlogan, setEditingSlogan] = useState(false);
+  const [sloganDraft, setSloganDraft] = useState("");
+  const [sloganSaving, setSloganSaving] = useState(false);
+  const [sloganError, setSloganError] = useState<string | null>(null);
   const [teamColor1, setTeamColor1] = useState(DEFAULT_COLOR1);
   const [teamColor2, setTeamColor2] = useState(DEFAULT_COLOR2);
   const [overallTotal, setOverallTotal] = useState<number | null>(null);
@@ -162,6 +166,21 @@ export default function KadroPage() {
       }
     });
   }, [session]);
+
+  async function saveSlogan() {
+    if (!session) return;
+    setSloganSaving(true);
+    setSloganError(null);
+    const value = sloganDraft.trim() || null;
+    const { error } = await supabase.from("profiles").update({ slogan: value }).eq("id", session.user.id);
+    setSloganSaving(false);
+    if (error) {
+      setSloganError(`Hata: ${error.message}`);
+      return;
+    }
+    setSlogan(value);
+    setEditingSlogan(false);
+  }
 
   // Takım adı, amblemi, sloganı ve renkleri (profil)
   useEffect(() => {
@@ -407,12 +426,67 @@ export default function KadroPage() {
 
       {squadName && (
         <div className="flex flex-col items-center gap-1.5">
-          <TeamEmblem emblem={emblem} color1={teamColor1} color2={teamColor2} size={56} />
+          <button
+            type="button"
+            onClick={() => router.push("/profil")}
+            aria-label="Profil sayfasına git"
+            title="Profil"
+            className="rounded-full transition-transform hover:scale-105 active:scale-95"
+          >
+            <TeamEmblem emblem={emblem} color1={teamColor1} color2={teamColor2} size={56} />
+          </button>
           <h2 className="text-center font-display text-2xl font-bold text-charcoal sm:text-3xl">
             {squadName} Takım Kadro
           </h2>
-          {slogan && (
-            <p className="text-center text-xs italic text-foreground/60">{slogan}</p>
+          {editingSlogan ? (
+            <div className="flex w-full max-w-sm flex-col items-center gap-1.5">
+              <input
+                type="text"
+                value={sloganDraft}
+                onChange={(e) => setSloganDraft(e.target.value)}
+                maxLength={75}
+                autoFocus
+                placeholder="Kısa bir slogan yaz"
+                className="h-9 w-full rounded-lg border border-charcoal/15 px-3 text-center text-sm outline-none focus:border-pitch"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={saveSlogan}
+                  disabled={sloganSaving}
+                  className="rounded-full bg-pitch px-3.5 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
+                >
+                  {sloganSaving ? "Kaydediliyor…" : "Kaydet"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingSlogan(false);
+                    setSloganError(null);
+                  }}
+                  disabled={sloganSaving}
+                  className="rounded-full border border-charcoal/20 px-3.5 py-1 text-[11px] font-medium text-foreground/70"
+                >
+                  Vazgeç
+                </button>
+              </div>
+              {sloganError && <p className="text-[11px] text-red-600">{sloganError}</p>}
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+              {slogan && <p className="text-center text-xs italic text-foreground/60">{slogan}</p>}
+              <button
+                type="button"
+                onClick={() => {
+                  setSloganDraft(slogan ?? "");
+                  setSloganError(null);
+                  setEditingSlogan(true);
+                }}
+                className="rounded-full border border-gold/50 px-2.5 py-0.5 text-[10.5px] font-medium text-gold hover:bg-gold/10"
+              >
+                {slogan ? "Güncelle" : "Slogan ekle"}
+              </button>
+            </div>
           )}
         </div>
       )}
