@@ -67,7 +67,7 @@ interface WeeklyHighlights {
   } | null;
 }
 
-type FilterValue = "total" | "weekly_wins" | number;
+type FilterValue = "total" | "weekly_wins" | "last" | number;
 
 export default function SiralamaPage() {
   const { session } = useSession();
@@ -75,12 +75,15 @@ export default function SiralamaPage() {
   const [weeklyWinRows, setWeeklyWinRows] = useState<WeeklyWinRow[]>([]);
   const [weeks, setWeeks] = useState<FinishedGameweek[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<FilterValue>("total");
+  // Kapatılmış (status=finished) son hafta. undefined: henüz yüklenmedi, null: yok.
+  const [lastClosed, setLastClosed] = useState<{ id: number; week_number: number } | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [lastWeekRanks, setLastWeekRanks] = useState<Map<string, number>>(new Map());
   const [highlights, setHighlights] = useState<WeeklyHighlights | null>(null);
 
   useEffect(() => {
     fetchFinishedGameweeks().then(setWeeks);
+    fetchLastClosedGameweek().then(setLastClosed);
   }, []);
 
   // Genel Toplam görünümünde, her satırın sağına en son biten haftadaki
@@ -169,10 +172,21 @@ export default function SiralamaPage() {
         return;
       }
 
+      if (selectedFilter === "last") {
+        if (lastClosed === undefined) return; // hafta bilgisi gelince efekt yeniden çalışır
+        if (lastClosed === null) {
+          if (cancelled) return;
+          setRows([]);
+          setLoading(false);
+          return;
+        }
+      }
+
+      const weekId = selectedFilter === "last" ? lastClosed!.id : selectedFilter;
       const r =
         selectedFilter === "total"
           ? await fetchLeaderboardWithTrend()
-          : (await fetchGameweekLeaderboard(selectedFilter)).map((row) => ({
+          : (await fetchGameweekLeaderboard(weekId as number)).map((row) => ({
               ...row,
               rankChange: null,
             }));
@@ -185,7 +199,7 @@ export default function SiralamaPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFilter, weeks]);
+  }, [selectedFilter, weeks, lastClosed]);
 
   const isWeeklyWins = selectedFilter === "weekly_wins";
 
@@ -216,11 +230,12 @@ export default function SiralamaPage() {
     }
 
     if (!myRow) return;
+    const scopeWeekId = selectedFilter === "last" ? lastClosed?.id : selectedFilter;
     const scopeText =
       selectedFilter === "total"
         ? "genel toplamda"
-        : weeks.find((w) => w.id === selectedFilter)?.name ||
-          `${weeks.find((w) => w.id === selectedFilter)?.week_number ?? ""}. haftada`;
+        : weeks.find((w) => w.id === scopeWeekId)?.name ||
+          `${weeks.find((w) => w.id === scopeWeekId)?.week_number ?? lastClosed?.week_number ?? ""}. haftada`;
 
     // Metindeki link artık ana sayfa değil, sonucu görsel bir önizlemeyle
     // (WhatsApp/OG kartı) gösteren ayrı bir paylaşım sayfası.
@@ -287,28 +302,73 @@ export default function SiralamaPage() {
         </div>
       )}
 
-      <select
-        value={selectedFilter}
-        onChange={(e) => {
-          const v = e.target.value;
-          setSelectedFilter(
-            v === "total"
-              ? "total"
-              : v === "weekly_wins"
-              ? "weekly_wins"
-              : Number(v)
-          );
-        }}
-        className="h-10 w-full rounded-lg border border-charcoal/15 bg-white px-3 text-sm"
-      >
-        <option value="total">Genel Toplam</option>
-        <option value="weekly_wins">Haftalık Birincilikler</option>
-        {weeks.map((w) => (
-          <option key={w.id} value={w.id}>
-            {w.name || `${w.week_number}. Hafta`}
-          </option>
-        ))}
-      </select>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {(
+            [
+              ["total", "Genel Sıralama"],
+              ["weekly_wins", "Haf. Birincilik"],
+              ["last", "Son Hafta"],
+            ] as [FilterValue, string][]
+          ).map(([value, label]) => (
+            <button
+              key={String(value)}
+              type="button"
+              onClick={() => setSelectedFilter(value)}
+              className={`rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold ${
+                selectedFilter === value
+                  ? "border-pitch bg-pitch text-ivory"
+                  : "border-charcoal/20 bg-white text-charcoal"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+          <div className="relative">
+            <select
+              aria-label="Hafta seç"
+              value={typeof selectedFilter === "number" ? selectedFilter : ""}
+              onChange={(e) => {
+                if (e.target.value !== "") setSelectedFilter(Number(e.target.value));
+              }}
+              className={`appearance-none rounded-full border py-1.5 pl-3.5 pr-7 text-[12.5px] font-semibold ${
+                typeof selectedFilter === "number"
+                  ? "border-pitch bg-pitch text-ivory"
+                  : "border-charcoal/20 bg-white text-charcoal"
+              }`}
+            >
+              <option value="" disabled>
+                Hafta seç
+              </option>
+              {weeks.map((w) => (
+                <option key={w.id} value={w.id} className="bg-white text-charcoal">
+                  {w.name || `${w.week_number}. Hafta`}
+                </option>
+              ))}
+            </select>
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-current">
+              ▾
+            </span>
+          </div>
+        </div>
+
+        {selectedFilter === "last" && (
+          <p className="text-center text-[11px] text-foreground/45">
+            {lastClosed
+              ? `${weeks.find((w) => w.id === lastClosed.id)?.name || `${lastClosed.week_number}. Hafta`} sıralaması`
+              : lastClosed === null
+              ? "Henüz kapanmış bir hafta yok."
+              : ""}
+          </p>
+        )}
+        {typeof selectedFilter === "number" && (
+          <p className="text-center text-[11px] text-foreground/45">
+            {weeks.find((w) => w.id === selectedFilter)?.name ||
+              `${weeks.find((w) => w.id === selectedFilter)?.week_number ?? ""}. Hafta`}{" "}
+            sıralaması
+          </p>
+        )}
+      </div>
 
       {isWeeklyWins && (
         <p className="text-center text-[11px] text-foreground/45">
