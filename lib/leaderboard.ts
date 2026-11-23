@@ -144,6 +144,53 @@ export async function fetchGameweekLeaderboard(
   );
 }
 
+// Sezon yarıları: 18 takımlı ligde 34 hafta var. 1. yarı = 1-17. haftalar,
+// 2. yarı = 18-34. haftalar. Kullanıcının o aralıktaki haftalık puanları toplanır.
+// Henüz hiç puanı olmayan (onaylı) kullanıcılar da 0 puanla listelenir.
+export async function fetchHalfLeaderboard(half: 1 | 2): Promise<LeaderboardRow[]> {
+  const minWeek = half === 1 ? 1 : 18;
+  const maxWeek = half === 1 ? 17 : 34;
+
+  const { data: gws, error: gwErr } = await supabase
+    .from("gameweeks")
+    .select("id")
+    .gte("week_number", minWeek)
+    .lte("week_number", maxWeek);
+  if (gwErr) {
+    console.error("Hafta listesi çekilemedi:", gwErr.message);
+    return [];
+  }
+  const gwIds = (gws ?? []).map((g) => g.id as number);
+
+  const sums = new Map<string, number>();
+  if (gwIds.length > 0) {
+    const { data: scores, error } = await supabase
+      .from("user_gameweek_scores")
+      .select("user_id, points")
+      .in("gameweek_id", gwIds);
+    if (error) {
+      console.error("Yarı sezon puanları çekilemedi:", error.message);
+      return [];
+    }
+    for (const s of scores ?? []) {
+      const id = s.user_id as string;
+      sums.set(id, (sums.get(id) ?? 0) + ((s.points as number) ?? 0));
+    }
+  }
+
+  // Profil bilgileri ve eşitlik bozma için genel sıralamayı taban al.
+  const overall = await fetchLeaderboard();
+  const overallOrder = new Map(overall.map((r, i) => [r.user_id, i]));
+  return overall
+    .map((r) => ({ ...r, total_points: sums.get(r.user_id) ?? 0 }))
+    .sort(
+      (x, y) =>
+        y.total_points - x.total_points ||
+        (overallOrder.get(x.user_id) ?? Number.MAX_SAFE_INTEGER) -
+          (overallOrder.get(y.user_id) ?? Number.MAX_SAFE_INTEGER)
+    );
+}
+
 // "Haftanın Takımı / Futbolcusu" gibi vitrinler için: admin tarafından KAPATILMIŞ
 // (status = 'finished') en son hafta. Haftaya veri girilmeye başlansa bile hafta
 // kapanana kadar bir önceki kapanmış hafta gösterilir.
