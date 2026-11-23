@@ -129,7 +129,7 @@ export async function loadGazeteData(): Promise<GazeteData> {
     await Promise.all([
       fetchAll(
         "profiles",
-        "id, username, squad_name, emblem, team_color1, team_color2",
+        "id, username, squad_name, emblem, team_color1, team_color2, approved",
         ["id"]
       ),
       fetchAll("user_gameweek_scores", "user_id, gameweek_id, points", [
@@ -177,6 +177,7 @@ export async function loadGazeteData(): Promise<GazeteData> {
 
   const teams = new Map<string, GazeteTeam>();
   for (const p of profiles) {
+    if (p.approved === false) continue; // onay bekleyenler gazetede görünmez
     const id = p.id as string;
     teams.set(id, {
       userId: id,
