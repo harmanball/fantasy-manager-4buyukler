@@ -80,6 +80,7 @@ export function AppHeader() {
   const isAdmin = !!session?.user.email && ADMIN_EMAILS.includes(session.user.email);
   const [menuOpen, setMenuOpen] = useState(false);
   const [squadName, setSquadName] = useState<string | null>(null);
+  const [approved, setApproved] = useState<boolean | null>(null); // null: bilinmiyor (engelleme yok)
   const [iosInstructionsOpen, setIosInstructionsOpen] = useState(false);
   const { canInstall, promptInstall } = useInstallPrompt();
   const { canPrompt: canAskNotifications, requestPermission } = useNotificationPermission();
@@ -89,21 +90,41 @@ export function AppHeader() {
     async function load() {
       if (!session) {
         setSquadName(null);
+        setApproved(null);
         return;
       }
       const { data } = await supabase
         .from("profiles")
-        .select("squad_name, username")
+        .select("squad_name, username, approved")
         .eq("id", session.user.id)
         .maybeSingle();
       if (cancelled) return;
-      if (data) setSquadName(data.squad_name || data.username);
+      if (data) {
+        setSquadName(data.squad_name || data.username);
+        setApproved(typeof data.approved === "boolean" ? data.approved : null);
+      }
     }
     load();
     return () => {
       cancelled = true;
     };
   }, [session]);
+
+  // Onay bekleyen kullanıcı: onaylanınca sayfa kendiliğinden açılsın.
+  useEffect(() => {
+    if (!session || approved !== false) return;
+    const uid = session.user.id;
+    async function check() {
+      const { data } = await supabase.from("profiles").select("approved").eq("id", uid).maybeSingle();
+      if (data?.approved === true) window.location.reload();
+    }
+    const timer = setInterval(check, 20000);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, [session, approved]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -137,6 +158,22 @@ export function AppHeader() {
 
   return (
     <div className="sticky top-0 z-40">
+      {session && approved === false && !isAdmin && (
+        <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4 bg-background px-6 text-center">
+          <div className="text-5xl">⏳</div>
+          <h1 className="font-display text-2xl font-semibold">Üyeliğin onay bekliyor</h1>
+          <p className="max-w-sm text-sm text-charcoal/70">
+            Oyuna katılman için yönetici onayı gerekiyor. Onaylandığında bu ekran kendiliğinden kapanır ve oyuna girebilirsin.
+          </p>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-md border border-charcoal/30 px-4 py-2 text-sm font-semibold"
+          >
+            Çıkış yap
+          </button>
+        </div>
+      )}
       <header className="relative flex items-center justify-between border-b border-charcoal/10 bg-background px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
           <button
