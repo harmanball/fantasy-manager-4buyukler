@@ -307,8 +307,8 @@ export default function SiralamaPage() {
           {(
             [
               ["total", "Genel Sıralama"],
-              ["weekly_wins", "Haf. Birincilik"],
               ["last", "Son Hafta"],
+              ["weekly_wins", "Haf. Birincilik"],
             ] as [FilterValue, string][]
           ).map(([value, label]) => (
             <button
