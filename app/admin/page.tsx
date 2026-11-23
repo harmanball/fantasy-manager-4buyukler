@@ -42,11 +42,6 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [resultMsg, setResultMsg] = useState<string | null>(null);
 
-  const [newWeekNumber, setNewWeekNumber] = useState("");
-  const [newWeekName, setNewWeekName] = useState("");
-  const [creatingWeek, setCreatingWeek] = useState(false);
-  const [createMsg, setCreateMsg] = useState<string | null>(null);
-
   const [transferOverride, setTransferOverride] = useState<TransferWindowOverride>(0);
   const [transferSaving, setTransferSaving] = useState(false);
 
@@ -186,40 +181,11 @@ export default function AdminPage() {
       setCloseMsg(`Hafta kapatıldı ✓ — ${json.nextWeekNumber}. Hafta otomatik açıldı ✓`);
     } else if (json.nextWeekError) {
       setCloseMsg(
-        `Hafta kapatıldı ✓ — ama ${json.nextWeekNumber}. Hafta otomatik açılamadı (${json.nextWeekError}). "Yeni Hafta Oluştur"dan elle ekleyebilirsin.`
+        `Hafta kapatıldı ✓ — ama ${json.nextWeekNumber}. Hafta otomatik açılamadı (${json.nextWeekError}). Hata mesajını not alıp gameweeks tablosunu kontrol et.`
       );
     } else {
       setCloseMsg(`Hafta kapatıldı ✓ — ${json.nextWeekNumber}. Hafta zaten mevcuttu.`);
     }
-    refreshGameweeks();
-  }
-
-  async function handleCreateWeek(e: React.FormEvent) {
-    e.preventDefault();
-    setCreatingWeek(true);
-    setCreateMsg(null);
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    const res = await fetch("/api/admin/create-gameweek", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        weekNumber: Number(newWeekNumber),
-        name: newWeekName,
-      }),
-    });
-    const json = await res.json();
-    setCreatingWeek(false);
-    if (!res.ok) {
-      setCreateMsg(`Hata: ${json.error}`);
-      return;
-    }
-    setCreateMsg("Hafta oluşturuldu ✓");
-    setNewWeekNumber("");
-    setNewWeekName("");
     refreshGameweeks();
   }
 
@@ -302,40 +268,6 @@ export default function AdminPage() {
               Zorla Kapat
             </button>
           </div>
-        </section>
-
-        <section className="rounded-lg border border-charcoal/10 bg-white p-4">
-          <h2 className="mb-3 text-sm font-semibold">Yeni Hafta Oluştur</h2>
-          <p className="mb-3 text-xs text-foreground/50">
-            Normalde buna gerek kalmaz — "Haftayı Kapat" bir sonraki haftayı
-            otomatik açar. Bu form sadece elle ekleme gerektiren istisnai
-            durumlar için.
-          </p>
-          <form onSubmit={handleCreateWeek} className="flex flex-col gap-2">
-            <input
-              type="number"
-              placeholder="Hafta no (örn. 2)"
-              required
-              value={newWeekNumber}
-              onChange={(e) => setNewWeekNumber(e.target.value)}
-              className="h-10 rounded-lg border border-charcoal/15 px-3 text-sm outline-none focus:border-pitch"
-            />
-            <input
-              type="text"
-              placeholder="Ad (opsiyonel, örn. 2. Hafta)"
-              value={newWeekName}
-              onChange={(e) => setNewWeekName(e.target.value)}
-              className="h-10 rounded-lg border border-charcoal/15 px-3 text-sm outline-none focus:border-pitch"
-            />
-            <button
-              type="submit"
-              disabled={creatingWeek}
-              className="h-10 rounded-lg bg-pitch text-sm font-medium text-ivory disabled:opacity-50"
-            >
-              {creatingWeek ? "…" : "Hafta Oluştur"}
-            </button>
-            {createMsg && <p className="text-sm text-foreground/70">{createMsg}</p>}
-          </form>
         </section>
 
         <section className="rounded-lg border border-charcoal/10 bg-white p-4">
