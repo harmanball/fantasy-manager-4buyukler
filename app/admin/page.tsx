@@ -68,7 +68,12 @@ export default function AdminPage() {
       .order("week_number", { ascending: true })
       .then(({ data }) => {
         setGameweeks(data ?? []);
-        if (data && data.length > 0) setSelectedGw(data[0].id);
+        if (data && data.length > 0) {
+          // Varsayılan: açık hafta (yoksa henüz kapanmamış en son hafta, o da yoksa sonuncu).
+          const open = data.find((g) => g.status === "open");
+          const lastNotFinished = [...data].reverse().find((g) => g.status !== "finished");
+          setSelectedGw((open ?? lastNotFinished ?? data[data.length - 1]).id);
+        }
       });
     fetchPlayers().then(setPlayers);
     fetchTransferWindowOverride().then(setTransferOverride);
