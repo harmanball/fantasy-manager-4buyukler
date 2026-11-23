@@ -714,6 +714,7 @@ export default function KadroPage() {
         <PlayerPointsModal
           player={modalPlayer}
           gameweekId={lastWeekGameweekId}
+          totalPoints={pointsMap[modalPlayer.id] ?? 0}
           isCaptain={modalPlayer.id === captainId}
           onMakeCaptain={
             showEditor
