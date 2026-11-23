@@ -1513,15 +1513,25 @@ function buildStories(data: GazeteData, W: WeekInfo[], facts: Facts, seed: numbe
 
 // ───────────────────────── Tahmin Köşesi ─────────────────────────
 
+// Kademeli puanlama:
+//  5 tam skor · 3 sonuç + averaj · 2 sonuç + bir takımın golü · 1 sadece sonuç
+//  1 sonuç yanlış ama bir takımın gol sayısı doğru · 0 diğerleri
 function predPoints(tg: number, og: number, ts: number, os: number): number {
-  if (tg === ts && og === os) return 3; // tam isabet
-  return Math.sign(tg - og) === Math.sign(ts - os) ? 1 : 0; // doğru sonuç
+  if (tg === ts && og === os) return 5;
+  const oneGoal = tg === ts || og === os;
+  if (Math.sign(tg - og) === Math.sign(ts - os)) {
+    if (tg - og === ts - os) return 3;
+    return oneGoal ? 2 : 1;
+  }
+  return oneGoal ? 1 : 0;
 }
+const PRED_RULE = "Tam skor 5, sonuç + averaj 3, sonuç + bir takımın golü 2, sadece sonuç 1, sadece gol sayısı 1 puan.";
 
 interface PredWeek {
   userId: string;
   points: number;
   exact: number;
+  right: number; // sonucu (1-0-2) doğru bilinen maç sayısı
   rows: string[][]; // maç, tahmin, sonuç, puan
   exactMatches: string[]; // "Galatasaray 2–1 Kasımpaşa"
 }
@@ -1534,6 +1544,7 @@ function predWeek(data: GazeteData, weekId: number): PredWeek[] {
     if (!preds) continue;
     let points = 0;
     let exact = 0;
+    let right = 0;
     let played = 0;
     const rows: string[][] = [];
     const exactMatches: string[] = [];
@@ -1543,19 +1554,20 @@ function predWeek(data: GazeteData, weekId: number): PredWeek[] {
       played += 1;
       const pts = predPoints(pr.tg, pr.og, f.ts, f.os);
       points += pts;
+      if (Math.sign(pr.tg - pr.og) === Math.sign(f.ts - f.os)) right += 1;
       const clubName = CLUB_NAMES[f.team] ?? f.team;
       const home = f.isHome ? clubName : f.opponent;
       const away = f.isHome ? f.opponent : clubName;
       const fmt = (a: number, b: number) => (f.isHome ? `${a}–${b}` : `${b}–${a}`);
       rows.push([`${home} – ${away}`, fmt(pr.tg, pr.og), fmt(f.ts, f.os), String(pts)]);
-      if (pts === 3) {
+      if (pts === 5) {
         exact += 1;
         exactMatches.push(`${home} ${fmt(f.ts, f.os)} ${away}`);
       }
     }
-    if (played > 0) out.push({ userId: u, points, exact, rows, exactMatches });
+    if (played > 0) out.push({ userId: u, points, exact, right, rows, exactMatches });
   }
-  return out.sort((a, b) => b.points - a.points || b.exact - a.exact);
+  return out.sort((a, b) => b.points - a.points || b.exact - a.exact || b.right - a.right);
 }
 
 function buildPredictionStories(data: GazeteData, W: WeekInfo[], seed: number): Record<string, Story> {
@@ -1567,7 +1579,7 @@ function buildPredictionStories(data: GazeteData, W: WeekInfo[], seed: number): 
   const best = week[0];
   if (best && best.points > 0 && T(best.userId)) {
     const t = T(best.userId)!;
-    const tied = week.filter((x) => x.points === best.points && x.exact === best.exact && x.userId !== best.userId);
+    const tied = week.filter((x) => x.points === best.points && x.exact === best.exact && x.right === best.right && x.userId !== best.userId);
     out.kahin = {
       id: "kahin",
       kicker: "Kahin",
@@ -1580,7 +1592,7 @@ function buildPredictionStories(data: GazeteData, W: WeekInfo[], seed: number): 
         ],
         seed + 20
       ),
-      deck: "Tahmin Yap’ta bu haftanın en çok puan toplayan tahmincisi (tam skor 3, doğru sonuç 1 puan).",
+      deck: `Bu haftanın en çok puan toplayan tahmincisi. ${PRED_RULE} Eşitlikte tam skor, sonra doğru sonuç sayısı belirler.`,
       table: { head: ["Maç", "Tahmin", "Sonuç", "P"], rows: best.rows },
       after: tied.length > 0 ? `Aynı puanda: ${tied.map((x) => T(x.userId)?.name ?? "?").slice(0, 3).join(" · ")}` : undefined,
       full: true,
@@ -1620,7 +1632,7 @@ function buildPredictionStories(data: GazeteData, W: WeekInfo[], seed: number): 
       id: "kahinseason",
       kicker: "Sezonun kahini",
       headline: [{ text: T(lu)!.name, hot: true }, { text: ` tahmin liginde önde: ${lv.pts} puan` }],
-      deck: `Sezon boyunca toplam tahmin puanı. Lider ${lv.exact} kez tam skoru buldu.`,
+      deck: `Sezon boyunca toplam tahmin puanı (kademeli puanlama). Lider ${lv.exact} kez tam skoru buldu. Eşitlikte tam skor sayısı belirler.`,
       fbars: board.slice(0, 5).map(([u, v], i) => ({
         label: `${i + 1}.`,
         pct: Math.round((v.pts / lv.pts) * 100),
@@ -1667,6 +1679,11 @@ function buildPredictionReport(data: GazeteData, weekId: number, weekNumber: num
     rows.push([`${home} – ${away}`, `${top[0]} (${top[1]} kişi)`, fmt(f.ts, f.os), `%${Math.round((right / list.length) * 100)}`]);
   }
   if (rows.length === 0) return null;
+  let hardest: { label: string; pct: number } | null = null;
+  for (const r of rows) {
+    const pct = parseInt(r[3].replace("%", ""), 10);
+    if (!hardest || pct < hardest.pct) hardest = { label: r[0], pct };
+  }
   return {
     id: "predreport",
     kicker: "Tahmin raporu",
@@ -1676,6 +1693,47 @@ function buildPredictionReport(data: GazeteData, weekId: number, weekNumber: num
     ],
     deck: "Her maçta en çok yazılan skor, gerçek sonuç ve sonucu (1-0-2) doğru bilenlerin oranı.",
     table: { head: ["Maç", "En çok tahmin", "Sonuç", "Doğru"], rows },
+    after: hardest && rows.length > 1 ? `En zor maç: ${hardest.label} (sonucu bilen %${hardest.pct})` : undefined,
+    full: true,
+  };
+}
+
+// Cesur tahmin: en az 3 kişinin tahmin ettiği maçta, sonucu (1-0-2) TEK başına bilen.
+function buildBoldStory(data: GazeteData, weekId: number): Story | null {
+  const fixtures = data.fixtures.get(weekId) ?? [];
+  const T = (id: string) => data.teams.get(id);
+  const rows: { team: GazeteTeam; label: string; value: string }[] = [];
+  for (const f of fixtures) {
+    if (f.ts === null || f.os === null) continue;
+    const list: { u: string; tg: number; og: number }[] = [];
+    for (const [u, byWeek] of data.predictions) {
+      const pr = byWeek.get(weekId)?.get(f.team);
+      if (pr && T(u)) list.push({ u, tg: pr.tg, og: pr.og });
+    }
+    if (list.length < 3) continue;
+    const right = list.filter((x) => Math.sign(x.tg - x.og) === Math.sign(f.ts! - f.os!));
+    if (right.length !== 1) continue;
+    const club = CLUB_NAMES[f.team] ?? f.team;
+    const home = f.isHome ? club : f.opponent;
+    const away = f.isHome ? f.opponent : club;
+    const fmt = (a: number, b: number) => (f.isHome ? `${a}–${b}` : `${b}–${a}`);
+    const x = right[0];
+    rows.push({
+      team: T(x.u)!,
+      label: `${home} – ${away} · ${fmt(x.tg, x.og)} dedi (sonuç ${fmt(f.ts, f.os)})`,
+      value: `+${predPoints(x.tg, x.og, f.ts, f.os)} puan`,
+    });
+  }
+  if (rows.length === 0) return null;
+  return {
+    id: "bold",
+    kicker: "Cesur tahmin",
+    headline: [
+      { text: rows.length === 1 ? rows[0].team.name : `${rows.length} kişi`, hot: true },
+      { text: rows.length === 1 ? " herkese karşı çıktı, haklı çıktı" : " yalnız başına sonucu bildi" },
+    ],
+    deck: "Maçın sonucunu (1-0-2) tek başına doğru bilen tahminciler.",
+    rows: rows.slice(0, 6),
     full: true,
   };
 }
@@ -1697,12 +1755,13 @@ function buildHalfHitStory(data: GazeteData, weekId: number): Story | null {
       const t = T(u);
       if (!pr || !t) continue;
       if (pr.tg === f.ts && pr.og === f.os) continue; // tam isabet ayrı haber
+      const pts = predPoints(pr.tg, pr.og, f.ts, f.os);
       let note = "";
       if (pr.tg === f.ts) note = `${club} ${f.ts} gol`;
       else if (pr.og === f.os) note = `${f.opponent} ${f.os} gol`;
       else continue;
       people.add(u);
-      rows.push({ team: t, label: `${home} – ${away} · ${fmt(pr.tg, pr.og)} dedi (sonuç ${fmt(f.ts, f.os)})`, value: `${note} ✓` });
+      rows.push({ team: t, label: `${home} – ${away} · ${fmt(pr.tg, pr.og)} dedi (sonuç ${fmt(f.ts, f.os)})`, value: `${note} ✓ +${pts}` });
     }
   }
   if (rows.length === 0) return null;
@@ -1710,7 +1769,7 @@ function buildHalfHitStory(data: GazeteData, weekId: number): Story | null {
     id: "halfhit",
     kicker: "Kahin",
     headline: [{ text: `${people.size} kişi `, hot: true }, { text: "skoru tutturamadı ama golü bildi" }],
-    deck: "Skoru birebir bilemeyip bir takımın attığı gol sayısını doğru tahmin edenler.",
+    deck: "Skoru birebir bilemeyip bir takımın attığı gol sayısını doğru tahmin edenler (sonucu da bildiyse ek puan alır).",
     rows: rows.slice(0, 8),
     full: true,
   };
@@ -2116,7 +2175,7 @@ function buildPredResults(data: GazeteData, W: WeekInfo[]): Story | null {
     id: "predresults",
     kicker: "Skor tahmini sonuçları",
     headline,
-    deck: `Haftanın tahmin lideri ${tops.map((u) => T(u)!.name).join(" ve ")} (${bestPts} puan). Tam skor 3, doğru sonuç 1 puan.`,
+    deck: `Haftanın tahmin lideri ${tops.map((u) => T(u)!.name).join(" ve ")} (${bestPts} puan). ${PRED_RULE}`,
     ptable: { head, rows },
     full: true,
   };
@@ -2276,6 +2335,8 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
   if (rep) stories.predreport = rep;
   const half = buildHalfHitStory(data, predLatest.id);
   if (half) stories.halfhit = half;
+  const bold = buildBoldStory(data, predLatest.id);
+  if (bold) stories.bold = bold;
   const news = buildWeekNews(data, W, latest.weekNumber);
   if (news) stories.weeknews = news;
   const rm = buildRankMove(data, W);
@@ -2326,7 +2387,7 @@ export function buildIssue(data: GazeteData, weekNumber: number): Issue | null {
     ["Kaptan Köşesi", ["captaingain", "crowd", "differential"]],
     ["Diziliş Servisi", ["formloyal", "formattack", "formdefence", "formdist", "formpoints", "formmatrix"]],
     ["Tribün Magazin", ["motm", "gentle"]],
-    [predFallback ? `Tahmin Köşesi · ${predLatest.weekNumber}. hafta` : "Tahmin Köşesi", ["predresults", "kahin", "predreport", "exact", "halfhit", "kahinseason"]],
+    [predFallback ? `Tahmin Köşesi · ${predLatest.weekNumber}. hafta` : "Tahmin Köşesi", ["predresults", "kahin", "predreport", "bold", "exact", "halfhit", "kahinseason"]],
     ["Meydan Okuma", ["challengeresults"]],
     ["Basın Toplantısı", ["press"]],
     ["Tribün Sloganları", ["slogans"]],
