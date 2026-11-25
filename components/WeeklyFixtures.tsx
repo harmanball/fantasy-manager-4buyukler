@@ -245,6 +245,9 @@ export function WeeklyFixtures({
           >
             Sakat ve Cezalılar Listesi ↗
           </a>
+          <p className="max-w-xs text-center text-[10.5px] leading-snug text-ivory/55">
+            Sakat ve cezalı bilgileri dış bir kaynaktan alınmaktadır; güncel olmayabilir veya hata içerebilir.
+          </p>
         </div>
       </div>
 
