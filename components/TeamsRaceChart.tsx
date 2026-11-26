@@ -3,6 +3,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchTeamsProgress, TeamProgress } from "@/lib/teamsProgress";
 
+// Birbirinden olabildiğince ayrışan sabit renkler (takımın kendi rengi kullanılmaz).
+// Renk, takım kimliğine göre sabit atanır: sıralama değişse de bir takımın rengi değişmez.
+const PALETTE = [
+  "#E41A1C", "#377EB8", "#2CA02C", "#FF7F00", "#984EA3", "#00B8D4",
+  "#E7298A", "#8C564B", "#111111", "#C9A800", "#7F7F7F", "#008080",
+];
+
+function recolor(teams: TeamProgress[]): TeamProgress[] {
+  const order = [...teams].sort((a, b) => a.userId.localeCompare(b.userId));
+  const idx = new Map(order.map((t, i) => [t.userId, i]));
+  return teams.map((t) => ({ ...t, color: PALETTE[(idx.get(t.userId) ?? 0) % PALETTE.length] }));
+}
+
 // "Puan yarışı": tüm takımların haftalık / kümülatif puan çizgileri tek grafikte.
 // startWeek-endWeek: eksenin aralığı (ör. 1-17). endWeek verilmezse oynanan son haftaya kadar.
 export function TeamsRaceChart({
@@ -21,7 +34,7 @@ export function TeamsRaceChart({
   const [hidden, setHidden] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetchTeamsProgress().then(setData);
+    fetchTeamsProgress().then((d) => setData({ ...d, teams: recolor(d.teams) }));
   }, []);
 
   const lastAxis = endWeek ?? Math.max(data?.lastWeek ?? 0, startWeek + 1);
