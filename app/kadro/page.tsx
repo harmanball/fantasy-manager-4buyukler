@@ -14,6 +14,7 @@ import {
 } from "@/lib/squad";
 import { fetchPlayerPointsMap, fetchUserLastWeekPlayerPoints } from "@/lib/playerPoints";
 import { fetchGameweekResult } from "@/lib/gameweekResult";
+import { fetchMaxPossibleScore } from "@/lib/maxScore";
 import { fetchUserOverallRank, fetchUserGameweekRank } from "@/lib/leaderboard";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
@@ -73,6 +74,7 @@ export default function KadroPage() {
   const [lastWeekName, setLastWeekName] = useState<string | null>(null);
   const [lastWeekGameweekId, setLastWeekGameweekId] = useState<number | null>(null);
   const [lastWeekTotal, setLastWeekTotal] = useState<number | null>(null);
+  const [weekMaxScore, setWeekMaxScore] = useState<number | null>(null);
   const [overallRank, setOverallRank] = useState<number | null>(null);
   const [squadName, setSquadName] = useState<string | null>(null);
   const [emblem, setEmblem] = useState<EmblemId>(DEFAULT_EMBLEM);
@@ -155,6 +157,12 @@ export default function KadroPage() {
       setLastWeekTotal(total);
     });
   }, [session, lastWeekGameweekId]);
+
+  // O haftada alınabilecek en yüksek puan (en iyi 11 + kaptan çarpanı)
+  useEffect(() => {
+    if (!lastWeekGameweekId) return;
+    fetchMaxPossibleScore(lastWeekGameweekId).then(setWeekMaxScore);
+  }, [lastWeekGameweekId]);
 
   // Genel lig sıralaman ve genel toplam puanın
   useEffect(() => {
@@ -515,6 +523,12 @@ export default function KadroPage() {
             <span className="text-foreground/60">Bu Haftaki Toplam Puanın:</span>
             <span className="font-display font-semibold text-charcoal">
               {lastWeekTotal ?? "—"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-2 text-sm">
+            <span className="text-foreground/60">Bu Hafta Alınabilecek En Yüksek Puan:</span>
+            <span className="font-display font-semibold text-charcoal">
+              {weekMaxScore ?? "—"}
             </span>
           </div>
         </div>
