@@ -60,7 +60,7 @@ export interface GazeteData {
   sloganChanges: Map<number, { userId: string; oldSlogan: string | null; newSlogan: string }[]>;
   // Meydan okumalar (tüm haftalar) ve cevaplanan basın toplantısı soruları (hafta id -> sorular)
   challenges: { challengerId: string; rivalId: string; weekId: number }[];
-  pressQA: Map<number, { askerId: string; targetId: string; question: string; answer: string }[]>;
+  pressQA: Map<number, { id: number; askerId: string; targetId: string; question: string; answer: string }[]>;
 }
 
 interface FixtureResult {
@@ -357,7 +357,7 @@ export async function loadGazeteData(): Promise<GazeteData> {
     const ans = ((r.answer as string | null) ?? "").trim();
     if (gw === null || gw === undefined || !ans) continue;
     if (!pressQA.has(gw)) pressQA.set(gw, []);
-    pressQA.get(gw)!.push({ askerId: r.asker_id as string, targetId: r.target_id as string, question: r.question as string, answer: ans });
+    pressQA.get(gw)!.push({ id: r.id as number, askerId: r.asker_id as string, targetId: r.target_id as string, question: r.question as string, answer: ans });
   }
 
   return { weeks, teams, scores, picks, stats, players, captainMult, fixtures, predictions, lockedWeek, currentWeek, teamsOfWeek, sloganChanges, challenges, pressQA };
@@ -392,7 +392,7 @@ export interface Story {
   twoCol?: { title: string; tone: "up" | "down"; rows: { team: GazeteTeam; value: string }[] }[];
   ptable?: { head: string[]; rows: { cells: { text: string; pts?: number }[]; total?: boolean }[] };
   slogans?: { team: GazeteTeam; old: string | null; now: string }[];
-  qa?: { asker: GazeteTeam; target: GazeteTeam; question: string; answer: string }[];
+  qa?: { id: number; asker: GazeteTeam; target: GazeteTeam; question: string; answer: string }[];
   pitch?: { tag: string; name: string; value: string; cap?: boolean }[][];
   full?: boolean;
 }
@@ -2295,7 +2295,7 @@ function buildPressStory(data: GazeteData, W: WeekInfo[]): Story | null {
   const latest = W[W.length - 1];
   const qa = (data.pressQA.get(latest.id) ?? [])
     .filter((x) => data.teams.has(x.askerId) && data.teams.has(x.targetId))
-    .map((x) => ({ asker: data.teams.get(x.askerId)!, target: data.teams.get(x.targetId)!, question: x.question, answer: x.answer }));
+    .map((x) => ({ id: x.id, asker: data.teams.get(x.askerId)!, target: data.teams.get(x.targetId)!, question: x.question, answer: x.answer }));
   if (qa.length === 0) return null;
   const n = qa.length;
   return {
