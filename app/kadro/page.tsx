@@ -13,8 +13,9 @@ import {
   OpenGameweek,
 } from "@/lib/squad";
 import { fetchPlayerPointsMap, fetchUserLastWeekPlayerPoints } from "@/lib/playerPoints";
-import { fetchGameweekResult } from "@/lib/gameweekResult";
-import { fetchMaxPossibleScore } from "@/lib/maxScore";
+import { fetchGameweekResult, fetchUserWeeklySeries, WeeklyPoint } from "@/lib/gameweekResult";
+import { fetchMaxPossibleScore, fetchWeeklyMaxSeries } from "@/lib/maxScore";
+import { PerformanceChart } from "@/components/PerformanceChart";
 import { fetchUserOverallRank, fetchUserGameweekRank } from "@/lib/leaderboard";
 import { useSession } from "@/lib/useSession";
 import { supabase } from "@/lib/supabase";
@@ -75,6 +76,8 @@ export default function KadroPage() {
   const [lastWeekGameweekId, setLastWeekGameweekId] = useState<number | null>(null);
   const [lastWeekTotal, setLastWeekTotal] = useState<number | null>(null);
   const [weekMaxScore, setWeekMaxScore] = useState<number | null>(null);
+  const [weeklySeries, setWeeklySeries] = useState<WeeklyPoint[]>([]);
+  const [maxByWeek, setMaxByWeek] = useState<Record<number, number> | undefined>(undefined);
   const [overallRank, setOverallRank] = useState<number | null>(null);
   const [squadName, setSquadName] = useState<string | null>(null);
   const [emblem, setEmblem] = useState<EmblemId>(DEFAULT_EMBLEM);
@@ -157,6 +160,16 @@ export default function KadroPage() {
       setLastWeekTotal(total);
     });
   }, [session, lastWeekGameweekId]);
+
+  // Haftalık form grafiği: kendi puanların + her haftanın alınabilecek en yüksek puanı
+  useEffect(() => {
+    if (!session) return;
+    fetchUserWeeklySeries(session.user.id).then(setWeeklySeries);
+  }, [session]);
+  useEffect(() => {
+    if (weeklySeries.length === 0) return;
+    fetchWeeklyMaxSeries(weeklySeries.map((w) => w.weekNumber)).then(setMaxByWeek);
+  }, [weeklySeries]);
 
   // O haftada alınabilecek en yüksek puan (en iyi 11 + kaptan çarpanı)
   useEffect(() => {
@@ -533,6 +546,8 @@ export default function KadroPage() {
           </div>
         </div>
       )}
+
+      {weeklySeries.length >= 2 && <PerformanceChart data={weeklySeries} maxByWeek={maxByWeek} />}
 
       <GazeteBanner />
 
