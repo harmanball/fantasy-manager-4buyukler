@@ -122,7 +122,7 @@ export function PerformanceChart({
             fill="#999"
             textAnchor="middle"
           >
-            {p.weekNumber}.H
+            {p.weekNumber}
           </text>
         ))}
       </svg>
