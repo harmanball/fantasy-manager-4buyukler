@@ -11,6 +11,7 @@ import {
 } from "@/lib/leaderboard";
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
 import { useSession } from "@/lib/useSession";
+import { TeamsRaceChart } from "@/components/TeamsRaceChart";
 import { supabase } from "@/lib/supabase";
 import { fetchWeekTopPlayer } from "@/lib/teamOfWeek";
 import { AppHeader } from "@/components/AppHeader";
@@ -600,6 +601,21 @@ export default function SiralamaPage() {
               );
             })}
         </ol>
+      )}
+
+      {!loading && selectedFilter !== "weekly_wins" && (
+        <TeamsRaceChart
+          startWeek={selectedFilter === "half2" ? 18 : 1}
+          endWeek={selectedFilter === "half1" ? 17 : selectedFilter === "half2" ? 34 : undefined}
+          subtitle={
+            selectedFilter === "half1"
+              ? "Sezon 1. yarı · Haftalar 1–17"
+              : selectedFilter === "half2"
+              ? "Sezon 2. yarı · Haftalar 18–34"
+              : "Tüm sezon"
+          }
+          meId={session?.user.id}
+        />
       )}
 
       {selectedFilter === "total" && (
