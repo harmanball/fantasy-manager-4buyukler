@@ -15,6 +15,7 @@ import { PlayerPointsModal } from "@/components/PlayerPointsModal";
 import { AppHeader } from "@/components/AppHeader";
 import { PageHeader } from "@/components/PageHeader";
 import { PerformanceChart } from "@/components/PerformanceChart";
+import { fetchMaxPossibleScore, fetchWeeklyMaxSeries } from "@/lib/maxScore";
 import { SkeletonRow } from "@/components/Skeleton";
 import { positionLabel } from "@/lib/positionLabels";
 import { TeamCode } from "@/lib/teams";
@@ -32,6 +33,21 @@ export default function PuanlarimPage() {
     null
   );
   const [weeklySeries, setWeeklySeries] = useState<WeeklyPoint[]>([]);
+  const [maxByWeek, setMaxByWeek] = useState<Record<number, number> | undefined>(undefined);
+  const [selectedMax, setSelectedMax] = useState<number | null>(null);
+
+  // Grafikteki "alınabilecek en yüksek puan" çizgisi
+  useEffect(() => {
+    if (weeklySeries.length === 0) return;
+    fetchWeeklyMaxSeries(weeklySeries.map((w) => w.weekNumber)).then(setMaxByWeek);
+  }, [weeklySeries]);
+
+  // Seçili haftanın alınabilecek en yüksek puanı
+  useEffect(() => {
+    if (!selectedGw) return;
+    setSelectedMax(null);
+    fetchMaxPossibleScore(selectedGw).then(setSelectedMax);
+  }, [selectedGw]);
 
   useEffect(() => {
     if (!session) return;
@@ -105,13 +121,22 @@ export default function PuanlarimPage() {
             ))}
           </select>
 
-          <PerformanceChart data={weeklySeries} />
+          <PerformanceChart data={weeklySeries} maxByWeek={maxByWeek} />
 
-          <div className="rounded-lg border border-gold/40 bg-gold/10 px-4 py-3 text-center">
-            <p className="text-xs text-foreground/60">Bu haftaki toplam puanın</p>
-            <p className="font-display text-2xl font-semibold text-charcoal">
-              {total}
-            </p>
+          <div className="flex rounded-lg border border-gold/40 bg-gold/10 px-2 py-3 text-center">
+            <div className="flex-1 px-2">
+              <p className="text-xs text-foreground/60">Bu haftaki toplam puanın</p>
+              <p className="font-display text-2xl font-semibold text-charcoal">
+                {total}
+              </p>
+            </div>
+            <div className="w-px flex-none bg-gold/40" />
+            <div className="flex-1 px-2">
+              <p className="text-xs text-foreground/60">Bu hafta alınabilecek en yüksek puan</p>
+              <p className="font-display text-2xl font-semibold text-[#A67B1E]">
+                {selectedMax ?? "—"}
+              </p>
+            </div>
           </div>
 
           {loading ? (
