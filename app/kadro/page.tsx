@@ -559,7 +559,7 @@ export default function KadroPage() {
             <p className="mt-2 font-display text-base font-semibold text-ivory sm:text-lg">
               Transfer penceresi kapalı
             </p>
-            <p className="mx-auto mt-1.5 max-w-[260px] text-xs leading-relaxed text-ivory/65">
+            <p className="mx-auto mt-1.5 max-w-[260px] text-xs leading-relaxed text-red-300">
               Bu hafta için kadro güncelleme ve transfer zamanı kapalı. Kadro
               değişiklikleri yalnızca Salı, Çarşamba ve Perşembe günleri
               yapılabilir.
@@ -625,11 +625,11 @@ export default function KadroPage() {
                 ? `${gameweek.name || `${gameweek.week_number}. Hafta`} Transfer Penceresi Açık`
                 : "Transfer penceresi açık"}
             </p>
-            <p className="mx-auto mt-1.5 max-w-[240px] text-xs leading-relaxed text-ivory/65">
+            <p className="mx-auto mt-1.5 max-w-[240px] text-xs leading-relaxed text-green-300">
               {windowDeadline ? (
                 <>
                   Transfer penceresi{" "}
-                  <span className="text-sm font-bold text-red-400">
+                  <span className="text-sm font-bold">
                     {formatDeadline(windowDeadline)}
                   </span>
                   &apos;da kapanacak. Kaydetmeyi unutma!
