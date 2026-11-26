@@ -30,7 +30,7 @@ export function TeamsRaceChart({
   meId?: string;
 }) {
   const [data, setData] = useState<{ teams: TeamProgress[]; lastWeek: number } | null>(null);
-  const [mode, setMode] = useState<"cum" | "weekly">("cum");
+  const [mode, setMode] = useState<"cum" | "weekly">("weekly");
   const [hidden, setHidden] = useState<Set<string>>(new Set());
 
   useEffect(() => {
