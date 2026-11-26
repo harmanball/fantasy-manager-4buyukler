@@ -53,7 +53,7 @@ export function TeamsRaceChart({
   const W = 340;
   const H = 250;
   const x0 = 30;
-  const x1 = mode === "cum" ? 252 : 322;
+  const x1 = 322;
   const yt = 14;
   const yb = 200;
   const all = visible.flatMap((s) => s.vals.filter((v): v is number => v !== null));
@@ -63,13 +63,6 @@ export function TeamsRaceChart({
   const step = vmax > 600 ? 250 : vmax > 250 ? 100 : 50;
   const grid: number[] = [];
   for (let g = 0; g <= vmax; g += step) grid.push(g);
-
-  // Sağdaki takım adı etiketleri çakışmasın (kümülatif görünüm)
-  const labels = visible
-    .filter((s) => s.vals[playedUpTo - startWeek] !== null)
-    .map((s) => ({ s, y: Y(s.vals[playedUpTo - startWeek] as number) }))
-    .sort((a, b) => a.y - b.y);
-  for (let i = 1; i < labels.length; i++) if (labels[i].y - labels[i - 1].y < 10) labels[i].y = labels[i - 1].y + 10;
 
   const toggle = (id: string) =>
     setHidden((prev) => {
@@ -87,8 +80,8 @@ export function TeamsRaceChart({
       <div className="mb-2 flex gap-1.5">
         {(
           [
-            ["cum", "Kümülatif"],
             ["weekly", "Haftalık"],
+            ["cum", "Kümülatif"],
           ] as const
         ).map(([v, label]) => (
           <button
@@ -161,19 +154,6 @@ export function TeamsRaceChart({
             </g>
           );
         })}
-        {mode === "cum" &&
-          labels.map(({ s, y }) => (
-            <text
-              key={s.team.userId}
-              x={X(playedUpTo - startWeek) + 8}
-              y={y + 3}
-              fontSize="9.5"
-              fontWeight={s.team.userId === meId ? 800 : 600}
-              fill={s.team.color}
-            >
-              {s.team.name.length > 12 ? s.team.name.slice(0, 11) + "…" : s.team.name} {s.last}
-            </text>
-          ))}
       </svg>
     </div>
   );
