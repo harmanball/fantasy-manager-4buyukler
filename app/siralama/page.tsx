@@ -11,6 +11,7 @@ import {
 } from "@/lib/leaderboard";
 import { fetchFinishedGameweeks, FinishedGameweek } from "@/lib/gameweekResult";
 import { useSession } from "@/lib/useSession";
+import { supabase } from "@/lib/supabase";
 import { fetchWeekTopPlayer } from "@/lib/teamOfWeek";
 import { AppHeader } from "@/components/AppHeader";
 import { PageHeader } from "@/components/PageHeader";
@@ -81,6 +82,19 @@ export default function SiralamaPage() {
   const [loading, setLoading] = useState(true);
   const [lastWeekRanks, setLastWeekRanks] = useState<Map<string, number>>(new Map());
   const [highlights, setHighlights] = useState<WeeklyHighlights | null>(null);
+
+  // Sezon takvimi için: hafta numarası -> durum (finished / open / upcoming)
+  const [weekStatus, setWeekStatus] = useState<Record<number, string>>({});
+  useEffect(() => {
+    supabase
+      .from("gameweeks")
+      .select("week_number, status")
+      .then(({ data }) => {
+        const m: Record<number, string> = {};
+        for (const g of data ?? []) m[g.week_number as number] = g.status as string;
+        setWeekStatus(m);
+      });
+  }, []);
 
   useEffect(() => {
     fetchFinishedGameweeks().then(setWeeks);
@@ -374,6 +388,43 @@ export default function SiralamaPage() {
           </button>
         </div>
 
+        {(selectedFilter === "half1" || selectedFilter === "half2") && (() => {
+          const start = selectedFilter === "half1" ? 1 : 18;
+          const nums = Array.from({ length: 17 }, (_, i) => start + i);
+          const doneCount = nums.filter((n) => weekStatus[n] === "finished").length;
+          return (
+            <div className="flex items-center gap-2" aria-label={`Sezon takvimi: ${doneCount} / 17 hafta tamamlandı`}>
+              <div className="grid flex-1 grid-cols-[repeat(17,minmax(0,1fr))] gap-[2px]">
+                {nums.map((n) => {
+                  const st = weekStatus[n];
+                  const done = st === "finished";
+                  const cur = st === "open";
+                  return (
+                    <span
+                      key={n}
+                      title={`${n}. hafta`}
+                      className={`relative grid aspect-square place-items-center rounded-[3px] border font-serif text-[8px] font-bold leading-none ${
+                        done
+                          ? "border-charcoal/10 bg-charcoal/10 text-charcoal/40"
+                          : cur
+                          ? "border-pitch bg-pitch text-ivory ring-[1.5px] ring-gold/70"
+                          : "border-pitch/40 bg-white/60 text-pitch"
+                      }`}
+                    >
+                      {n}
+                      {done && (
+                        <svg viewBox="0 0 10 10" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
+                          <path d="M1.5 1.5 L8.5 8.5 M8.5 1.5 L1.5 8.5" stroke="#b91c1c" strokeWidth="1.2" strokeLinecap="round" />
+                        </svg>
+                      )}
+                    </span>
+                  );
+                })}
+              </div>
+              <span className="whitespace-nowrap text-[10.5px] text-foreground/50">{doneCount}/17</span>
+            </div>
+          );
+        })()}
         {(selectedFilter === "half1" || selectedFilter === "half2") && (
           <p className="text-center text-[11px] text-foreground/45">
             {selectedFilter === "half1"
