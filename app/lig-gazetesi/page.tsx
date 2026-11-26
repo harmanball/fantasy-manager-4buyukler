@@ -216,7 +216,7 @@ function StoryCard({
       {story.qa && (
         <div className="flex flex-col gap-3">
           {story.qa.map((x, i) => (
-            <div key={i} className="flex flex-col gap-1.5 border-l-[3px] border-charcoal pl-3">
+            <div key={x.id ?? i} className="flex flex-col gap-1.5 border-l-[3px] border-charcoal pl-3">
               <div className="text-[13px] leading-relaxed">
                 <b className="font-serif">{x.asker.name}</b> soruyor → <b className="font-serif">{x.target.name}</b>: “{x.question}”
               </div>
@@ -226,6 +226,7 @@ function StoryCard({
                 </small>
                 “{x.answer}”
               </div>
+              <ReactionBar storyId={`qa-${x.id}`} state={reactions} canReact={!!meId} onReact={onReact} nameOf={nameOf} />
             </div>
           ))}
         </div>
@@ -416,7 +417,8 @@ function StoryCard({
           body
         )}
       </div>
-      <ReactionBar storyId={story.id} state={reactions} canReact={!!meId} onReact={onReact} nameOf={nameOf} />
+      {/* Basın toplantısında tepki, her soru-cevabın altında verilir */}
+      {!story.qa && <ReactionBar storyId={story.id} state={reactions} canReact={!!meId} onReact={onReact} nameOf={nameOf} />}
     </div>
   );
 }
