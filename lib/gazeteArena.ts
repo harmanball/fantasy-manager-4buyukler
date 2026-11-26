@@ -21,7 +21,7 @@ export interface ArenaData {
 }
 
 export const MAX_QUESTIONS_PER_WEEK = 2;
-export const MAX_QUESTION_LENGTH = 140;
+export const MAX_QUESTION_LENGTH = 500;
 export const MAX_ANSWER_LENGTH = 300;
 
 export async function fetchArena(meId: string): Promise<ArenaData> {
