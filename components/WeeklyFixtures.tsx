@@ -235,7 +235,7 @@ export function WeeklyFixtures({
             rel="noopener noreferrer"
             className="rounded-full border border-gold/50 px-3.5 py-1.5 text-[11px] font-medium text-gold hover:bg-gold/10"
           >
-            Lig Tablosu ↗
+            Süper Lig Tablosu ↗
           </a>
           <a
             href="https://sakat-ve-cezali.com/turkiye-super-lig.php"
