@@ -12,7 +12,9 @@ import {
   fetchPreviousWeekSquad,
   buildSquadFromPicks,
 } from "@/lib/squad";
-import { fetchFinishedGameweeks } from "@/lib/gameweekResult";
+import { fetchFinishedGameweeks, fetchUserWeeklySeries, WeeklyPoint } from "@/lib/gameweekResult";
+import { fetchWeeklyMaxSeries } from "@/lib/maxScore";
+import { PerformanceChart } from "@/components/PerformanceChart";
 import { fetchUserLastWeekPlayerPoints } from "@/lib/playerPoints";
 import { fetchIsTransferWindowOpen } from "@/lib/transferWindow";
 import { AppHeader } from "@/components/AppHeader";
@@ -38,6 +40,8 @@ export default function TakimPage() {
   const [lastWeekPoints, setLastWeekPoints] = useState<Record<string, number>>({});
   const [lastWeekGameweekId, setLastWeekGameweekId] = useState<number | null>(null);
   const [lastWeekName, setLastWeekName] = useState<string | null>(null);
+  const [weeklySeries, setWeeklySeries] = useState<WeeklyPoint[]>([]);
+  const [maxByWeek, setMaxByWeek] = useState<Record<number, number> | undefined>(undefined);
 
   // Gösterilen kadronun "bu haftanın canlı seçimi" değil, kilitli bir
   // önceki hafta olduğunu belirtmek için — sadece bilgi notu amaçlı.
@@ -57,6 +61,16 @@ export default function TakimPage() {
   useEffect(() => {
     if (!sessionLoading && !session) router.push("/giris");
   }, [sessionLoading, session, router]);
+
+  // Haftalık form grafiği: bu takımın puanları + her haftanın alınabilecek en yüksek puanı
+  useEffect(() => {
+    if (!session) return;
+    fetchUserWeeklySeries(targetUserId).then(setWeeklySeries);
+  }, [session, targetUserId]);
+  useEffect(() => {
+    if (weeklySeries.length === 0) return;
+    fetchWeeklyMaxSeries(weeklySeries.map((w) => w.weekNumber)).then(setMaxByWeek);
+  }, [weeklySeries]);
 
   useEffect(() => {
     if (!session) return;
@@ -182,6 +196,8 @@ export default function TakimPage() {
           )}
         </div>
       )}
+
+      {weeklySeries.length >= 2 && <PerformanceChart data={weeklySeries} maxByWeek={maxByWeek} />}
 
       <PredictionsView
         userId={targetUserId}
